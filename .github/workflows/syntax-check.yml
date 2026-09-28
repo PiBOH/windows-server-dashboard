@@ -1,0 +1,56 @@
+# ---------------------------------------------------------------------------
+#  Every push is parsed by the real PowerShell parser on a Windows runner.
+#  A syntax error would make the dashboard exit before writing a single line
+#  of log, so this check is the cheapest insurance there is.
+# ---------------------------------------------------------------------------
+name: Syntax check
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  powershell:
+    name: Parse every script
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse the PowerShell files
+        shell: pwsh
+        run: |
+          $bad = 0
+          foreach ($f in Get-ChildItem -Path scripts -Filter *.ps1 -File) {
+            $errors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile(
+                $f.FullName, [ref]$null, [ref]$errors)
+            if ($errors.Count) {
+              $bad++
+              Write-Host "::error file=$($f.Name)::$($errors.Count) syntax error(s)"
+              foreach ($e in $errors) {
+                Write-Host ("  line {0}: {1}" -f $e.Extent.StartLineNumber, $e.Message)
+              }
+            } else {
+              Write-Host "OK  $($f.Name)"
+            }
+          }
+          if ($bad) { exit 1 }
+
+      - name: Check the language files
+        shell: pwsh
+        run: |
+          $ref = $null; $bad = 0
+          foreach ($f in Get-ChildItem -Path lang -Filter *.xml -File) {
+            try { [xml]$x = Get-Content $f.FullName -Raw -Encoding UTF8 }
+            catch { Write-Host "::error file=$($f.Name)::not valid XML"; $bad++; continue }
+            $keys = @($x.language.string.key)
+            if (-not $ref) { $ref = $keys }
+            $missing = @($ref | Where-Object { $_ -notin $keys })
+            if ($missing.Count) {
+              Write-Host "::warning file=$($f.Name)::missing keys: $($missing -join ', ')"
+            }
+            Write-Host ("{0,-14} {1,3} keys" -f $f.Name, $keys.Count)
+          }
+          if ($bad) { exit 1 }

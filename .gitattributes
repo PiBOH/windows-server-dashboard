@@ -1,0 +1,27 @@
+# ---------------------------------------------------------------------------
+#  Line endings.
+#
+#  This project is meant to be edited with Notepad on a Windows Server, and a
+#  .bat file with LF endings misbehaves. Git must therefore check these files
+#  out with CRLF on every platform, and store them that way.
+# ---------------------------------------------------------------------------
+*           text=auto eol=crlf
+
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+*.ps1       text eol=crlf
+*.psm1      text eol=crlf
+*.xml       text eol=crlf
+*.txt       text eol=crlf
+*.md        text eol=crlf
+*.html      text eol=crlf
+*.json      text eol=crlf
+
+*.png       binary
+*.jpg       binary
+*.ico       binary
+
+# Keep the offline preview and the translations out of the language statistics:
+# the repository is a PowerShell project.
+docs/Dashboard-Preview.html linguist-documentation
+lang/*.xml                  linguist-detectable=false
