@@ -1,6 +1,6 @@
 ==============================================================================
   SERVER DASHBOARD - web monitoring for Windows Server 2016
-  Version 1.13.0
+  Version 1.14.0
 ==============================================================================
 
 A monitoring dashboard you can open from any computer on the local network by
@@ -42,11 +42,15 @@ Everything you normally need is in the root folder; the rest is tidied away.
     |
     +-- lang\                    the 38 translations, one XML each
     |
-    +-- docs\                    README.md, CHANGELOG.md,
+    +-- screenshots\           the images used by the GitHub page
+    |
+    +-- docs\                    README.md (this manual), CHANGELOG.md,
+    |                            RELEASE-NOTES-vX.Y.Z.md,
     |                            Dashboard-Preview.html (offline preview)
     |
-    +-- logs\                    logs\ServerDashboard.log
-                                 logs\ServerDashboard-notify.log
+    +-- logs\                    one file per day, kept 14 days:
+                                 ServerDashboard-YYYY-MM-DD.log
+                                 ServerDashboard-notify-YYYY-MM-DD.log
                                  install-state.txt, previous-task-backup.xml
 
 The four files you use day to day are in the root. Everything under scripts\
@@ -262,14 +266,15 @@ visible, logging on.
   the user interface.
 - To change them, edit settings.txt on the server with Notepad. The file is
   watched: the change is applied within ten seconds, no restart needed.
-- settings.txt ships with the package already filled with the default values,
-  so the settings panel works from the very first start. It is a plain text
+- settings.txt is created automatically at the first start, already filled
+  with the default values, so the settings panel works from the very first
+  start. It is a plain text
   file with one "key = value" per line, so you can also change it with Notepad
   and restart the service:
 
       refresh_seconds = 0.5      (0.5 - 3600, dot as decimal separator)
       idle_seconds    = 0        (0 = do not sample when nobody watches)
-      logging         = no       (never create logs\ServerDashboard.log)
+      logging         = no       (never create a log file)
       show_cpu        = yes
       show_events     = no
 
@@ -277,9 +282,11 @@ visible, logging on.
   a deleted file is recreated with the defaults at the next start.
 - logging = yes/no is available in settings.txt ONLY, on purpose: it is not
   shown in the settings panel, so nobody watching the dashboard can turn the
-  log on or off. With logging = no the script writes nothing and the file
-  logs\ServerDashboard.log is never created. The setting is read before the first
-  line would be written, and it survives every save made from the panel.
+  log on or off. The log is rotated every day: each day has its own file
+  (logs\ServerDashboard-YYYY-MM-DD.log), so no file ever grows without
+  limit, and the files older than 14 days are deleted automatically. With
+  logging = no no log file is ever created. The setting is read before the
+  first line would be written, and it survives every save made from the panel.
 - If no settings are found (first run, or browser cache cleared) the defaults
   above are applied automatically. "Restore defaults" resets everything from
   the panel itself.
@@ -362,14 +369,14 @@ scheduled task "PiBOH Windows Server Dashboard Notify" that Install.bat creates.
       Available at http://192.168.1.10:8080
 
       Server Dashboard - Dashboard is NOT running
-      Check logs\ServerDashboard.log for details
+      Check the newest logs\ServerDashboard-*.log for details
 
 - Three display methods are tried in order: a real Windows toast in the Action
   Center, a tray balloon tip, and finally a window drawn like a Windows 10
   toast in the bottom right corner, which always works on a desktop. Windows
   Server often has no Action Center, so the last one is what you usually see.
 - The script waits for the shell (explorer.exe) before showing anything, and
-  writes what it tried in logs\ServerDashboard-notify.log.
+  writes what it tried in the daily logs\ServerDashboard-notify-*.log.
 - scripts\Test-Notification.bat shows the notification immediately, without logging
   off and on, so you can check it in five seconds.
 
@@ -499,7 +506,7 @@ back to the defaults.
 | Log says localhost ONLY         | Missing privileges: run as admin       |
 | Port already in use             | netstat -ano | findstr :8080           |
 | Temperature not available       | Install Core Temp + its WMI provider   |
-| Page does not refresh           | Check logs\ServerDashboard.log              |
+| Page does not refresh           | Check the newest logs\ServerDashboard-*.log |
 | Check the task state            | schtasks /Query /TN "PiBOH Windows Server Dashboard" /V |
 | Uninstall                       | Run Uninstall.bat as administrator     |
 
@@ -525,4 +532,4 @@ The current version is shown in the centre of the footer and returned by
 /api/health. Changes follow Semantic Versioning (MAJOR.MINOR.PATCH); see
 CHANGELOG.md.
 
-Current version: 1.13.0
+Current version: 1.14.0

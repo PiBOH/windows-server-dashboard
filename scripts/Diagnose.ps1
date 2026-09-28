@@ -237,12 +237,12 @@ if (-not $nt) {
     Info ("Last run    : " + $ni.LastRunTime)
     Info ("Last result : " + $ni.LastTaskResult)
     if ($ni.LastTaskResult -ne 0 -and $null -ne $ni.LastTaskResult) {
-        Warn 'The notification task ended with an error: see ServerDashboard-notify.log'
+        Warn 'The notification task ended with an error: see the newest ServerDashboard-notify-*.log'
     }
 }
-$nlog = Join-Path $root 'logs\ServerDashboard-notify.log'
+$nlog = Join-Path $root ("logs\ServerDashboard-notify-" + (Get-Date -Format 'yyyy-MM-dd') + ".log")
 if (Test-Path $nlog) {
-    Info 'Last lines of ServerDashboard-notify.log:'
+    Info 'Last lines of the newest notification log:'
     Get-Content $nlog -Tail 8 | ForEach-Object { Write-Host ("        " + $_) -ForegroundColor DarkGray }
 } else {
     Info 'No notification log yet: run scripts\Test-Notification.bat to try it now.'
@@ -250,9 +250,13 @@ if (Test-Path $nlog) {
 
 # ---------------------------------------------------------------- 7. log
 Head 7 'LAST LINES OF THE LOG'
-$log = Join-Path $root 'logs\ServerDashboard.log'
-if (Test-Path $log) {
-    Get-Content $log -Tail 20 | ForEach-Object { Write-Host ("   " + $_) -ForegroundColor DarkGray }
+# The log is rotated daily: show the newest file of the last 14 days.
+$logDir2 = Join-Path $root 'logs'
+$logs = @(Get-ChildItem -Path $logDir2 -Filter 'ServerDashboard-*.log' -File -ErrorAction SilentlyContinue |
+          Sort-Object LastWriteTime -Descending)
+if ($logs.Count) {
+    Info ("Newest log: " + $logs[0].Name + " (" + $logs.Count + " file(s) kept, one per day)")
+    Get-Content $logs[0].FullName -Tail 20 | ForEach-Object { Write-Host ("   " + $_) -ForegroundColor DarkGray }
 } else {
     Info 'No log file in logs\: either it never started, or logging = no.'
 }

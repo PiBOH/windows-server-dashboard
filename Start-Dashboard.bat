@@ -84,7 +84,8 @@ for /f "tokens=2 delims=:" %%I in ('ipconfig ^| findstr /c:"IPv4"') do (
 )
 echo        http://%COMPUTERNAME%:%PORT%
 echo.
-echo    Log file: %~dp0logs\ServerDashboard.log
+echo    Log files: %~dp0logs\ServerDashboard-YYYY-MM-DD.log (one per day,
+echo    kept for 14 days)
 echo    To stop it:  Stop-Dashboard.bat
 echo  =======================================================
 echo.

@@ -114,7 +114,7 @@ set "SETTINGS_BEFORE=absent"
 if exist "%~dp0settings.txt" set "SETTINGS_BEFORE=present"
 
 set "LOG_BEFORE=absent"
-if exist "%~dp0logs\ServerDashboard.log" set "LOG_BEFORE=present"
+if exist "%~dp0logs\ServerDashboard-*.log" set "LOG_BEFORE=present"
 
 REM ---- 3. write the state file (used by the uninstaller) --------------------
 > "%STATE%" echo # Server Dashboard - state recorded before installation
@@ -296,8 +296,8 @@ if "%HEALTH%"=="ok" (
 ) else (
     echo   [!!] The dashboard is NOT answering yet. Last lines of the log:
     echo.
-    if exist "%~dp0logs\ServerDashboard.log" (
-        powershell -NoProfile -Command "Get-Content '%~dp0logs\ServerDashboard.log' -Tail 12 | ForEach-Object { '      ' + $_ }"
+    if exist "%~dp0logs\ServerDashboard-*.log" (
+        powershell -NoProfile -Command "$n = Get-ChildItem (Join-Path '%~dp0' 'logs\ServerDashboard-*.log') | Sort-Object LastWriteTime -Descending | Select-Object -First 1; if ($n) { Get-Content $n.FullName -Tail 12 | ForEach-Object { '      ' + $_ } }"
     ) else (
         echo        No log file yet.
     )

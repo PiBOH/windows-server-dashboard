@@ -182,18 +182,18 @@ if exist "%~dp0settings.txt" (
 )
 
 REM ---- 7. log file ----------------------------------------------------------
-if exist "%~dp0logs\ServerDashboard.log" (
+if exist "%~dp0logs\ServerDashboard-*.log" (
     if "!LOG_BEFORE!"=="present" (
-        echo  [=] logs\ServerDashboard.log
+        echo  [=] the log files
         echo      BEFORE : already existed  ^|  AFTER : kept
     ) else (
         echo.
-        choice /c YN /m "  Delete the log file logs\ServerDashboard.log as well"
+        choice /c YN /m "  Delete the log files in logs\ as well"
         if errorlevel 2 (
-            echo  [=] logs\ServerDashboard.log : kept on request
+            echo  [=] the log files : kept on request
         ) else (
-            del "%~dp0logs\ServerDashboard.log" >nul 2>&1
-            echo  [-] logs\ServerDashboard.log
+            del "%~dp0logs\ServerDashboard-*.log" >nul 2>&1
+            echo  [-] logs\ServerDashboard-*.log (one file per day)
             echo      BEFORE : written by the service  ^|  AFTER : deleted
         )
     )

@@ -1,0 +1,167 @@
+# ---------------------------------------------------------------------------
+#  Automatic release, in the same style of the other PiBOH repositories.
+#
+#  It runs in one of two cases:
+#    1. a push to main whose commit message starts with "v" (for example
+#       "v1.14.0 - daily log rotation"), or
+#    2. a manual run from the Actions tab ("Run workflow").
+#
+#  The version always comes from scripts/version.txt, unless the manual run
+#  fills the "version" input. The archive is built from the tracked files
+#  only, WITHOUT the development folders (.github, .config, _build,
+#  screenshots) and without the repository housekeeping files, so what the
+#  user downloads is exactly what he has to copy on the server.
+#
+#  The tag is created by the release step itself: pushing the commit is
+#  enough, no git tag is needed. The auto-updater of the dashboard downloads
+#  the zip attached to that tag, so the tag name must stay "v" + version.
+# ---------------------------------------------------------------------------
+name: auto-release.yml
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      draft:
+        description: 'Create the release as a draft'
+        type: boolean
+        default: false
+      version:
+        description: 'Version to release, without the v prefix (empty = use scripts/version.txt)'
+        type: string
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build the zip and publish the release
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' &&
+       startsWith(github.event.head_commit.message, 'v'))
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the version
+        id: ver
+        shell: bash
+        run: |
+          V='${{ github.event.inputs.version }}'
+          if [ -z "$V" ]; then V="$(tr -d ' \t\r\n' < scripts/version.txt)"; fi
+          if [ -z "$V" ]; then echo "no version found"; exit 1; fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          case "$V" in
+            *-*) echo "prerelease=true"  >> "$GITHUB_OUTPUT" ;;
+            * )  echo "prerelease=false" >> "$GITHUB_OUTPUT" ;;
+          esac
+          echo "releasing $V"
+
+      - name: Build the release notes file name
+        id: notes
+        shell: bash
+        run: |
+          F="docs/RELEASE-NOTES-v${{ steps.ver.outputs.version }}.md"
+          if [ ! -f "$F" ]; then echo "missing $F"; exit 1; fi
+          echo "file=$F" >> "$GITHUB_OUTPUT"
+
+      - name: Stage the files
+        shell: bash
+        run: |
+          set -eu
+          VERSION='${{ steps.ver.outputs.version }}'
+          STAGE="$RUNNER_TEMP/stage/windows-server-dashboard"
+          mkdir -p "$STAGE"
+          # every tracked file, except the development and repo-only ones
+          git ls-files -z | while IFS= read -r -d '' f; do
+            case "$f" in
+              .github/*|.config/*|_build/*|screenshots/*) continue ;;
+              .gitattributes|.gitignore)                   continue ;;
+            esac
+            mkdir -p "$STAGE/$(dirname "$f")"
+            cp -p "$f" "$STAGE/$f"
+          done
+          # the manual input may release a different number: the zip must
+          # always tell the truth
+          printf '%s' "$VERSION" > "$STAGE/scripts/version.txt"
+
+      - name: Make the zip
+        shell: bash
+        run: |
+          set -eu
+          VERSION='${{ steps.ver.outputs.version }}'
+          cd "$RUNNER_TEMP/stage"
+          python3 - "$VERSION" <<'PY'
+          import os, shutil, sys
+          ver = sys.argv[1]
+          shutil.make_archive(
+              f'windows-server-dashboard-{ver}', 'zip',
+              root_dir='.', base_dir='windows-server-dashboard')
+          PY
+
+      - name: Validate the zip
+        shell: bash
+        run: |
+          set -eu
+          VERSION='${{ steps.ver.outputs.version }}'
+          ARCHIVE="$RUNNER_TEMP/stage/windows-server-dashboard-$VERSION.zip"
+          test -s "$ARCHIVE"
+          python3 - "$ARCHIVE" <<'PY'
+          import sys, zipfile
+          archive = sys.argv[1]
+          prefix  = 'windows-server-dashboard/'
+          names   = set(zipfile.ZipFile(archive).namelist())
+          def check(path, wanted):
+              ok = (prefix + path) in names if wanted else (prefix + path) not in names
+              print(('OK  ' if ok else 'FAIL') + '  ' + path + \
+                    ('' if wanted else ' (must be absent)'))
+              if not ok: sys.exit(1)
+          # settings.txt is NOT here on purpose: it is gitignored (it may hold
+          # local choices), and the engine writes it with the defaults at the
+          # first start anyway
+          for f in ['Install.bat', 'Uninstall.bat', 'Start-Dashboard.bat',
+                    'Stop-Dashboard.bat',
+                    'scripts/ServerDashboard.ps1', 'scripts/version.txt',
+                    'scripts/New-DashboardTask.ps1', 'scripts/Set-UrlAcl.ps1',
+                    'scripts/Diagnose.ps1', 'scripts/Diagnose.bat',
+                    'scripts/Repair-Autostart.bat',
+                    'scripts/Show-StartupNotification.ps1',
+                    'scripts/Stop-DashboardProcess.ps1', 'scripts/Test-Syntax.ps1',
+                    'scripts/Test-Notification.bat', 'scripts/Update-Now.bat',
+                    'lang/en-US.xml', 'lang/it-IT.xml',
+                    'docs/README.md', 'docs/CHANGELOG.md', 'LICENSE']:
+              check(f, True)
+          for d in ['.github/', '.config/', '_build/', 'screenshots/']:
+              if any(n.startswith(prefix + d) for n in names):
+                  print('FAIL  ' + d + ' (must be absent)'); sys.exit(1)
+              print('OK    ' + d + ' (absent)')
+          print('zip content validated')
+          PY
+
+      - name: Checksum
+        shell: bash
+        run: |
+          set -eu
+          VERSION='${{ steps.ver.outputs.version }}'
+          cd "$RUNNER_TEMP/stage"
+          sha512sum "windows-server-dashboard-$VERSION.zip" \
+              > "windows-server-dashboard-$VERSION.zip.sha512"
+          cat "windows-server-dashboard-$VERSION.zip.sha512"
+
+      - name: Publish the release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          name: windows-server-dashboard ${{ steps.ver.outputs.version }}
+          body_path: ${{ steps.notes.outputs.file }}
+          draft: ${{ github.event.inputs.draft == 'true' }}
+          prerelease: ${{ steps.ver.outputs.prerelease == 'true' }}
+          files: |
+            ${{ runner.temp }}/stage/windows-server-dashboard-${{ steps.ver.outputs.version }}.zip
+            ${{ runner.temp }}/stage/windows-server-dashboard-${{ steps.ver.outputs.version }}.zip.sha512
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

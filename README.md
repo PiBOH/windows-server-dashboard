@@ -8,13 +8,13 @@ No agent, no IIS, no external module, no database: a single PowerShell script
 publishes the page, and you open it from any computer on the LAN by typing the
 IP of the server.
 
-[![Version](https://img.shields.io/badge/version-1.13.0-blue)](docs/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.14.0-blue)](docs/CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/Windows%20Server-2016%2B-0078D6?logo=windows)](#requirements)
 [![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)](#requirements)
 [![Languages](https://img.shields.io/badge/UI%20languages-38-brightgreen)](#-38-languages)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
 
-![Dashboard](docs/screenshots/hero-dark.png)
+![Dashboard](screenshots/hero-dark.png)
 
 </div>
 
@@ -97,7 +97,7 @@ The interface is translated into every language Windows Server 2016 ships as a
 display language. It opens in the language of Windows, and each visitor can pick
 another one from the footer; the choice is personal and saved in their browser.
 
-<div align="center"><img src="docs/screenshots/languages.png" width="85%" alt="Language picker"></div>
+<div align="center"><img src="screenshots/languages.png" width="85%" alt="Language picker"></div>
 
 ```text
 ar-SA  bg-BG  cs-CZ  da-DK  de-DE  el-GR  en-GB  en-US  es-ES  es-MX  et-EE
@@ -112,7 +112,7 @@ picker by itself.
 
 ## Settings
 
-<div align="center"><img src="docs/screenshots/settings.png" width="85%" alt="Settings panel"></div>
+<div align="center"><img src="screenshots/settings.png" width="85%" alt="Settings panel"></div>
 
 | Option | Stored where | Who can change it |
 |---|---|---|
@@ -140,8 +140,9 @@ windows-server-dashboard\
 ├── scripts\               the engine, the updater and the helper scripts
 │   └── version.txt        the version: the single source of truth
 ├── lang\                  the 38 translations
-├── docs\                  manual, changelog, offline preview, screenshots
-└── logs\                  every log file (auto-created)
+├── screenshots\           the images used by this page
+├── docs\                  manual, changelog, release notes, offline preview
+└── logs\                  one log file per day (auto-created)
 ```
 
 ## Self update
@@ -161,7 +162,7 @@ scripts\Update-Now.bat                   -> check right now, by hand
 ```
 
 Because of this mechanism, releases must always be tagged `v<version>`
-(for example `v1.13.0`).
+(for example `v1.14.0`).
 
 ## Try it without a server
 

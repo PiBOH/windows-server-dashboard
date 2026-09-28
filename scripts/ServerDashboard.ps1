@@ -43,9 +43,34 @@ $ScriptDir = $PSScriptRoot
 $Root = if ((Split-Path -Leaf $ScriptDir) -eq 'scripts') { Split-Path -Parent $ScriptDir } else { $ScriptDir }
 $LangDir = Join-Path $Root 'lang'
 $LogDir  = Join-Path $Root 'logs'
-if (-not $LogFile)      { $LogFile      = Join-Path $LogDir 'ServerDashboard.log' }
 if (-not $SettingsFile) { $SettingsFile = Join-Path $Root 'settings.txt' }
 if (-not (Test-Path $LogDir)) { try { [void](New-Item -ItemType Directory -Path $LogDir -Force) } catch { } }
+
+# ----------------------------------------------------------------------------
+# Daily log rotation.
+# One log file per day: the file name carries the date of the moment the line
+# is written, so at midnight the rotation happens by itself, with no timer and
+# no file ever growing without limit. Files older than $LogKeepDays days are
+# deleted automatically. An explicit -LogFile parameter still wins, for tests.
+# ----------------------------------------------------------------------------
+$LogKeepDays = 14
+$script:FixedLogFile = $null
+if ($LogFile) { $script:FixedLogFile = $LogFile }
+
+function Get-DailyLogPath {
+    if ($script:FixedLogFile) { return $script:FixedLogFile }
+    Join-Path $LogDir ("ServerDashboard-" + (Get-Date -Format 'yyyy-MM-dd') + ".log")
+}
+
+function Remove-OldLogs([string]$Dir) {
+    try {
+        $limit = (Get-Date).AddDays(-$LogKeepDays)
+        foreach ($f in @(Get-ChildItem -Path $Dir -Filter '*.log' -File -ErrorAction SilentlyContinue)) {
+            if ($f.LastWriteTime -lt $limit) { Remove-Item -Path $f.FullName -Force -ErrorAction SilentlyContinue }
+        }
+    } catch { }
+}
+Remove-OldLogs $LogDir
 
 # The version lives in version.txt, next to this script: it is the single
 # source of truth, read by the dashboard, the updater and the docs.
@@ -82,7 +107,7 @@ function Write-Log {
     if (-not $script:LogEnabled) { return }
     $line = "{0} [{1}] {2}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Level, $Message
     Write-Host $line
-    try { Add-Content -Path $LogFile -Value $line -Encoding UTF8 -ErrorAction SilentlyContinue } catch { }
+    try { Add-Content -Path (Get-DailyLogPath) -Value $line -Encoding UTF8 -ErrorAction SilentlyContinue } catch { }
 }
 
 Write-Log "=== Starting PiBOH Windows Server Dashboard v$DashboardVersion on port $Port ==="
@@ -115,7 +140,10 @@ $Shared = [hashtable]::Synchronized(@{
     Running     = $true
     Started     = Get-Date
     Port        = $Port
-    LogFile     = $LogFile
+    LogFile     = $(if ($script:FixedLogFile) { $script:FixedLogFile } else { $LogDir })
+    LogFixed    = [bool]$script:FixedLogFile
+    LogDir      = $LogDir
+    LogKeepDays = $LogKeepDays
     Interval    = $IntervalSeconds
     IdleInterval= $IdleIntervalSeconds
     LastRequest = Get-Date
@@ -217,7 +245,8 @@ function Write-Settings($cfg) {
         [void]$lines.Add('#   >0 = keep sampling every N seconds, to build history')
         [void]$lines.Add("idle_seconds = " + ([double]$cfg.idleSeconds).ToString($inv))
         [void]$lines.Add('')
-        [void]$lines.Add('# Write the ServerDashboard.log file: yes / no')
+        [void]$lines.Add('# Write the log files in logs\: yes / no. One file per day')
+        [void]$lines.Add('# (ServerDashboard-YYYY-MM-DD.log), kept for 14 days.')
         [void]$lines.Add('# This option is available HERE ONLY: it cannot be changed from the')
         [void]$lines.Add('# dashboard, so a visitor can never enable or disable logging.')
         [void]$lines.Add('# With no, the log file is never created.')
@@ -264,7 +293,7 @@ $UpdateRepo    = 'PiBOH/windows-server-dashboard'
 $UpdateVersion = 'https://raw.githubusercontent.com/' + $UpdateRepo + '/main/scripts/version.txt'
 $UpdateZipFmt  = 'https://github.com/' + $UpdateRepo + '/archive/refs/tags/v{0}.zip'
 $UpdateKeep    = @('logs', 'settings.txt', 'settings-backup.txt', 'install-state.txt',
-                   'previous-task-backup.xml', 'ServerDashboard.log', 'ServerDashboard-notify.log')
+                   'previous-task-backup.xml', 'ServerDashboard-*.log', 'ServerDashboard-notify-*.log')
 
 function Get-LatestVersion {
     try {
@@ -433,8 +462,16 @@ $CollectorScript = {
     function Write-CollectorLog($sh, $text) {
         if (-not $sh.LogEnabled) { return }
         $line = "{0} [INFO] {1}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $text
-        try { Add-Content -Path $sh.LogFile -Value $line -Encoding UTF8 -ErrorAction SilentlyContinue } catch { }
+        # Same rule as the main log: one file per day, the date is in the name,
+        # so the rotation happens by itself at midnight. A fixed -LogFile
+        # (used by the tests) wins over the daily rotation.
+        $p = if ($sh.LogFixed) { $sh.LogFile }
+             else { Join-Path $sh.LogDir ("ServerDashboard-" + (Get-Date -Format 'yyyy-MM-dd') + ".log") }
+        try { Add-Content -Path $p -Value $line -Encoding UTF8 -ErrorAction SilentlyContinue } catch { }
     }
+
+    # delete the log files older than the retention, once a day
+    $lastPurge = Get-Date
 
     # --- previous sample, used to compute deltas ------------------------------
     $prevNet  = @{}
@@ -1066,6 +1103,17 @@ $CollectorScript = {
                 $evStamp = Get-Date
             }
             $snap.Events = $evCache
+
+            # ================== LOG RETENTION ===============================
+            if (((Get-Date) - $lastPurge).TotalHours -ge 24) {
+                $lastPurge = Get-Date
+                try {
+                    $limit = (Get-Date).AddDays(-$Shared.LogKeepDays)
+                    foreach ($f in @(Get-ChildItem -Path $Shared.LogDir -Filter '*.log' -File -ErrorAction SilentlyContinue)) {
+                        if ($f.LastWriteTime -lt $limit) { Remove-Item -Path $f.FullName -Force -ErrorAction SilentlyContinue }
+                    }
+                } catch { }
+            }
 
             # ================== CHART HISTORY ===============================
             $Shared.Data = $snap
@@ -2315,7 +2363,7 @@ Write-DashEvent 1 'Information' (@(
     'Files      : ' + $Root,
     'Script     : ' + $PSCommandPath,
     'Task       : PiBOH Windows Server Dashboard (at system startup, as SYSTEM)',
-    'Log        : ' + $LogFile,
+    'Log        : ' + $LogDir + ' (one file per day, kept for ' + $LogKeepDays + ' days)',
     'Updates    : downloaded from github.com/' + $UpdateRepo + ' at every start',
     'Remove     : run Uninstall.bat in ' + $Root
 ) -join "`r`n")

@@ -25,7 +25,16 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $root = if ((Split-Path -Leaf $scriptDir) -eq 'scripts') { Split-Path -Parent $scriptDir } else { $scriptDir }
 $logDir = Join-Path $root 'logs'
 if (-not (Test-Path $logDir)) { try { [void](New-Item -ItemType Directory -Path $logDir -Force) } catch { } }
-$nlog = Join-Path $logDir 'ServerDashboard-notify.log'
+# One file per day, like the main log: the date is in the name, so the
+# rotation happens by itself at midnight.
+$nlog = Join-Path $logDir ("ServerDashboard-notify-" + (Get-Date -Format 'yyyy-MM-dd') + ".log")
+# housekeeping: delete the notification logs older than 14 days
+try {
+    $limit = (Get-Date).AddDays(-14)
+    foreach ($f in @(Get-ChildItem -Path $logDir -Filter 'ServerDashboard-notify-*.log' -File -ErrorAction SilentlyContinue)) {
+        if ($f.LastWriteTime -lt $limit) { Remove-Item -Path $f.FullName -Force -ErrorAction SilentlyContinue }
+    }
+} catch { }
 
 # Small log of its own: if no notification shows up, this file says which of the
 # three display methods was tried and what went wrong.
@@ -44,7 +53,7 @@ function Get-Strings {
         notif_ok        = 'Dashboard started successfully'
         notif_ok_body   = 'Available at {0}'
         notif_fail      = 'Dashboard is NOT running'
-        notif_fail_body = 'Check logs\ServerDashboard.log for details'
+        notif_fail_body = 'Check the newest logs\ServerDashboard-*.log for details'
     }
     $culture = (Get-UICulture).Name
     $candidates = @((Join-Path $root "lang\$culture.xml"))

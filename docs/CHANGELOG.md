@@ -7,6 +7,34 @@ Versioning follows Semantic Versioning: MAJOR.MINOR.PATCH.
 - MINOR - new backward compatible features.
 - PATCH - fixes and tweaks that add no feature.
 
+------------------------------------------------------------------------------
+  1.14.0 - 2026-09-28
+------------------------------------------------------------------------------
+
+Added:
+  - Daily log rotation. The log file now carries the date in its name
+    (logs\ServerDashboard-YYYY-MM-DD.log): at midnight the rotation happens
+    by itself, with no timer and no file ever growing without limit. The
+    log files older than 14 days are deleted automatically, at every start
+    and once a day while running. The notification log rotates the same way
+    (logs\ServerDashboard-notify-YYYY-MM-DD.log). An explicit -LogFile
+    parameter still forces one fixed file, for tests.
+  - Automatic release workflow (.github/workflows/auto-release.yml), in the
+    style of the other PiBOH repositories: a push to main whose commit
+    message starts with "v", or a manual run from the Actions tab, builds
+    the release zip from the tracked files only - excluding the development
+    folders (.github, .config, _build, screenshots) and the repository
+    housekeeping files - validates its content, computes the SHA-512
+    checksum and publishes the GitHub release with the tag v<version>.
+
+Changed:
+  - The screenshots moved from docs\screenshots to screenshots\ in the
+    root of the repository, regenerated with the interface in English.
+  - Diagnose, Install and Uninstall read the newest daily log
+    (ServerDashboard-*.log) instead of one fixed file.
+  - The release zip does not carry settings.txt any more: the file is
+    gitignored on purpose, and the engine already writes it with the
+    default values at the first start.
 
 ------------------------------------------------------------------------------
   1.13.0 - 2026-09-28
