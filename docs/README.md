@@ -1,6 +1,6 @@
 ==============================================================================
   SERVER DASHBOARD - web monitoring for Windows Server 2016
-  Version 1.14.0
+  Version 1.15.1
 ==============================================================================
 
 A monitoring dashboard you can open from any computer on the local network by
@@ -44,8 +44,10 @@ Everything you normally need is in the root folder; the rest is tidied away.
     |
     +-- screenshots\           the images used by the GitHub page
     |
-    +-- docs\                    README.md (this manual), CHANGELOG.md,
-    |                            RELEASE-NOTES-vX.Y.Z.md,
+    +-- Changelog\              CHANGELOG.md: the only changelog file
+    |
+    +-- docs\                    README.md (this manual),
+    |                            RELEASE-NOTES-vX.Y.Z.md, logo.png,
     |                            Dashboard-Preview.html (offline preview)
     |
     +-- logs\                    one file per day, kept 14 days:
@@ -162,9 +164,14 @@ OPERATING SYSTEM
 PROCESSES
   All running processes with the real image name, extension included
   (sqlservr.exe, w3wp.exe, svchost.exe), PID, CPU %, RAM (MB), threads and
-  handles, in a scrollable pane with sticky headers. Hover a name to see the
-  full path of the executable; the filter searches the name and the path, so
-  you can type "exe" or a folder name too.
+  handles, in a scrollable pane with sticky headers. Under every image name
+  the dashboard also shows the friendly name of the executable ("Task
+  Manager" under taskmgr.exe, "Windows Explorer" under explorer.exe), read
+  from the version info of the file itself: it comes already in the language
+  of the server, exactly like Task Manager shows it. Hover a name to see the
+  full path of the executable; the filter searches the image name, the
+  friendly name and the path, so you can type "task manager", "exe" or a
+  folder name too.
 
 SERVICES
   The complete service list with display name, internal name, state, startup
@@ -349,9 +356,17 @@ NOBODY WATCHING = NOTHING RUNNING
   folder or the local backups. The dashboard then restarts itself on the new
   version, and writes both a log line and an entry in the Windows event log.
 
-  - Turn it off with auto_update = no in settings.txt; force a check with
-    scripts\Update-Now.bat. Releases must be tagged v<version> for the updater
-    to find them.
+  - The automatic check is switched on and off ONLY in settings.txt
+    (auto_update = yes, the default, or no): the settings panel of the page
+    shows it but cannot change it, and no visitor can.
+  - scripts\Update-Now.bat is the manual way: it checks GitHub and, when a
+    new release exists, does the whole cycle by itself - download, stop the
+    dashboard, install, start the dashboard again and wait for its answer.
+    With no new release it prints "up to date" and changes nothing. It works
+    even with auto_update = no, because it is an explicit request.
+  - ServerDashboard.ps1 -CheckUpdatesOnly only reports whether a new release
+    exists (exit code 3 = available) and touches nothing.
+  - Releases must be tagged v<version> for the updater to find them.
 
 
 5-ter. LOGON NOTIFICATION
@@ -530,6 +545,6 @@ Internet, restrict the firewall rule to the local subnet:
 
 The current version is shown in the centre of the footer and returned by
 /api/health. Changes follow Semantic Versioning (MAJOR.MINOR.PATCH); see
-CHANGELOG.md.
+Changelog\CHANGELOG.md.
 
-Current version: 1.14.0
+Current version: 1.15.1
