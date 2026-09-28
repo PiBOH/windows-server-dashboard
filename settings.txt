@@ -1,0 +1,55 @@
+# ============================================================
+#  ServerDashboard - settings
+# ============================================================
+#  Plain text file: one "key = value" per line.
+#  You can edit it with Notepad, or from the gear button of the
+#  dashboard (the dashboard rewrites this file when you save).
+#  Lines starting with # are comments. Delete the file to go back
+#  to the default values listed below.
+# ------------------------------------------------------------
+
+# Default refresh interval proposed to every visitor, in seconds.
+# Allowed: 0.5 - 3600. Default: 0.5 (half a second, live view). Use a dot as
+# decimal separator. Each visitor can choose a different value for their own
+# browser from the settings panel; that choice is personal and changes nothing
+# here.
+refresh_seconds = 0.5
+
+# What to do when NOBODY is watching the dashboard:
+#   0  = do not sample at all (default, zero CPU cost)
+#   >0 = keep sampling every N seconds, to build history
+idle_seconds = 0
+
+# Write the log files in logs\: yes / no. One file per day
+# (ServerDashboard-YYYY-MM-DD.log), automatically deleted after 14 days.
+# This option is available HERE ONLY: it cannot be changed from the
+# dashboard, so a visitor can never enable or disable logging.
+# With no, the log file is never created.
+logging = yes
+
+# Sections shown on the page: yes / no
+show_cpu          = yes
+show_cpu_trend    = yes
+show_ram          = yes
+show_ram_trend    = yes
+show_network      = yes
+show_net_adapters = yes
+show_ip_config    = yes
+show_disks        = yes
+show_os           = yes
+show_processes    = yes
+show_services     = yes
+show_events       = yes
+
+# Show a Windows notification at logon telling whether the dashboard
+# started correctly: yes / no  (the scheduled task must be installed)
+startup_notification = yes
+
+# Check GitHub for a newer release at every start and install it
+# automatically (the dashboard restarts itself). yes / no.
+# Manual check any time: scripts\Update-Now.bat (works even with no)
+# Manual check: scripts\Update-Now.bat
+auto_update = yes
+
+# Theme and language are NOT stored here: they are personal
+# choices, saved in the cache of each visitor browser.
