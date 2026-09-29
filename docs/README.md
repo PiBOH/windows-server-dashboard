@@ -1,6 +1,6 @@
 ==============================================================================
   SERVER DASHBOARD - web monitoring for Windows Server 2016
-  Version 1.14.0
+  Version 1.15.2
 ==============================================================================
 
 A monitoring dashboard you can open from any computer on the local network by
@@ -44,8 +44,11 @@ Everything you normally need is in the root folder; the rest is tidied away.
     |
     +-- screenshots\           the images used by the GitHub page
     |
-    +-- docs\                    README.md (this manual), CHANGELOG.md,
-    |                            RELEASE-NOTES-vX.Y.Z.md,
+    +-- Changelog\              CHANGELOG.md: the only changelog file
+    |   |
+    |   +-- release-notes\       RELEASE-NOTES-vX.Y.Z.md, one per release
+    |
+    +-- docs\                    README.md (this manual), logo.png,
     |                            Dashboard-Preview.html (offline preview)
     |
     +-- logs\                    one file per day, kept 14 days:
@@ -103,15 +106,24 @@ CPU
   Temperature sources, tried in this order:
     1. BIOS/ACPI sensor (MSAcpi_ThermalZoneTemperature). Many Dell, HP and
        Lenovo servers do not expose it.
-    2. Core Temp, through its free "Core Temp WMI provider" add-on (namespace
-       root\CoreTemp). Install Core Temp, then its WMI provider plug-in, and
-       make sure Core Temp starts with Windows: the dashboard picks it up
-       automatically, one reading per core, and converts Fahrenheit to Celsius
-       if needed.
-    3. LibreHardwareMonitor or OpenHardwareMonitor, with the WMI option
+    2. Core Temp, the plain program from alcpu.com: NO add-on, no server
+       plug-in, nothing to configure. While it runs, Core Temp always
+       publishes its readings in a shared memory block, and the dashboard
+       reads it directly - the 32-bit and the 64-bit build alike, one
+       reading per core, Fahrenheit converted to Celsius automatically.
+       Install Core Temp and let it run: that is all. Its readings are
+       visible when Core Temp and the dashboard share the same logon
+       session (dashboard started with Start-Dashboard.bat, or both
+       launched by tasks in session 0); otherwise the chain simply moves
+       on to the next source.
+    3. Core Temp with its free "Core Temp WMI provider" add-on (namespace
+       root\CoreTemp): same readings, but through WMI, which also works
+       when Core Temp runs in another logon session than the dashboard -
+       the option to pick for a boot task plus an always-logged-in user.
+    4. LibreHardwareMonitor or OpenHardwareMonitor, with the WMI option
        enabled (namespaces root\LibreHardwareMonitor and
        root\OpenHardwareMonitor).
-    4. HWiNFO with its shared WMI provider enabled (root\HWiNFO).
+    5. HWiNFO with its shared WMI provider enabled (root\HWiNFO).
   If none of them is available the dashboard writes "not available (no ACPI
   sensor)" instead of a wrong number.
 
@@ -162,9 +174,14 @@ OPERATING SYSTEM
 PROCESSES
   All running processes with the real image name, extension included
   (sqlservr.exe, w3wp.exe, svchost.exe), PID, CPU %, RAM (MB), threads and
-  handles, in a scrollable pane with sticky headers. Hover a name to see the
-  full path of the executable; the filter searches the name and the path, so
-  you can type "exe" or a folder name too.
+  handles, in a scrollable pane with sticky headers. Under every image name
+  the dashboard also shows the friendly name of the executable ("Task
+  Manager" under taskmgr.exe, "Windows Explorer" under explorer.exe), read
+  from the version info of the file itself: it comes already in the language
+  of the server, exactly like Task Manager shows it. Hover a name to see the
+  full path of the executable; the filter searches the image name, the
+  friendly name and the path, so you can type "task manager", "exe" or a
+  folder name too.
 
 SERVICES
   The complete service list with display name, internal name, state, startup
@@ -349,9 +366,17 @@ NOBODY WATCHING = NOTHING RUNNING
   folder or the local backups. The dashboard then restarts itself on the new
   version, and writes both a log line and an entry in the Windows event log.
 
-  - Turn it off with auto_update = no in settings.txt; force a check with
-    scripts\Update-Now.bat. Releases must be tagged v<version> for the updater
-    to find them.
+  - The automatic check is switched on and off ONLY in settings.txt
+    (auto_update = yes, the default, or no): the settings panel of the page
+    shows it but cannot change it, and no visitor can.
+  - scripts\Update-Now.bat is the manual way: it checks GitHub and, when a
+    new release exists, does the whole cycle by itself - download, stop the
+    dashboard, install, start the dashboard again and wait for its answer.
+    With no new release it prints "up to date" and changes nothing. It works
+    even with auto_update = no, because it is an explicit request.
+  - ServerDashboard.ps1 -CheckUpdatesOnly only reports whether a new release
+    exists (exit code 3 = available) and touches nothing.
+  - Releases must be tagged v<version> for the updater to find them.
 
 
 5-ter. LOGON NOTIFICATION
@@ -505,7 +530,8 @@ back to the defaults.
 | Works locally, not from the LAN | Firewall rule missing: run as admin    |
 | Log says localhost ONLY         | Missing privileges: run as admin       |
 | Port already in use             | netstat -ano | findstr :8080           |
-| Temperature not available       | Install Core Temp + its WMI provider   |
+| Temperature not available       | Let Core Temp run (the plain program   |
+|                                 | is enough), or check the source list   |
 | Page does not refresh           | Check the newest logs\ServerDashboard-*.log |
 | Check the task state            | schtasks /Query /TN "PiBOH Windows Server Dashboard" /V |
 | Uninstall                       | Run Uninstall.bat as administrator     |
@@ -530,6 +556,6 @@ Internet, restrict the firewall rule to the local subnet:
 
 The current version is shown in the centre of the footer and returned by
 /api/health. Changes follow Semantic Versioning (MAJOR.MINOR.PATCH); see
-CHANGELOG.md.
+Changelog\CHANGELOG.md.
 
-Current version: 1.14.0
+Current version: 1.15.2

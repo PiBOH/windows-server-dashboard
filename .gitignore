@@ -1,3 +1,4 @@
-.ignore/
 logs/
 settings.txt
+.ignore/
+_build/

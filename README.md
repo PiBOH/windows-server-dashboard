@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/logo.png" width="180" alt="PiBOH Windows Server Dashboard logo">
+
 # windows-server-dashboard
 
 **A web dashboard for Windows Server that installs with one double click.**
@@ -8,7 +10,7 @@ No agent, no IIS, no external module, no database: a single PowerShell script
 publishes the page, and you open it from any computer on the LAN by typing the
 IP of the server.
 
-[![Version](https://img.shields.io/badge/version-1.14.0-blue)](docs/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.15.2-blue)](Changelog/CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/Windows%20Server-2016%2B-0078D6?logo=windows)](#requirements)
 [![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)](#requirements)
 [![Languages](https://img.shields.io/badge/UI%20languages-38-brightgreen)](#-38-languages)
@@ -43,7 +45,7 @@ and the software announces itself in the Windows event log at every start.
 | **Network** | live download and upload, history chart, per-adapter figures, link speed, MAC, active TCP connections |
 | **IP configuration** | IPv4, mask, gateway, DNS, IPv6, DHCP, per adapter |
 | **Operating system** | version and build, manufacturer, model, BIOS, serial, install date, last boot, uptime, sessions |
-| **Processes** | every process with its real image name (`sqlservr.exe`), PID, CPU %, RAM, threads, handles, full path in the tooltip |
+| **Processes** | every process with its real image name (`sqlservr.exe`) and, right under it, the friendly name from the file ("Task Manager" for `taskmgr.exe`); PID, CPU %, RAM, threads, handles, full path in the tooltip |
 | **Services** | the complete list with state, startup type, PID and log-on account |
 | **Events** | critical, error and warning entries of the System and Application logs of the last 24 hours |
 
@@ -141,7 +143,8 @@ windows-server-dashboard\
 │   └── version.txt        the version: the single source of truth
 ├── lang\                  the 38 translations
 ├── screenshots\           the images used by this page
-├── docs\                  manual, changelog, release notes, offline preview
+├── Changelog\             CHANGELOG.md + release-notes\ (one file per release)
+├── docs\                  manual, logo, offline preview
 └── logs\                  one log file per day (auto-created)
 ```
 
@@ -158,11 +161,11 @@ Everything is written to the log, and to the Windows event log under the source
 
 ```text
 auto_update = no        in settings.txt  -> disable it
-scripts\Update-Now.bat                   -> check right now, by hand
+scripts\Update-Now.bat                   -> check, stop, update, restart
 ```
 
 Because of this mechanism, releases must always be tagged `v<version>`
-(for example `v1.14.0`).
+(for example `v1.15.2`).
 
 ## Try it without a server
 
@@ -175,8 +178,9 @@ both themes included. Nothing is installed and no network is used.
 - Windows Server 2016 or newer (works on Windows 10/11 too)
 - PowerShell 5.1, the one already in the box
 - Administrator rights for the installation only
-- CPU temperature needs a sensor: BIOS/ACPI, or [Core Temp](https://www.alcpu.com/CoreTemp/)
-  with its WMI provider, LibreHardwareMonitor or HWiNFO
+- CPU temperature needs a sensor: BIOS/ACPI, or just
+  [Core Temp](https://www.alcpu.com/CoreTemp/) running (the plain program, 32-bit or
+  64-bit - no add-on), LibreHardwareMonitor or HWiNFO
 
 ## Troubleshooting
 
@@ -195,7 +199,7 @@ reservation without reinstalling.
 ## Documentation
 
 - [Manual](docs/README.md) — every option explained, in ten short chapters
-- [Changelog](docs/CHANGELOG.md) — Semantic Versioning, from 1.0.0 to today
+- [Changelog](Changelog/CHANGELOG.md) — Semantic Versioning, from 1.0.0 to today
 
 ## Security note
 

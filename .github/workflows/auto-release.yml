@@ -3,7 +3,7 @@
 #
 #  It runs in one of two cases:
 #    1. a push to main whose commit message starts with "v" (for example
-#       "v1.14.0 - daily log rotation"), or
+#       "v1.15.2 - Core Temp basic support"), or
 #    2. a manual run from the Actions tab ("Run workflow").
 #
 #  The version always comes from scripts/version.txt, unless the manual run
@@ -65,7 +65,7 @@ jobs:
         id: notes
         shell: bash
         run: |
-          F="docs/RELEASE-NOTES-v${{ steps.ver.outputs.version }}.md"
+          F="Changelog/release-notes/RELEASE-NOTES-v${{ steps.ver.outputs.version }}.md"
           if [ ! -f "$F" ]; then echo "missing $F"; exit 1; fi
           echo "file=$F" >> "$GITHUB_OUTPUT"
 
@@ -133,7 +133,8 @@ jobs:
                     'scripts/Stop-DashboardProcess.ps1', 'scripts/Test-Syntax.ps1',
                     'scripts/Test-Notification.bat', 'scripts/Update-Now.bat',
                     'lang/en-US.xml', 'lang/it-IT.xml',
-                    'docs/README.md', 'docs/CHANGELOG.md', 'LICENSE']:
+                    'docs/README.md', 'Changelog/CHANGELOG.md',
+                    'docs/logo.png', 'LICENSE']:
               check(f, True)
           for d in ['.github/', '.config/', '_build/', 'screenshots/']:
               if any(n.startswith(prefix + d) for n in names):

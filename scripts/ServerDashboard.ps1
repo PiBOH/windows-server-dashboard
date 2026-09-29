@@ -20,7 +20,8 @@ param(
     [int]$Port = 8080,
     [double]$IntervalSeconds = 0.5,      # sampling interval while at least one browser is connected
     [double]$IdleIntervalSeconds = 0,   # when nobody is connected: 0 = do not sample at all
-    [switch]$CheckUpdatesOnly,          # look for a newer release, apply it and exit
+    [switch]$CheckUpdatesOnly,          # only REPORT whether a newer release exists, then exit
+    [switch]$UpdateNow,                 # manual update: download, stop, install, start
     [string]$LogFile,
     [string]$SettingsFile
 )
@@ -253,7 +254,8 @@ function Write-Settings($cfg) {
         [void]$lines.Add("logging = " + $(if ($script:LogEnabled) { 'yes' } else { 'no' }))
         [void]$lines.Add('')
         [void]$lines.Add('# Check GitHub for a newer release at every start and install it')
-        [void]$lines.Add('# automatically (the dashboard restarts itself). yes / no')
+        [void]$lines.Add('# automatically (the dashboard restarts itself). yes / no.')
+        [void]$lines.Add('# Manual check any time: scripts\\Update-Now.bat (works even with no)')
         [void]$lines.Add("auto_update = " + $(if ($cfg.autoUpdate) { 'yes' } else { 'no' }))
         [void]$lines.Add('')
         [void]$lines.Add('# Sections shown on the page: yes / no')
@@ -316,9 +318,14 @@ function Test-NewerVersion([string]$Remote, [string]$Local) {
     return $false
 }
 
-function Invoke-SelfUpdate([string]$Target) {
-    $zip = Join-Path $env:TEMP ("sd-update-" + $Target + '.zip')
-    $dir = Join-Path $env:TEMP ("sd-update-" + $Target)
+function Save-UpdatePackage([string]$Target) {
+    # downloads and unpacks the release zip of a tag; returns the path of the
+    # folder that holds the new files (the single root folder of the archive),
+    # or $null when something went wrong. Nothing is touched on the server.
+    # GetTempPath() instead of $env:TEMP: it never comes back empty
+    $tempRoot = [System.IO.Path]::GetTempPath()
+    $zip = Join-Path $tempRoot ("sd-update-" + $Target + '.zip')
+    $dir = Join-Path $tempRoot ("sd-update-" + $Target)
     try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         Invoke-WebRequest -Uri ($script:UpdateZipFmt -f $Target) -OutFile $zip -UseBasicParsing -TimeoutSec 120
@@ -327,18 +334,77 @@ function Invoke-SelfUpdate([string]$Target) {
         # the archive unpacks into a single root folder
         $src = Get-ChildItem -Path $dir -Directory | Select-Object -First 1
         if (-not $src) { throw 'the archive is empty' }
-        foreach ($item in @(Get-ChildItem -Path $src.FullName)) {
+        return $src.FullName
+    } catch {
+        Write-Log ("Update download failed: " + $_.Exception.Message) 'ERROR'
+        try { Remove-Item $zip -Force -ErrorAction SilentlyContinue } catch { }
+        try { Remove-Item $dir -Recurse -Force -ErrorAction SilentlyContinue } catch { }
+        return $null
+    }
+}
+
+function Install-UpdatePackage([string]$SrcDir) {
+    try {
+        # Clean up the nesting left by the updaters of the previous versions:
+        # up to 1.15.0 every update copied the "scripts" folder INSIDE the
+        # existing scripts\ folder (same for lang, docs, ...), one level
+        # deeper at every update: scripts\scripts\scripts\...
+        foreach ($n in @('scripts', 'lang', 'docs', 'Changelog', 'screenshots')) {
+            $nested = Join-Path (Join-Path $Root $n) $n
+            if (Test-Path $nested) { Remove-Item $nested -Recurse -Force -ErrorAction SilentlyContinue }
+        }
+        foreach ($item in @(Get-ChildItem -Path $SrcDir)) {
             if ($UpdateKeep -contains $item.Name) { continue }
-            Copy-Item -Path $item.FullName -Destination (Join-Path $Root $item.Name) -Recurse -Force
+            $dest = Join-Path $Root $item.Name
+            if ($item.PSIsContainer) {
+                # Copy-Item of a folder onto an EXISTING folder would copy the
+                # source INSIDE it, creating scripts\scripts at every update:
+                # copy the CONTENTS of the folder instead, so the new files
+                # land exactly where the old ones are.
+                if (-not (Test-Path $dest)) { try { [void](New-Item -ItemType Directory -Path $dest -Force) } catch { } }
+                Copy-Item -Path (Join-Path $item.FullName '*') -Destination $dest -Recurse -Force
+            } else {
+                Copy-Item -Path $item.FullName -Destination $dest -Force
+            }
         }
         return $true
     } catch {
         Write-Log ("Self update failed: " + $_.Exception.Message) 'ERROR'
         return $false
-    } finally {
-        Remove-Item $zip -Force -ErrorAction SilentlyContinue
-        Remove-Item $dir -Recurse -Force -ErrorAction SilentlyContinue
     }
+}
+
+function Invoke-SelfUpdate([string]$Target) {
+    # automatic path (boot): download and install in one go
+    $src = Save-UpdatePackage $Target
+    if (-not $src) { return $false }
+    if (-not (Install-UpdatePackage $src)) { return $false }
+    Remove-Item (Split-Path $src -Parent) -Recurse -Force -ErrorAction SilentlyContinue
+    return $true
+}
+
+function Stop-DashboardForUpdate {
+    # stop the service the clean way: end the scheduled task first, then make
+    # sure nothing is left listening on the port
+    try { $null = & schtasks /End /TN $BrandName 2>$null } catch { }
+    try {
+        $stopper = Join-Path $PSScriptRoot 'Stop-DashboardProcess.ps1'
+        if (Test-Path $stopper) { & $stopper -Port $Port | Out-Null }
+    } catch { }
+    Start-Sleep -Seconds 1
+}
+
+function Start-DashboardAfterUpdate {
+    try { $null = & schtasks /Run /TN $BrandName 2>$null } catch { }
+    # the task needs a moment to wake the listener: wait for its answer
+    foreach ($i in 1..20) {
+        Start-Sleep -Seconds 1
+        try {
+            $r = Invoke-WebRequest -Uri ("http://localhost:{0}/api/health" -f $Port) -UseBasicParsing -TimeoutSec 3
+            if ($r.StatusCode -eq 200) { return $true }
+        } catch { }
+    }
+    return $false
 }
 
 function Update-FromGithub {
@@ -362,22 +428,64 @@ function Update-FromGithub {
 
 # ----------------------------------------------------------------------------
 # Update check at start (runs as SYSTEM at boot: no interactive logon needed).
+# Three different requests arrive here:
+#   -UpdateNow         check, download, STOP, install, START (Update-Now.bat)
+#   -CheckUpdatesOnly  just check and report, touch nothing
+#   nothing            the automatic check at every start, if auto_update=yes
 # ----------------------------------------------------------------------------
-$script:Updated = Update-FromGithub
-if ($script:Updated -and -not $CheckUpdatesOnly) {
-    # hand over to the new version, with the same port
-    Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
-        '-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass',
-        '-File', $PSCommandPath, '-Port', "$Port"
-    ) -WindowStyle Hidden
+if ($CheckUpdatesOnly) {
+    # pure check: it never installs and never stops anything
+    $latest = Get-LatestVersion
+    if (-not $latest) {
+        Write-Host 'No update information available (offline or repository unreachable).'
+        exit 1
+    }
+    if (Test-NewerVersion $latest $DashboardVersion) {
+        Write-Host "UPDATE AVAILABLE: $latest (current: $DashboardVersion)."
+        exit 3
+    }
+    Write-Host "Version $DashboardVersion - up to date."
     exit 0
 }
-if ($CheckUpdatesOnly) {
-    if ($script:Updated) {
-        Write-Host ("Updated to the new version. Restart the service to run it:")
-        Write-Host '  Stop-Dashboard.bat   then   schtasks /Run /TN "PiBOH Windows Server Dashboard"'
+if ($UpdateNow) {
+    # manual update, run from scripts\Update-Now.bat: an explicit request
+    # always works, even with auto_update = no in settings.txt.
+    # Order: download FIRST (no downtime if the download fails), then stop,
+    # install and start again.
+    $latest = Get-LatestVersion
+    if (-not $latest) { Write-Host 'No update information available (offline or repository unreachable).'; exit 1 }
+    if (-not (Test-NewerVersion $latest $DashboardVersion)) { Write-Host "Version $DashboardVersion - up to date."; exit 0 }
+    Write-Host "New version available: $latest (current: $DashboardVersion). Downloading..."
+    Write-Log "Manual update to $latest requested (Update-Now.bat)."
+    $pkg = Save-UpdatePackage $latest
+    if (-not $pkg) { Write-Host 'Download failed: nothing was changed.'; exit 1 }
+    Write-Host 'Stopping the dashboard...'
+    Stop-DashboardForUpdate
+    Write-Host 'Installing the new version...'
+    $installed = Install-UpdatePackage $pkg
+    Remove-Item (Split-Path $pkg -Parent) -Recurse -Force -ErrorAction SilentlyContinue
+    if (-not $installed) { Write-Host 'Install failed: run scripts\Diagnose.bat and check the log.'; exit 1 }
+    Write-DashEvent 2 'Information' ("$BrandName updated to $latest from $UpdateRepo by hand (Update-Now.bat). " +
+        "The local settings and the logs were preserved.")
+    Write-Host 'Starting the dashboard on the new version...'
+    if (Start-DashboardAfterUpdate) {
+        Write-Host "Updated to ${latest}: the dashboard is running again."
     } else {
-        Write-Host "Version $DashboardVersion - up to date."
+        Write-Host "Updated to $latest, but the service does not answer yet. Start it with:"
+        Write-Host '  Start-Dashboard.bat   or   schtasks /Run /TN "PiBOH Windows Server Dashboard"'
+    }
+    exit 0
+}
+$script:Updated = Update-FromGithub
+if ($script:Updated) {
+    # hand over to the new version, with the same port
+    try {
+        Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
+            '-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass',
+            '-File', $PSCommandPath, '-Port', "$Port"
+        ) -WindowStyle Hidden
+    } catch {
+        Write-Log 'Could not launch the new version: it will start at the next task run.' 'WARN'
     }
     exit 0
 }
@@ -491,6 +599,7 @@ $CollectorScript = {
     $old = (Get-Date).AddYears(-1)
     $dkCache = $null; $dkStamp = $old      # disks      : every 10 s
     $prCache = $null; $prStamp = $old      # processes  : every 5 s
+    $descCache = @{}                       # exe descriptions, read once per path
     $svCache = $null; $svStamp = $old      # services   : every 30 s
     $ipCache = $null; $ipStamp = $old      # IP config  : every 60 s
     $script:lastMapSource = 'associators'
@@ -589,8 +698,60 @@ $CollectorScript = {
                     }
                 }
             }
-            # Fallback 1: Core Temp (needs its free "Core Temp WMI provider" add-on,
-            # which publishes root\CoreTemp -> CoreTempInfo with one reading per core)
+            # Fallback 1: Core Temp, the plain program. While it runs, Core Temp
+            # ALWAYS publishes its readings in a shared memory block: no add-on,
+            # no server plug-in, nothing to switch on, in the 32-bit and in the
+            # 64-bit build alike. The block holds a fixed C struct without
+            # pointers, so its layout is the same everywhere and any process
+            # can read it as raw bytes:
+            #   offset 1536        uiCoreCnt   (UInt32)  cores per CPU package
+            #   offset 1540        uiCPUCnt    (UInt32)  physical CPU packages
+            #   offset 1544        fTemp[256]  (float)   one reading per core
+            #   offset 2684/2784   ucFahrenheit (byte)   ANSI / Unicode block
+            if (-not $temps.Count) {
+                foreach ($map in @('CoreTempMappingObjectUnicode', 'CoreTempMappingObject',
+                                   'Global\CoreTempMappingObjectUnicode', 'Global\CoreTempMappingObject')) {
+                    # Read access only: the block belongs to Core Temp,
+                    # the dashboard just looks at it
+                    try   { $ctMap = [System.IO.MemoryMappedFiles.MemoryMappedFile]::OpenExisting($map,
+                                 [System.IO.MemoryMappedFiles.MemoryMappedFileAccess]::Read) }
+                    catch { continue }
+                    try {
+                        $acc = $ctMap.CreateViewAccessor(0, 0, [System.IO.MemoryMappedFiles.MemoryMappedFileAccess]::Read)
+                        try {
+                            $coreCnt = $acc.ReadUInt32(1536)
+                            $cpuCnt  = $acc.ReadUInt32(1540)
+                            if ($coreCnt -ge 1 -and $coreCnt -le 128 -and $cpuCnt -ge 1 -and $cpuCnt -le 32) {
+                                $fahOff = 2784
+                                if ($map -notlike '*Unicode') { $fahOff = 2684 }
+                                $isFah = ($acc.ReadByte($fahOff) -ne 0)
+                                $nTot  = [int]$coreCnt * [int]$cpuCnt
+                                if ($nTot -gt 256) { $nTot = 256 }
+                                for ($i = 0; $i -lt $nTot; $i++) {
+                                    $v = [double]$acc.ReadSingle(1544 + 4 * $i)
+                                    if ($isFah) { $v = ($v - 32) / 1.8 }          # normalize to Celsius
+                                    if ($v -gt 0 -and $v -lt 150) {
+                                        $label = "Core $i"
+                                        # [math]::Floor, not [int]: a plain cast rounds
+                                        # 1.5 to 2 and would print CPU2 instead of CPU1
+                                        if ($cpuCnt -gt 1) { $label = "CPU$([int][math]::Floor($i / $coreCnt)) Core$($i % $coreCnt)" }
+                                        $temps += @{ Sensor = $label; Celsius = [math]::Round($v, 1) }
+                                    }
+                                }
+                                if ($temps.Count) { $Shared.TempSource = 'Core Temp' }
+                            }
+                        } finally { $acc.Dispose() }
+                    } catch { }
+                    $ctMap.Dispose()
+                    if ($temps.Count) { break }
+                }
+            }
+
+            # Fallback 2: Core Temp with its free "Core Temp WMI provider" add-on
+            # (namespace root\CoreTemp -> CoreTempInfo). A plain Core Temp is
+            # enough (see Fallback 1); this one is checked too because WMI is
+            # global, so it works even when Core Temp runs in another logon
+            # session than the dashboard.
             if (-not $temps.Count) {
                 try {
                     $ct = Get-CimInstance -Namespace 'root\CoreTemp' -ClassName 'CoreTempInfo' -ErrorAction Stop |
@@ -613,7 +774,7 @@ $CollectorScript = {
                 } catch { }
             }
 
-            # Fallback 2: OpenHardwareMonitor / LibreHardwareMonitor when installed
+            # Fallback 3: OpenHardwareMonitor / LibreHardwareMonitor when installed
             if (-not $temps.Count) {
                 foreach ($ns in @('root\OpenHardwareMonitor','root\LibreHardwareMonitor')) {
                     foreach ($s in @(Get-CimSafe Sensor $ns)) {
@@ -625,7 +786,7 @@ $CollectorScript = {
                 }
             }
 
-            # Fallback 3: HWiNFO shared WMI provider (optional feature of HWiNFO)
+            # Fallback 4: HWiNFO shared WMI provider (optional feature of HWiNFO)
             if (-not $temps.Count) {
                 foreach ($s in @(Get-CimSafe SensorInfo 'root\HWiNFO')) {
                     if ($s.SensorType -eq 'Temperature' -and $s.SensorValue) {
@@ -990,15 +1151,36 @@ $CollectorScript = {
             # Real image names: the performance counter class reports "chrome" or
             # "chrome#1", never the file name, so Win32_Process is used to get the
             # executable with its extension and its full path.
+            #
+            # Friendly description ("Task Manager" for taskmgr.exe): it comes
+            # from the version info of the executable itself, so it is already
+            # in the language of the server. Reading it costs a file access,
+            # so it happens once per path and then stays in $descCache: while
+            # a process runs, its description cannot change.
+            $GetDesc = {
+                param([string]$exePath)
+                if (-not $exePath) { return '' }
+                $dk = $exePath.ToLowerInvariant()
+                if ($descCache.ContainsKey($dk)) { return $descCache[$dk] }
+                $d = ''
+                try { $d = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($exePath).FileDescription } catch { $d = '' }
+                $descCache[$dk] = $d
+                return $d
+            }
             $imgMap = @{}
-            foreach ($wp in @(Get-CimSafe Win32_Process)) {
+            # The Where-Object is not decoration: when the CIM class cannot be
+            # queried at all, Get-CimSafe returns a single $null, which @()
+            # would count as one element and the Get-Process fallback would
+            # never run. Filtering it out keeps the fallback alive.
+            foreach ($wp in @(Get-CimSafe Win32_Process | Where-Object { $_ })) {
                 $imgMap["$($wp.ProcessId)"] = @{
                     File = "$($wp.Name)"                 # e.g. "sqlservr.exe"
                     Path = "$($wp.ExecutablePath)"       # e.g. "C:\Program Files\...\sqlservr.exe"
                 }
             }
 
-            $pp = @(Get-CimSafe Win32_PerfFormattedData_PerfProc_Process)
+            # same guard as above: a $null answer must not look like data
+            $pp = @(Get-CimSafe Win32_PerfFormattedData_PerfProc_Process | Where-Object { $_ })
             if ($pp.Count) {
                 foreach ($p in ($pp | Where-Object { $_.Name -ne '_Total' -and $_.IDProcess -ne 0 } |
                                 Sort-Object { [double]$_.PercentProcessorTime } -Descending)) {
@@ -1013,6 +1195,7 @@ $CollectorScript = {
                     }
                     $procs += @{
                         Name    = $file
+                        Desc    = (& $GetDesc $path)
                         Path    = $path
                         Pid     = [int]$p.IDProcess
                         CpuPct  = [math]::Round([double]$p.PercentProcessorTime / $nCpu, 1)
@@ -1026,7 +1209,8 @@ $CollectorScript = {
                     $key  = "$($p.Id)"
                     $file = if ($imgMap.ContainsKey($key)) { $imgMap[$key].File } else { "$($p.ProcessName).exe" }
                     $path = if ($imgMap.ContainsKey($key)) { $imgMap[$key].Path } else { '' }
-                    $procs += @{ Name=$file; Path=$path; Pid=$p.Id; CpuPct=0;
+                    $desc = & $GetDesc $path
+                    $procs += @{ Name=$file; Desc=$desc; Path=$path; Pid=$p.Id; CpuPct=0;
                                  RamMB=[math]::Round($p.WorkingSet64/1MB,1);
                                  Threads=$p.Threads.Count; Handles=$p.HandleCount }
                 }
@@ -1268,6 +1452,8 @@ th{text-align:left;color:var(--muted);font-weight:500;padding:6px 8px;border-bot
 td{padding:5px 8px;border-bottom:1px solid var(--border)}
 tr:hover td{background:var(--hover)}
 .num{text-align:right;font-variant-numeric:tabular-nums}
+/* second line of the process cell: the friendly name of the executable */
+.pd{display:block;font-size:11px;line-height:1.3;color:var(--muted);font-weight:400}
 .cores{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:8px;margin-top:6px}
 .core{background:var(--panel2);border-radius:6px;padding:6px 8px}
 .core div:first-child{font-size:10.5px;color:var(--muted)}
@@ -1883,11 +2069,15 @@ function drawProcs(){
   var f = (document.getElementById('pfilter').value || '').toLowerCase();
   var rows = sortRows(lastProcs.filter(function(p){
       if (!f) return true;
-      return ((p.Name || '') + ' ' + (p.Path || '')).toLowerCase().indexOf(f) >= 0;
+      /* the filter matches the image name, its description and the path */
+      return ((p.Name || '') + ' ' + (p.Desc || '') + ' ' + (p.Path || '')).toLowerCase().indexOf(f) >= 0;
   }), 'tproc');
   document.getElementById('procs').innerHTML = rows.length ? rows.map(function(p){
-     /* always the real image name, extension included; full path in the tooltip */
-     var nm = '<td title="'+esc(p.Path || p.Name).replace(/"/g,'&quot;')+'">'+esc(p.Name)+'</td>';
+     /* always the real image name, extension included; the friendly name of
+        the executable ("Task Manager" for taskmgr.exe) goes right under it;
+        the full path stays in the tooltip */
+     var nm = '<td title="'+esc(p.Path || p.Name).replace(/"/g,'&quot;')+'">'+esc(p.Name)+
+              ((p.Desc) ? '<span class="pd">'+esc(p.Desc)+'</span>' : '')+'</td>';
      return '<tr>'+nm+'<td class="num">'+p.Pid+'</td>'+
             '<td class="num '+cls(p.CpuPct)+'">'+fmt(p.CpuPct)+'</td>'+
             '<td class="num">'+fmt(p.RamMB)+'</td><td class="num">'+p.Threads+'</td><td class="num">'+p.Handles+'</td></tr>';
