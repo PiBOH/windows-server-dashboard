@@ -143,6 +143,8 @@
   <string key="srv_locked">Wprowadź hasło, aby zmienić opcje serwera.</string>
   <string key="srv_unlocked">Odblokowano: Zapis zapisuje te opcje do settings.txt na serwerze</string>
   <string key="pwd_ph">Hasło...</string>
+  <string key="pwd_title">Hasło serwera</string>
+  <string key="pwd_explain">Wprowadź hasło, aby zmienić opcje serwera.</string>
   <string key="logging_opt">Pliki dziennika na serwerze</string>
   <string key="auto_update_opt">Aktualizacje automatyczne</string>
   <string key="server_default">domyślne serwera</string>

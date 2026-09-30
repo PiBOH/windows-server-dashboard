@@ -143,6 +143,8 @@
   <string key="srv_locked">Voer het wachtwoord in om de serveropties te wijzigen.</string>
   <string key="srv_unlocked">Ontgrendeld: Opslaan schrijft deze opties naar settings.txt op de server</string>
   <string key="pwd_ph">Wachtwoord...</string>
+  <string key="pwd_title">Serverwachtwoord</string>
+  <string key="pwd_explain">Voer het wachtwoord in om de serveropties te wijzigen.</string>
   <string key="logging_opt">Logbestanden op de server</string>
   <string key="auto_update_opt">Automatische updates</string>
   <string key="server_default">standaard van de server</string>

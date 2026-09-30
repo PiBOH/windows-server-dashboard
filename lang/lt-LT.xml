@@ -143,6 +143,8 @@
   <string key="srv_locked">Įveskite slaptažodį, kad pakeistumėte serverio parinktis.</string>
   <string key="srv_unlocked">Atrakinta: Išsaugoti rašo šias parinktis į settings.txt serveryje</string>
   <string key="pwd_ph">Slaptažodis...</string>
+  <string key="pwd_title">Serverio slaptažodis</string>
+  <string key="pwd_explain">Įveskite slaptažodį, kad pakeistumėte serverio parinktis.</string>
   <string key="logging_opt">Žurnalo failai serveryje</string>
   <string key="auto_update_opt">Automatiniai atnaujinimai</string>
   <string key="server_default">serverio numatytoji</string>

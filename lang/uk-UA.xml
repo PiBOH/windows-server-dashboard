@@ -143,6 +143,8 @@
   <string key="srv_locked">Введіть пароль, щоб змінити параметри сервера.</string>
   <string key="srv_unlocked">Розблоковано: Зберегти записує ці параметри у settings.txt на сервері</string>
   <string key="pwd_ph">Пароль...</string>
+  <string key="pwd_title">Пароль сервера</string>
+  <string key="pwd_explain">Введіть пароль, щоб змінити параметри сервера.</string>
   <string key="logging_opt">Файли журналів на сервері</string>
   <string key="auto_update_opt">Автоматичні оновлення</string>
   <string key="server_default">типове значення сервера</string>

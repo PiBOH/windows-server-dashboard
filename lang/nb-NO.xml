@@ -143,6 +143,8 @@
   <string key="srv_locked">Skriv inn passordet for å endre serveralternativene.</string>
   <string key="srv_unlocked">Låst opp: Lagre skriver disse alternativene til settings.txt på serveren</string>
   <string key="pwd_ph">Passord...</string>
+  <string key="pwd_title">Serverpassord</string>
+  <string key="pwd_explain">Skriv inn passordet for å endre serveralternativene.</string>
   <string key="logging_opt">Loggfiler på serveren</string>
   <string key="auto_update_opt">Automatiske oppdateringer</string>
   <string key="server_default">serverstandard</string>

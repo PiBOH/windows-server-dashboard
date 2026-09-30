@@ -143,6 +143,8 @@
   <string key="srv_locked">서버 옵션을 변경하려면 암호를 입력하세요.</string>
   <string key="srv_unlocked">잠금 해제됨: 저장을 누르면 이 옵션이 서버의 settings.txt에 기록됩니다</string>
   <string key="pwd_ph">암호...</string>
+  <string key="pwd_title">서버 암호</string>
+  <string key="pwd_explain">서버 옵션을 변경하려면 암호를 입력하세요.</string>
   <string key="logging_opt">서버의 로그 파일</string>
   <string key="auto_update_opt">자동 업데이트</string>
   <string key="server_default">서버 기본값</string>

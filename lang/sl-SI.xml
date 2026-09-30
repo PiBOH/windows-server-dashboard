@@ -143,6 +143,8 @@
   <string key="srv_locked">Vnesite geslo za spreminjanje možnosti strežnika.</string>
   <string key="srv_unlocked">Odklenjeno: Shrani zapiše te možnosti v settings.txt na strežniku</string>
   <string key="pwd_ph">Geslo...</string>
+  <string key="pwd_title">Geslo strežnika</string>
+  <string key="pwd_explain">Vnesite geslo za spreminjanje možnosti strežnika.</string>
   <string key="logging_opt">Dnevniške datoteke na strežniku</string>
   <string key="auto_update_opt">Samodejne posodobitve</string>
   <string key="server_default">privzeto iz strežnika</string>

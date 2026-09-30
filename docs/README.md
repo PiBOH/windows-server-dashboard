@@ -27,6 +27,10 @@ Everything you normally need is in the root folder; the rest is tidied away.
     +-- Stop-Dashboard.bat       stop the dashboard
     +-- settings.txt             server settings, editable with Notepad
     |
+    +-- .config-do-not-delete-me\  the local secrets of this installation:
+    |                             pwd (the password file, empty = none) and
+    |                             settings-backup.txt (written by Install.bat)
+    |
     +-- scripts\                 everything that runs
     |   +-- ServerDashboard.ps1          the engine
     |   +-- Diagnose.bat / Diagnose.ps1  read-only diagnostics
@@ -39,6 +43,9 @@ Everything you normally need is in the root folder; the rest is tidied away.
     |   +-- Set-UrlAcl.ps1               URL reservation, localized names
     |   +-- Show-StartupNotification.ps1 the notification itself
     |   +-- Stop-DashboardProcess.ps1    stops the script and frees the port
+    |   +-- Set-Password.ps1            set / change / remove the password
+    |   +-- install-state.txt           what the installer changed (hidden,
+    |                                    read-only; used by Uninstall.bat)
     |
     +-- lang\                    the 38 translations, one XML each
     |
@@ -54,7 +61,7 @@ Everything you normally need is in the root folder; the rest is tidied away.
     +-- logs\                    one file per day, kept 14 days:
                                  ServerDashboard-YYYY-MM-DD.log
                                  ServerDashboard-notify-YYYY-MM-DD.log
-                                 install-state.txt, previous-task-backup.xml
+                                 previous-task-backup.xml
 
 The four files you use day to day are in the root. Everything under scripts\
 is called by them; you never need to open it, but nothing stops you. The logs\
@@ -78,7 +85,22 @@ settings.txt.
        [+] Scheduled task "PiBOH Windows Server Dashboard"
            BEFORE : not present  |  AFTER : created, runs at boot as SYSTEM
 
-4. From another computer on the LAN open http://SERVER-IP:8080
+   The installer also asks whether to set an optional password: type it
+   (masked, twice) or just press Enter for none. The file
+   .config-do-not-delete-me\pwd is always created: an empty file simply
+   means "no password". It can be changed at any time with
+   scripts\Set-Password.ps1.
+
+4. From another computer on the LAN open http://SERVER-IP:8080. The name
+   of the server works too: http://SERVER-NAME:8080. Keep the http:// part
+   (or at least the two slashes: //SERVER-NAME:8080): a bare
+   SERVER-NAME:8080 is read by the browser as a web search, not as an
+   address. That is a rule of every browser: no web server can change it.
+   Two tricks make it shorter: after the first complete address the
+   browser autocompletes it from the history while you type, and a name
+   that contains a dot, like SRV01.COMPANY.LOCAL:8080, is accepted even
+   without http:// (a single-word name never is; localhost:8080 is the
+   only exception).
 
 For a quick test without installing anything, use Start-Dashboard.bat.
 
@@ -286,10 +308,12 @@ visible, logging on.
                             write with 403 and logs the address of the
                             caller, so the restriction holds even against a
                             handcrafted request, not only against the page.
-      password, partial  -> the panel shows a lock: type the password, press
-                            Unlock, change the options, Save. The password
-                            travels with the save and the server refuses a
-                            wrong one with 403, logged with the caller.
+      password, partial  -> the options look normal: the password is asked
+                            by a small popup the moment one of them is
+                            clicked, never before. The server checks it
+                            immediately (a wrong one is refused in red,
+                            inside the popup); after that the options stay
+                            editable and Save writes them to settings.txt.
       password, total    -> you already typed the password to open the page,
                             so the server options are editable directly.
 - To change them, edit settings.txt on the server with Notepad. The file is
@@ -376,10 +400,10 @@ NOBODY WATCHING = NOTHING RUNNING
   without any logon - the dashboard reads scripts\version.txt from the main
   branch of github.com/PiBOH/windows-server-dashboard. If the published
   version is newer, the release tagged v<version> is downloaded, unpacked and
-  copied over the current files, without ever touching settings.txt, the pwd
-  file, the logs folder or the local backups. The dashboard then restarts
-  itself on the new version, and writes both a log line and an entry in the
-  Windows event log.
+  copied over the current files, without ever touching settings.txt,
+  the .config-do-not-delete-me folder, the logs folder or the local
+  backups. The dashboard then restarts itself on the new version, and
+  writes both a log line and an entry in the Windows event log.
 
   Since 1.16.0 the check is ALSO repeated every 24 hours while the dashboard
   runs, so a server that stays on for months does not need a reboot to
@@ -584,23 +608,37 @@ options.
 OPTIONAL PASSWORD
 
 The password lives in a plain text file called "pwd" (no file extension)
-placed next to settings.txt: create it with Notepad, write the password on
-the first line, save. Delete the file (or empty it) to remove the password.
-Both operations apply within ten seconds, no restart needed. The key
-password_mode in settings.txt decides what it protects:
+in the .config-do-not-delete-me folder at the root of the package, next
+to the settings backup: .config-do-not-delete-me\pwd. The file always
+exists - Install.bat asks for the password during the installation and
+creates it, and the dashboard itself recreates it empty whenever it is
+missing. An empty file simply means "no password". To set or change it
+later run scripts\Set-Password.ps1 (masked input, Enter alone = no
+password) or edit the file with Notepad: the password goes on the first
+line. Empty the file (or delete it) to remove the password. Every change
+applies within ten seconds, no restart needed. The key password_mode in
+settings.txt decides what it protects:
 
     total   (default)  the whole dashboard asks for the password: the
                        browser opens its standard login window, and without
                        the password nothing at all is served.
-    partial            everybody can look at the dashboard, but changing the
-                       server options from the settings panel requires the
-                       password (the lock in the panel).
+    partial            everybody can look at the dashboard. The server
+                       options look normal in the panel and a popup asks
+                       for the password the moment one of them is clicked,
+                       not before.
 
 Worth knowing:
 
 - The password itself is never sent to the browsers: /api/settings only
   reports whether one is set and in which mode. It is never written to the
   log either, and Diagnose.bat only reports whether it is set.
+- No browser will ever offer to save this password - not Chrome, Edge,
+  Safari or any other Chromium / WebKit browser, desktop or mobile, and
+  not Firefox: where supported the popup field is technically not a
+  password field at all (it only looks like one), elsewhere it belongs to
+  no form and is never submitted. What you type stays in a JavaScript
+  variable for the request only: never in the browser storage, never on
+  disk.
 - /api/health always stays open, even in total mode: the updater,
   Repair-Autostart.bat and the logon notification poll it to see whether
   the service answers, and it only carries the version number.
@@ -609,7 +647,8 @@ Worth knowing:
 - In total mode any user name is accepted: only the password is checked.
 - The pwd file is preserved by every update, is never published on GitHub
   (it is in .gitignore, so it is not in the release zip either) and is
-  deleted by Uninstall.bat.
+  deleted by Uninstall.bat. Updating from 1.16.0 moves it automatically
+  from the package root into the .config-do-not-delete-me folder.
 - WARNING: like everything else in the dashboard, the password travels
   unencrypted on the local network (HTTP Basic authentication). It keeps
   curious colleagues out; it is no defense against somebody who can sniff

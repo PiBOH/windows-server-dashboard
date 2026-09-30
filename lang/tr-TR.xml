@@ -143,6 +143,8 @@
   <string key="srv_locked">Sunucu seçeneklerini değiştirmek için parolayı girin.</string>
   <string key="srv_unlocked">Kilidi açık: Kaydet, bu seçenekleri sunucudaki settings.txt dosyasına yazar</string>
   <string key="pwd_ph">Parola...</string>
+  <string key="pwd_title">Sunucu parolası</string>
+  <string key="pwd_explain">Sunucu seçeneklerini değiştirmek için parolayı girin.</string>
   <string key="logging_opt">Sunucudaki günlük dosyaları</string>
   <string key="auto_update_opt">Otomatik güncellemeler</string>
   <string key="server_default">sunucu varsayılanı</string>

@@ -7,8 +7,9 @@ REM ===========================================================================
 REM  Install.bat
 REM  Installs the Server Dashboard as a scheduled task that starts at boot.
 REM
-REM  Everything this installer touches is recorded in logs\install-state.txt so that
-REM  Uninstall.bat can put the machine back exactly as it was found.
+REM  Everything this installer touches is recorded in scripts\install-state.txt
+REM  (created hidden and read-only) so that Uninstall.bat can put the machine
+REM  back exactly as it was found.
 REM  Every change is printed on screen with its BEFORE and AFTER value.
 REM ===========================================================================
 
@@ -22,7 +23,8 @@ REM ---------------------------------------------------------------------------
 cd /d "%~dp0"
 if not exist "%~dp0logs" mkdir "%~dp0logs" >nul 2>&1
 set "PS1=%~dp0scripts\ServerDashboard.ps1"
-set "STATE=%~dp0logs\install-state.txt"
+set "STATE=%~dp0scripts\install-state.txt"
+set "STATE_OLD=%~dp0logs\install-state.txt"
 set "TASKBAK=%~dp0logs\previous-task-backup.xml"
 
 echo.
@@ -47,9 +49,12 @@ if not exist "%~dp0lang\en-US.xml" (
     echo      The dashboard will still run, but language switching will not work.
     echo.
 )
-if exist "%STATE%" (
-    echo  [!] logs\install-state.txt already exists: the dashboard looks already installed.
-    echo      Run Uninstall.bat first if you want a clean installation.
+set "INSTALLED=no"
+if exist "%STATE%" set "INSTALLED=yes"
+if exist "%STATE_OLD%" set "INSTALLED=yes"
+if "%INSTALLED%"=="yes" (
+    echo  [!] install-state.txt already exists: the dashboard looks already
+    echo      installed. Run Uninstall.bat first if you want a clean installation.
     echo      Continuing will overwrite the recorded state.
     echo.
     choice /c YN /m "  Continue anyway"
@@ -117,6 +122,10 @@ set "LOG_BEFORE=absent"
 if exist "%~dp0logs\ServerDashboard-*.log" set "LOG_BEFORE=present"
 
 REM ---- 3. write the state file (used by the uninstaller) --------------------
+REM  The file is written in one piece and then made hidden and read-only, so
+REM  that nobody deletes or edits it by mistake. A re-install clears the
+REM  attributes first: a read-only file cannot be overwritten.
+attrib -h -r "%STATE%" >nul 2>&1
 > "%STATE%" echo # Server Dashboard - state recorded before installation
 >>"%STATE%" echo # Created by Install.bat on %DATE% %TIME% - do NOT delete, Uninstall.bat needs it
 >>"%STATE%" echo PORT=%PORT%
@@ -128,10 +137,12 @@ REM ---- 3. write the state file (used by the uninstaller) --------------------
 >>"%STATE%" echo NOTIFYTASK=%NOTIFYTASK%
 >>"%STATE%" echo SETTINGS_BEFORE=%SETTINGS_BEFORE%
 >>"%STATE%" echo LOG_BEFORE=%LOG_BEFORE%
+attrib +h +r "%STATE%" >nul 2>&1
 
 REM ---- 4. back up a pre-existing scheduled task ----------------------------
 if "%SETTINGS_BEFORE%"=="present" (
-    copy /y "%~dp0settings.txt" "%~dp0settings-backup.txt" >nul 2>&1
+    if not exist "%~dp0.config-do-not-delete-me" mkdir "%~dp0.config-do-not-delete-me" >nul 2>&1
+    copy /y "%~dp0settings.txt" "%~dp0.config-do-not-delete-me\settings-backup.txt" >nul 2>&1
 )
 if "%TASK_BEFORE%"=="present" (
     schtasks /Query /TN "%TASKNAME%" /XML > "%TASKBAK%" 2>nul
@@ -139,6 +150,24 @@ if "%TASK_BEFORE%"=="present" (
     echo      logs\previous-task-backup.xml and will be restored by Uninstall.bat.
     echo.
 )
+
+REM ---- 4-bis. optional password ----------------------------------------------
+REM  The password protects the server options (password_mode = partial) or
+REM  the whole page (password_mode = total, the default - see settings.txt).
+REM  The file .config-do-not-delete-me\pwd always exists: empty = no
+REM  password at all. A password set on a previous installation is never
+REM  overwritten.
+if exist "%~dp0scripts\Set-Password.ps1" (
+    echo  PASSWORD ^(optional^)
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\Set-Password.ps1" -KeepExisting
+    if errorlevel 1 if not errorlevel 2 (
+        echo  [!] the pwd file could NOT be written: the dashboard will
+        echo      recreate it empty at its first start ^(no password^).
+    )
+) else (
+    echo  [!] scripts\Set-Password.ps1 missing: the password question was skipped.
+)
+echo.
 
 echo  ------------------------------------------------------------
 echo   CHANGES APPLIED
@@ -262,7 +291,7 @@ if "%SETTINGS_BEFORE%"=="absent" (
 ) else (
     echo  [=] settings.txt
     echo      BEFORE : already present  ^|  AFTER : left exactly as it is
-    echo               ^(a copy was saved as settings-backup.txt^)
+    echo               ^(a copy was saved in .config-do-not-delete-me^)
 )
 
 echo  ------------------------------------------------------------
@@ -326,7 +355,8 @@ echo.
 echo   Test it: reboot the server WITHOUT logging on, then open the page from
 echo   another computer. It must answer within about a minute of the boot.
 echo.
-echo   State recorded in : logs\install-state.txt
+echo   State recorded in : scripts\install-state.txt ^(hidden, read-only^)
+echo   Password file    : .config-do-not-delete-me\pwd ^(empty = no password^)
 echo   To revert everything: run Uninstall.bat
 echo.
 pause

@@ -6,13 +6,15 @@ color 0E
 REM ===========================================================================
 REM  Uninstall.bat
 REM  Reverts every change made by Install.bat, using the values recorded in
-REM  logs\install-state.txt: anything that already existed before the installation
-REM  is left exactly as it was, anything the installer created is removed.
+REM  scripts\install-state.txt: anything that already existed before the
+REM  installation is left exactly as it was, anything the installer created is
+REM  removed.
 REM  Each step prints what is changed, how, and what it was before.
 REM ===========================================================================
 
 cd /d "%~dp0"
-set "STATE=%~dp0logs\install-state.txt"
+set "STATE=%~dp0scripts\install-state.txt"
+if not exist "%STATE%" if exist "%~dp0logs\install-state.txt" set "STATE=%~dp0logs\install-state.txt"
 set "TASKBAK=%~dp0logs\previous-task-backup.xml"
 
 REM ---- defaults, used when no state file is available ----------------------
@@ -45,7 +47,7 @@ if exist "%STATE%" (
     echo  [i] State file found: the system will be restored to how it was
     echo      before the installation.
 ) else (
-    echo  [!] logs\install-state.txt not found.
+    echo  [!] install-state.txt not found.
     echo      Falling back to the standard values ^(port %PORT%, task %TASKNAME%^):
     echo      everything the installer normally creates will be removed.
     echo.
@@ -158,14 +160,18 @@ if errorlevel 1 (
 )
 
 REM ---- 6. settings file -----------------------------------------------------
+REM  The backup lives in .config-do-not-delete-me; versions before 1.16.1
+REM  left it in the package root, so both places are checked.
+set "SBAK=%~dp0.config-do-not-delete-me\settings-backup.txt"
+if not exist "%SBAK%" if exist "%~dp0settings-backup.txt" set "SBAK=%~dp0settings-backup.txt"
 if exist "%~dp0settings.txt" (
     if "!SETTINGS_BEFORE!"=="present" (
-        if exist "%~dp0settings-backup.txt" (
-            copy /y "%~dp0settings-backup.txt" "%~dp0settings.txt" >nul 2>&1
-            del "%~dp0settings-backup.txt" >nul 2>&1
+        if exist "%SBAK%" (
+            copy /y "%SBAK%" "%~dp0settings.txt" >nul 2>&1
+            del "%SBAK%" >nul 2>&1
             echo  [~] settings.txt
             echo      BEFORE : existed before the installation, changed since then
-            echo      AFTER  : original file restored from settings-backup.txt
+            echo      AFTER  : original file restored from the settings backup
         ) else (
             echo  [=] settings.txt
             echo      BEFORE : existed before the installation  ^|  AFTER : kept as it is
@@ -183,8 +189,11 @@ if exist "%~dp0settings.txt" (
 
 REM ---- 6b. password file ----------------------------------------------------
 REM The optional password file is a local secret: it is removed with the rest.
-if exist "%~dp0pwd" (
-    del "%~dp0pwd" >nul 2>&1
+set "PWDGONE=no"
+if exist "%~dp0.config-do-not-delete-me\pwd" ( del /f "%~dp0.config-do-not-delete-me\pwd" >nul 2>&1 & set "PWDGONE=yes" )
+if exist "%~dp0scripts\pwd" ( del /f "%~dp0scripts\pwd" >nul 2>&1 & set "PWDGONE=yes" )
+if exist "%~dp0pwd" ( del /f "%~dp0pwd" >nul 2>&1 & set "PWDGONE=yes" )
+if "%PWDGONE%"=="yes" (
     echo  [-] pwd
     echo      BEFORE : the optional password file
     echo      AFTER  : deleted
@@ -213,9 +222,21 @@ if exist "%~dp0logs\ServerDashboard-*.log" (
 
 REM ---- 8. state file --------------------------------------------------------
 if exist "%STATE%" (
-    del "%STATE%" >nul 2>&1
-    echo  [-] logs\install-state.txt
+    attrib -h -r "%STATE%" >nul 2>&1
+    del /f "%STATE%" >nul 2>&1
+    echo  [-] install-state.txt
     echo      BEFORE : held the pre-installation state  ^|  AFTER : deleted
+)
+
+REM ---- 8-bis. secrets folder ------------------------------------------------
+REM  .config-do-not-delete-me is removed only when it is empty: its whole
+REM  content (pwd, settings-backup.txt) has been handled above.
+if exist "%~dp0.config-do-not-delete-me" (
+    rmdir "%~dp0.config-do-not-delete-me" >nul 2>&1
+    if not exist "%~dp0.config-do-not-delete-me" (
+        echo  [-] .config-do-not-delete-me
+        echo      BEFORE : empty after removing its files  ^|  AFTER : deleted
+    )
 )
 
 echo  ------------------------------------------------------------

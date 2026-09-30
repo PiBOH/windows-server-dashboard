@@ -143,6 +143,8 @@
   <string key="srv_locked">Skriv in lösenordet för att ändra serveralternativen.</string>
   <string key="srv_unlocked">Upplåst: Spara skriver dessa alternativ till settings.txt på servern</string>
   <string key="pwd_ph">Lösenord...</string>
+  <string key="pwd_title">Serverlösenord</string>
+  <string key="pwd_explain">Skriv in lösenordet för att ändra serveralternativen.</string>
   <string key="logging_opt">Loggfiler på servern</string>
   <string key="auto_update_opt">Automatiska uppdateringar</string>
   <string key="server_default">serverns standardvärde</string>

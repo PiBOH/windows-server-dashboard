@@ -143,6 +143,8 @@
   <string key="srv_locked">Introduza a palavra-passe para alterar as opções do servidor.</string>
   <string key="srv_unlocked">Desbloqueado: Guardar escreve estas opções no settings.txt do servidor</string>
   <string key="pwd_ph">Palavra-passe...</string>
+  <string key="pwd_title">Palavra-passe do servidor</string>
+  <string key="pwd_explain">Introduza a palavra-passe para alterar as opções do servidor.</string>
   <string key="logging_opt">Ficheiros de registo no servidor</string>
   <string key="auto_update_opt">Atualizações automáticas</string>
   <string key="server_default">predefinição do servidor</string>

@@ -9,9 +9,10 @@
     Every metric is collected through language independent CIM/WMI classes,
     so it works on any localized build of Windows.
 
-    An optional password (a plain text file called "pwd" next to
-    settings.txt) can protect the whole page (password_mode = total) or
-    just the server options (password_mode = partial).
+    An optional password (a plain text file called "pwd" in the
+    .config-do-not-delete-me folder) can protect the whole page
+    (password_mode = total) or just the server options
+    (password_mode = partial).
 
     Typical start:  powershell -ExecutionPolicy Bypass -File ServerDashboard.ps1 -Port 8080
 
@@ -50,10 +51,14 @@ $Root = if ((Split-Path -Leaf $ScriptDir) -eq 'scripts') { Split-Path -Parent $S
 $LangDir = Join-Path $Root 'lang'
 $LogDir  = Join-Path $Root 'logs'
 if (-not $SettingsFile) { $SettingsFile = Join-Path $Root 'settings.txt' }
-# Optional password: a plain text file called "pwd" (no extension) next to
-# settings.txt. First non-empty line = the password. No file / empty file =
-# no password at all and everything stays exactly as it was.
-$PwdFile = Join-Path $Root 'pwd'
+# Optional password: a plain text file called "pwd" (no extension) in the
+# .config-do-not-delete-me folder at the root of the package. First
+# non-empty line = the password. No file / empty file = no password at all
+# and everything stays exactly as it was. Install.bat and
+# scripts\Set-Password.ps1 create the file, and it is recreated empty at
+# every start when missing (see the block below).
+$CfgDir  = Join-Path $Root '.config-do-not-delete-me'
+$PwdFile = Join-Path $CfgDir 'pwd'
 if (-not (Test-Path $LogDir)) { try { [void](New-Item -ItemType Directory -Path $LogDir -Force) } catch { } }
 
 # ----------------------------------------------------------------------------
@@ -239,12 +244,13 @@ function Read-Settings {
 # Used only to create the file the first time: the dashboard never rewrites it,
 # because the settings it contains cannot be changed from the web interface.
 function Read-FilePassword {
-    # The optional password lives in a plain text file called "pwd" (no file
-    # extension) next to settings.txt: create it with Notepad, write the
-    # password on the first line, save, done - the change is picked up within
-    # seconds, no restart needed. Remove the file (or empty it) to remove the
-    # password. The content is only ever compared, never logged and never sent
-    # to the browsers (only the fact that a password is set, and its mode).
+    # The optional password lives in a plain text file called "pwd" (no
+    # file extension) in the .config-do-not-delete-me folder: set it during
+    # Install.bat or with scripts\Set-Password.ps1, or edit it with Notepad
+    # - the change is picked up within seconds, no restart needed. Empty
+    # the file (or delete it) to remove the password. The content is only
+    # ever compared, never logged and never sent to the browsers (only the
+    # fact that a password is set, and its mode).
     try {
         if (-not (Test-Path $PwdFile)) { return '' }
         foreach ($line in (Get-Content -Path $PwdFile -Encoding UTF8 -ErrorAction Stop)) {
@@ -296,12 +302,14 @@ function Write-Settings($cfg) {
         [void]$lines.Add('# Check GitHub for a newer release at every start and then')
         [void]$lines.Add('# every 24 hours, and install it automatically (the dashboard')
         [void]$lines.Add('# restarts itself). yes / no.')
-        [void]$lines.Add('# Manual check any time: scripts\\Update-Now.bat (works even with no)')
+        [void]$lines.Add('# Manual check any time: scripts\Update-Now.bat (works even with no)')
         [void]$lines.Add("auto_update = " + $(if ($cfg.autoUpdate) { 'yes' } else { 'no' }))
         [void]$lines.Add('')
         [void]$lines.Add('# Password protection, in two steps.')
-        [void]$lines.Add('# 1. Create a text file called "pwd" (no extension) next to this')
-        [void]$lines.Add('#    file and write the password on its first line.')
+        [void]$lines.Add('# 1. The password lives in .config-do-not-delete-me\pwd')
+        [void]$lines.Add('#    (first line = password, empty file = no password).')
+        [void]$lines.Add('#    Install.bat asks for it, and it can be changed any time')
+        [void]$lines.Add('#    with scripts\Set-Password.ps1 or with Notepad.')
         [void]$lines.Add('# 2. Choose what the password protects:')
         [void]$lines.Add('#      total   = without the password the whole dashboard refuses')
         [void]$lines.Add('#                to open (recommended)')
@@ -328,6 +336,31 @@ function Write-Settings($cfg) {
     } catch { Write-Log "Could not save the settings: $($_.Exception.Message)" 'ERROR'; return $false }
 }
 
+# The pwd file always exists, even when empty (no password): Install.bat
+# and Set-Password.ps1 create it, and this covers every other case, for
+# example the first start after an update from a version without it. The
+# .config-do-not-delete-me folder holds the local secrets of this
+# installation; a pwd file left somewhere by an earlier version (package
+# root, or the scripts folder of the first 1.16.0 builds) is moved into
+# it first, so no password is ever lost.
+if (-not (Test-Path -LiteralPath $CfgDir)) {
+    try { [void](New-Item -ItemType Directory -Path $CfgDir -Force -ErrorAction Stop) } catch { }
+}
+foreach ($legacyPwd in @((Join-Path $ScriptDir 'pwd'), (Join-Path $Root 'pwd'))) {
+    if ($legacyPwd -ne $PwdFile -and -not (Test-Path -LiteralPath $PwdFile) -and (Test-Path -LiteralPath $legacyPwd)) {
+        try {
+            Move-Item -LiteralPath $legacyPwd -Destination $PwdFile -Force -ErrorAction Stop
+            Write-Log 'pwd file moved into the .config-do-not-delete-me folder'
+        } catch { }
+    }
+}
+if (-not (Test-Path -LiteralPath $PwdFile)) {
+    try {
+        [System.IO.File]::WriteAllText($PwdFile, '')
+        Write-Log 'No pwd file: an empty one was created (no password)'
+    } catch { }
+}
+
 $Shared.Settings = Read-Settings
 $Shared.Interval = $Shared.Settings.refreshSeconds
 $Shared.Password = Read-FilePassword
@@ -348,8 +381,10 @@ if (-not (Test-Path $SettingsFile)) { [void](Write-Settings $Shared.Settings) }
 # When it is newer than the local one, the release tagged v<version> is
 # downloaded, unpacked and copied over the current files - never touching
 # settings.txt, the pwd file, the logs\ folder or anything that belongs to
-# this installation only. The dashboard then restarts itself on the new
-# version.
+# this installation only. The pwd file (.config-do-not-delete-me\pwd) and
+# the installer state (scripts\install-state.txt) are never in the GitHub
+# archive, so the copy leaves them alone by itself. The dashboard then
+# restarts itself on the new version.
 # Set auto_update = no in settings.txt to disable it, or run the script with
 # -CheckUpdatesOnly to trigger a check by hand.
 # ----------------------------------------------------------------------------
@@ -358,6 +393,9 @@ $UpdateVersion = 'https://raw.githubusercontent.com/' + $UpdateRepo + '/main/scr
 $UpdateZipFmt  = 'https://github.com/' + $UpdateRepo + '/archive/refs/tags/v{0}.zip'
 $UpdateKeep    = @('logs', 'settings.txt', 'settings-backup.txt', 'install-state.txt', 'pwd',
                    'previous-task-backup.xml', 'ServerDashboard-*.log', 'ServerDashboard-notify-*.log')
+# The GitHub archive of a tag also carries the repository folders that are
+# not part of the package: never copy them over an installation.
+$UpdateSkip    = @('.github', '.config', '_build', 'screenshots', '.config-do-not-delete-me')
 # The updater writes this marker while it works, so that the periodic 24 hour
 # check and a manual Update-Now.bat never install at the same time.
 $script:UpdateMarker = Join-Path $Root '.update-running'
@@ -430,6 +468,7 @@ function Install-UpdatePackage([string]$SrcDir) {
         Remove-NestedFolders
         foreach ($item in @(Get-ChildItem -Path $SrcDir)) {
             if ($UpdateKeep -contains $item.Name) { continue }
+            if ($UpdateSkip -contains $item.Name) { continue }
             $dest = Join-Path $Root $item.Name
             if ($item.PSIsContainer) {
                 # Copy-Item of a folder onto an EXISTING folder would copy the
@@ -1631,9 +1670,11 @@ footer .fcenter b{color:var(--txt)}
 .seclist input{accent-color:var(--accent);width:15px;height:15px}
 .seclist input[disabled] + span, .seclist label.ro{opacity:.65;cursor:not-allowed}
 .setrow select[disabled]{opacity:.65;cursor:not-allowed}
-.lockrow{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
-.lockrow input{flex:1;min-width:140px;padding:6px 10px;font-size:13px;
+.pwbox{width:min(400px,100%)}
+.pwinput{width:100%;margin-top:10px;padding:8px 10px;font-size:14px;
   background:var(--input);border:1px solid var(--border);color:var(--txt)}
+.pwmasked{-webkit-text-security:disc}
+#pwmodal{z-index:60}
 .srvnote{font-size:11.5px;margin-top:8px;min-height:14px}
 .srvnote.crit{color:var(--crit)} .srvnote.ok{color:var(--ok)}
 .modal-foot{padding:12px 18px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px}
@@ -1866,11 +1907,6 @@ footer .fcenter b{color:var(--txt)}
       <div class="setrow col" id="srvrow">
         <label><span data-i18n="srv_options">Server options</span>
           <span class="hint" data-i18n="stored_server"></span></label>
-        <div id="lockrow" class="lockrow" style="display:none">
-          <input type="password" id="srvpwd" autocomplete="off"
-            placeholder="" data-i18n-ph="pwd_ph">
-          <button id="srvunlock" class="btn" data-i18n="unlock">Unlock</button>
-        </div>
         <div id="srvnote" class="srvnote"></div>
         <div class="setrow" style="margin-top:10px">
           <label><span data-i18n="srv_refresh">Default refresh</span>
@@ -1904,6 +1940,25 @@ footer .fcenter b{color:var(--txt)}
     <div class="langgrid" id="langgrid"></div>
     <div class="modal-note">The language is detected automatically from the Windows display language
       (<b id="syslang">-</b>). Your choice is saved in this browser.</div>
+  </div>
+</div>
+
+<div id="pwmodal" class="modal">
+  <div class="modal-box pwbox">
+    <h3>&#128274; <span data-i18n="pwd_title">Server password</span>
+      <span class="close" id="pwclose">&times;</span></h3>
+    <div class="setbody">
+      <div class="hint" data-i18n="pwd_explain">Type the password to change the
+        server options.</div>
+      <input type="password" id="pwinput" class="pwinput" autocomplete="new-password"
+        autocapitalize="off" autocorrect="off" spellcheck="false"
+        placeholder="" data-i18n-ph="pwd_ph">
+      <div id="pwmsg" class="srvnote crit"></div>
+    </div>
+    <div class="modal-foot">
+      <button id="pwcancel" class="btn" data-i18n="cancel">Cancel</button>
+      <button id="pwok" class="btn primary" data-i18n="unlock">Unlock</button>
+    </div>
   </div>
 </div>
 
@@ -2035,8 +2090,8 @@ function loadServer(){
    only, exactly as they always were. When a password is set:
    - total mode: the browser already authenticated with it (Basic auth), so
      saving posts the options directly;
-   - partial mode: the password typed in the unlock box travels in the body
-     and the server refuses the change if it is wrong. */
+   - partial mode: the password given in the popup (see below) travels in
+     the body and the server refuses the change if it is wrong. */
 function serverEditable(){
   if (!SRV.passwordProtected) { return false; }
   if (SRV.passwordMode !== 'partial') { return true; }
@@ -2075,6 +2130,100 @@ function saveServer(){
       return SRV;
     });
 }
+
+/* ================= PASSWORD POPUP (partial mode) ===================== */
+/* The options look normal in the panel: the password is asked by a small
+   popup only at the moment somebody clicks one of them, never before. */
+var PWBUSY = false;
+var pwLastTarget = null;
+
+function pwLocked(){
+  return SRV.passwordProtected && SRV.passwordMode === 'partial' && SRVPWD === null;
+}
+function pwRealTarget(t){
+  /* from the clicked element (label, span, ...) to the real control */
+  try {
+    var el = t;
+    while (el && el !== document) {
+      if (el.tagName === 'LABEL' && el.control) { return el.control; }
+      if (el.tagName === 'INPUT' || el.tagName === 'SELECT') { return el; }
+      el = el.parentNode;
+    }
+  } catch(e){ }
+  return t;
+}
+function verifyServerPassword(pw){
+  /* asks the server WITHOUT changing anything: an empty list of settings
+     is a pure password check (the server answers 200 or 403) */
+  return fetch('api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw, settings: {} })
+    }).then(function(r){
+      if (r.status === 403) { throw new Error('wrong password'); }
+      if (!r.ok) { throw new Error('http ' + r.status); }
+      return r.json();
+    });
+}
+function openPwPopup(target){
+  pwLastTarget = target || null;
+  var inp = document.getElementById('pwinput');
+  var msg = document.getElementById('pwmsg');
+  if (inp) { inp.value = ''; }
+  if (msg) { msg.textContent = ''; }
+  document.getElementById('pwmodal').className = 'modal on';
+  if (inp) { setTimeout(function(){ try { inp.focus(); } catch(e){ } }, 60); }
+}
+function closePwPopup(){
+  document.getElementById('pwmodal').className = 'modal';
+}
+function submitPwPopup(){
+  if (PWBUSY) { return; }
+  var inp = document.getElementById('pwinput');
+  var msg = document.getElementById('pwmsg');
+  var v = inp ? inp.value : '';
+  if (!v) { return; }
+  PWBUSY = true;
+  verifyServerPassword(v).then(function(){
+    SRVPWD = v;                 /* in memory only: no form, no storage */
+    PWBUSY = false;
+    closePwPopup();
+    fillSettings();
+    /* complete the click that opened the popup */
+    var t = pwLastTarget;
+    if (t && t.tagName === 'INPUT' &&
+        (t.type === 'checkbox' || t.type === 'radio')) { t.click(); }
+    else if (t && t.focus) { try { t.focus(); } catch(e){ } }
+  }).catch(function(){
+    PWBUSY = false;
+    if (msg) { msg.textContent = T('wrong_password'); }
+    if (inp) { inp.value = ''; try { inp.focus(); } catch(e){ } }
+  });
+}
+function pwUpgradeMasking(){
+  /* The password field must NEVER be offered for saving by a browser -
+     Chrome, Edge, Safari, Firefox, desktop and mobile - nor by password
+     manager add-ons. Where the CSS property -webkit-text-security exists
+     (every Chromium and WebKit browser) the field becomes a plain TEXT
+     input that only looks masked: no password semantics, so no save
+     prompt and no fill icon, ever. Where it does not exist (Firefox) it
+     stays a password field, but it belongs to no form, nothing is ever
+     submitted and autocomplete is set to new-password. */
+  var inp = document.getElementById('pwinput');
+  if (!inp) { return; }
+  try {
+    var probe = document.createElement('input');
+    probe.style.webkitTextSecurity = 'disc';
+    document.body.appendChild(probe);
+    var ok = (getComputedStyle(probe).webkitTextSecurity === 'disc');
+    document.body.removeChild(probe);
+    if (ok) {
+      inp.type = 'text';
+      inp.className = 'pwinput pwmasked';
+    }
+  } catch(e){ }
+}
+pwUpgradeMasking();
 
 function applySections(){
   var els = document.querySelectorAll('[data-sec]');
@@ -2123,7 +2272,7 @@ function fillSrvRate(){
     html = '<option value="'+cur+'" selected>'+rateLabel(SRV.refreshSeconds)+'</option>' + html;
   }
   var el = document.getElementById('setsrvrate');
-  if (el) { el.innerHTML = html; el.disabled = !serverEditable(); }
+  if (el) { el.innerHTML = html; el.disabled = !SRV.passwordProtected; }
 }
 function fillSettings(){
   document.getElementById('settheme').value = THEME;
@@ -2132,28 +2281,28 @@ function fillSettings(){
   }).join('');
   document.getElementById('setrate').value = (LOCAL.refresh != null) ? String(LOCAL.refresh) : '';
   var ed = serverEditable();
-  /* lock row + status note */
-  var lockrow = document.getElementById('lockrow');
-  if (lockrow) {
-    lockrow.style.display = (SRV.passwordProtected && SRV.passwordMode === 'partial' && !ed) ? '' : 'none';
-  }
+  var prot = !!SRV.passwordProtected;
+  /* status note only: read-only / password needed / unlocked. In partial
+     mode the options look NORMAL - the password popup appears only when
+     one of them is clicked, never before - so the controls stay enabled
+     and the first click is intercepted until the password is given. */
   var note = document.getElementById('srvnote');
   if (note) {
     note.className = 'srvnote';
-    if (!SRV.passwordProtected) { note.textContent = T('readonly_server'); }
+    if (!prot) { note.textContent = T('readonly_server'); }
     else if (ed) { note.textContent = T('srv_unlocked'); note.className = 'srvnote ok'; }
     else { note.textContent = T('srv_locked'); }
   }
   fillSrvRate();
   document.getElementById('setsections').innerHTML = SECTIONS.map(function(k){
     var on = !(SRV.sections && SRV.sections[k] === false);
-    return '<label class="ro"><input type="checkbox"'+(ed?'':' disabled')+
+    return '<label class="ro"><input type="checkbox"'+(prot?'':' disabled')+
            ' data-sec-key="'+k+'"'+(on?' checked':'')+'> <span>'+T(k)+'</span></label>';
   }).join('');
   var lg = document.getElementById('setlogging');
   var au = document.getElementById('setautoupd');
-  if (lg) { lg.checked = !!SRV.logging; lg.disabled = !ed; }
-  if (au) { au.checked = !!SRV.autoUpdate; au.disabled = !ed; }
+  if (lg) { lg.checked = !!SRV.logging; lg.disabled = !prot; }
+  if (au) { au.checked = !!SRV.autoUpdate; au.disabled = !prot; }
   document.getElementById('setmsg').textContent = '';
 }
 function openLang(){ buildLangGrid(); document.getElementById('langmodal').className = 'modal on'; }
@@ -2599,19 +2748,32 @@ document.getElementById('setclose').onclick = closeSettings;
 document.getElementById('setcancel').onclick = closeSettings;
 document.getElementById('setsave').onclick = function(){ applySettings(); };
 document.getElementById('setreset').onclick = resetSettings;
-document.getElementById('srvunlock').onclick = function(){
-  /* enables the server fields locally; the real check happens on Save, when
-     the password travels to the server with the changed options */
-  var v = document.getElementById('srvpwd').value;
-  if (!v) { return; }
-  SRVPWD = v;
-  fillSettings();
-};
+document.getElementById('pwok').onclick = submitPwPopup;
+document.getElementById('pwcancel').onclick = closePwPopup;
+document.getElementById('pwclose').onclick = closePwPopup;
+document.getElementById('pwmodal').onclick = function(e){ if (e.target === this) closePwPopup(); };
+document.getElementById('pwinput').addEventListener('keydown', function(e){
+  if (e.key === 'Enter') { e.preventDefault(); submitPwPopup(); }
+  if (e.key === 'Escape') { e.preventDefault(); closePwPopup(); }
+});
+/* While the password has not been given yet, every interaction with the
+   server options is stopped and the popup opens instead. After that the
+   options behave normally (and Save sends the password with the changes). */
+['pointerdown', 'click', 'keydown'].forEach(function(ev){
+  document.getElementById('srvrow').addEventListener(ev, function(e){
+    if (pwLocked()) {
+      e.preventDefault();
+      e.stopPropagation();
+      openPwPopup(pwRealTarget(e.target));
+    }
+  }, true);
+});
 document.getElementById('setmodal').onclick = function(e){ if (e.target === this) closeSettings(); };
+document.getElementById('pwmodal').onclick = function(e){ if (e.target === this) closePwPopup(); };
 document.getElementById('themebtn').onclick = function(){ applyTheme(THEME === 'dark' ? 'light' : 'dark', true); };
 document.getElementById('langbtn').onclick = function(){ document.getElementById('langmodal').className = 'modal on'; };
 document.getElementById('langclose').onclick = function(){ document.getElementById('langmodal').className = 'modal'; };
-document.getElementById('langmodal').onclick = function(e){ if (e.target === this) this.className = ''; };
+document.getElementById('langmodal').onclick = function(e){ if (e.target === this) closeLang(); };
 window.addEventListener('resize', draw);
 initSort('tproc', drawProcs);
 initSort('tsvc', drawSvcs);

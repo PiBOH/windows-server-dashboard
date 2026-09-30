@@ -57,7 +57,8 @@ is remembered by the browser.
 ```text
 1. Copy the folder to the server, for example  C:\ServerDashboard\
 2. Right-click Install.bat  ->  Run as administrator
-3. From any PC on the LAN:  http://<server-ip>:8080
+3. When asked, type the optional password (or press Enter for none)
+4. From any PC on the LAN:  http://<server-ip>:8080
 ```
 
 The installer checks the machine first, applies only what is missing and prints
@@ -92,9 +93,11 @@ task that happened to have the same name.
   whose property names are always English.
 - **Read-only by design** — the page only displays: no command can be executed.
   The server settings cannot be changed from the browser unless you set the
-  optional password (`pwd` file): **total** closes the whole page behind a
-  login, **partial** leaves the page open and locks only the server options,
-  editable from the dashboard after typing the password.
+  optional password (`.config-do-not-delete-me\pwd`, asked by the
+  installer): **total** closes
+  the whole page behind a login, **partial** leaves the page open and locks
+  only the server options, unlocked by a popup the moment one of them is
+  clicked.
 
 ## 🌐 38 languages
 

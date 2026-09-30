@@ -143,6 +143,8 @@
   <string key="srv_locked">Εισαγάγετε τον κωδικό για να αλλάξετε τις ρυθμίσεις του διακομιστή.</string>
   <string key="srv_unlocked">Ξεκλειδωμένο: Η αποθήκευση γράφει αυτές τις ρυθμίσεις στο settings.txt του διακομιστή</string>
   <string key="pwd_ph">Κωδικός...</string>
+  <string key="pwd_title">Κωδικός διακομιστή</string>
+  <string key="pwd_explain">Εισαγάγετε τον κωδικό για να αλλάξετε τις ρυθμίσεις του διακομιστή.</string>
   <string key="logging_opt">Αρχεία καταγραφής στον διακομιστή</string>
   <string key="auto_update_opt">Αυτόματες ενημερώσεις</string>
   <string key="server_default">προεπιλογή διακομιστή</string>

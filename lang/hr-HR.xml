@@ -143,6 +143,8 @@
   <string key="srv_locked">Unesite lozinku za promjenu opcija poslužitelja.</string>
   <string key="srv_unlocked">Otključano: Spremi zapisuje te opcije u settings.txt na poslužitelju</string>
   <string key="pwd_ph">Lozinka...</string>
+  <string key="pwd_title">Lozinka poslužitelja</string>
+  <string key="pwd_explain">Unesite lozinku za promjenu opcija poslužitelja.</string>
   <string key="logging_opt">Datoteke zapisa na poslužitelju</string>
   <string key="auto_update_opt">Automatsko ažuriranje</string>
   <string key="server_default">zadano s poslužitelja</string>

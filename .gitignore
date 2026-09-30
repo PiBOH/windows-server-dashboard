@@ -2,3 +2,6 @@ logs/
 settings.txt
 .ignore/
 pwd
+install-state.txt
+.config-do-not-delete-me/
+settings-backup.txt

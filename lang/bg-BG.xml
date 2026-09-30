@@ -143,6 +143,8 @@
   <string key="srv_locked">Въведете паролата, за да промените настройките на сървъра.</string>
   <string key="srv_unlocked">Отключено: Записва тези настройки в settings.txt на сървъра</string>
   <string key="pwd_ph">Парола...</string>
+  <string key="pwd_title">Парола на сървъра</string>
+  <string key="pwd_explain">Въведете паролата, за да промените настройките на сървъра.</string>
   <string key="logging_opt">Лог файлове на сървъра</string>
   <string key="auto_update_opt">Автоматични актуализации</string>
   <string key="server_default">по подразбиране от сървъра</string>

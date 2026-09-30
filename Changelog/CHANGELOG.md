@@ -8,6 +8,51 @@ Versioning follows Semantic Versioning: MAJOR.MINOR.PATCH.
 - PATCH - fixes and tweaks that add no feature.
 
 ------------------------------------------------------------------------------
+  1.16.1 - 2026-09-30
+------------------------------------------------------------------------------
+
+Changed:
+  - The local files of an installation now live together in the
+    .config-do-not-delete-me folder at the root of the package: the
+    password file (pwd) and the settings backup written by Install.bat
+    (settings-backup.txt). The existing pwd file is moved there
+    automatically at the first start of the new version (from the
+    package root, where 1.16.0 kept it), so no password is ever lost.
+    An empty file still means "no password" and everything else works
+    exactly as before.
+  - Partial password mode, reworked: the settings panel no longer shows
+    a lock. The server options look normal and a small popup asks for
+    the password only at the moment one of them is clicked, never
+    before; the server checks it immediately (a wrong one is refused in
+    red, inside the popup) and after that the options stay editable and
+    Save writes them to settings.txt.
+  - install-state.txt (the file Uninstall.bat uses to revert everything)
+    moved from logs\ into the scripts folder, created hidden and
+    read-only so that it is not deleted or edited by mistake. The
+    uninstaller still finds it in the old location too.
+  - The self updater no longer copies the repository folders that are
+    not part of the package (.github, screenshots, ...) when it
+    downloads the GitHub archive of a release.
+
+Added:
+  - Install.bat asks whether to set the password during the installation
+    (masked input, Enter alone = none) and never overwrites a password
+    that is already set; scripts\Set-Password.ps1 sets, changes or
+    removes it at any time.
+  - No browser will ever offer to save the password - Chrome, Edge,
+    Safari, Firefox, desktop and mobile: where supported the popup field
+    is technically not a password field at all (it only looks like one),
+    elsewhere it belongs to no form and is never submitted.
+  - The password popup and the language window close also by clicking
+    outside them, like the settings window always did.
+
+Fixed:
+  - Language window: closing it with a click on the dark background
+    around it (instead of the X button) left an empty copy of the window
+    at the bottom of the page. It now disappears, exactly like a close
+    with the X button.
+
+------------------------------------------------------------------------------
   1.16.0 - 2026-09-29
 ------------------------------------------------------------------------------
 

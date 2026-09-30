@@ -143,6 +143,8 @@
   <string key="srv_locked">ป้อนรหัสผ่านเพื่อเปลี่ยนตัวเลือกเซิร์ฟเวอร์</string>
   <string key="srv_unlocked">ปลดล็อกแล้ว: บันทึกจะเขียนตัวเลือกเหล่านี้ไปยัง settings.txt บนเซิร์ฟเวอร์</string>
   <string key="pwd_ph">รหัสผ่าน...</string>
+  <string key="pwd_title">รหัสผ่านเซิร์ฟเวอร์</string>
+  <string key="pwd_explain">ป้อนรหัสผ่านเพื่อเปลี่ยนตัวเลือกเซิร์ฟเวอร์</string>
   <string key="logging_opt">ไฟล์บันทึกบนเซิร์ฟเวอร์</string>
   <string key="auto_update_opt">อัปเดตอัตโนมัติ</string>
   <string key="server_default">ค่าเริ่มต้นของเซิร์ฟเวอร์</string>

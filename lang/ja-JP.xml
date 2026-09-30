@@ -143,6 +143,8 @@
   <string key="srv_locked">サーバーオプションを変更するにはパスワードを入力してください。</string>
   <string key="srv_unlocked">ロック解除: 保存するとこれらのオプションがサーバーのsettings.txtに書き込まれます</string>
   <string key="pwd_ph">パスワード...</string>
+  <string key="pwd_title">サーバーのパスワード</string>
+  <string key="pwd_explain">サーバーオプションを変更するにはパスワードを入力してください。</string>
   <string key="logging_opt">サーバー上のログファイル</string>
   <string key="auto_update_opt">自動更新</string>
   <string key="server_default">サーバーの既定値</string>

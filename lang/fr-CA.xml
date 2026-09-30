@@ -143,6 +143,8 @@
   <string key="srv_locked">Saisissez le mot de passe pour modifier les options du serveur.</string>
   <string key="srv_unlocked">Déverrouillé : Enregistrer écrit ces options dans settings.txt sur le serveur</string>
   <string key="pwd_ph">Mot de passe...</string>
+  <string key="pwd_title">Mot de passe du serveur</string>
+  <string key="pwd_explain">Saisissez le mot de passe pour modifier les options du serveur.</string>
   <string key="logging_opt">Fichiers journaux sur le serveur</string>
   <string key="auto_update_opt">Mises à jour automatiques</string>
   <string key="server_default">valeur par défaut du serveur</string>

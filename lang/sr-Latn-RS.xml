@@ -143,6 +143,8 @@
   <string key="srv_locked">Unesite lozinku da biste promenili opcije servera.</string>
   <string key="srv_unlocked">Otključano: Sačuvaj upisuje ove opcije u settings.txt na serveru</string>
   <string key="pwd_ph">Lozinka...</string>
+  <string key="pwd_title">Lozinka servera</string>
+  <string key="pwd_explain">Unesite lozinku da biste promenili opcije servera.</string>
   <string key="logging_opt">Fajlovi dnevnika na serveru</string>
   <string key="auto_update_opt">Automatska ažuriranja</string>
   <string key="server_default">podrazumevano sa servera</string>

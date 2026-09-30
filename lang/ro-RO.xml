@@ -143,6 +143,8 @@
   <string key="srv_locked">Introduceți parola pentru a schimba opțiunile serverului.</string>
   <string key="srv_unlocked">Deblocat: Salvarea scrie aceste opțiuni în settings.txt de pe server</string>
   <string key="pwd_ph">Parolă...</string>
+  <string key="pwd_title">Parola serverului</string>
+  <string key="pwd_explain">Introduceți parola pentru a schimba opțiunile serverului.</string>
   <string key="logging_opt">Fișiere jurnal pe server</string>
   <string key="auto_update_opt">Actualizări automate</string>
   <string key="server_default">implicit de la server</string>

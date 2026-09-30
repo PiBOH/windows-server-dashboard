@@ -217,7 +217,9 @@ foreach ($f in @('scripts\ServerDashboard.ps1','lang\en-US.xml','logs')) {
 }
 if (Test-Path (Join-Path $root 'settings.txt')) { Ok 'settings.txt' }
 else { Info 'settings.txt absent: the defaults will be used and the file recreated.' }
-$pwdFile = Join-Path $root 'pwd'
+$pwdFile = Join-Path $root '.config-do-not-delete-me\pwd'
+if (-not (Test-Path $pwdFile)) { $pwdFile = Join-Path $root 'pwd' }             # 1.16.0 kept it here
+if (-not (Test-Path $pwdFile)) { $pwdFile = Join-Path $root 'scripts\pwd' }    # first 1.16.0 builds
 if (Test-Path $pwdFile) {
     $mode = 'total'
     try {
@@ -230,7 +232,17 @@ if (Test-Path $pwdFile) {
     if ($has) { Ok "pwd file: a password is set ($mode mode)" }
     else { Info 'pwd file present but empty: no password, the dashboard is open' }
 } else {
-    Info 'pwd file absent: no password, the dashboard is open to everybody'
+    Info 'pwd file absent: no password, the dashboard is open'
+    Info '(the service recreates the file empty at its next start)'
+}
+if (Test-Path (Join-Path $root 'scripts\Set-Password.ps1')) { Ok 'scripts\Set-Password.ps1' }
+else { Info 'scripts\Set-Password.ps1 missing: Install.bat cannot ask for a password' }
+if (Test-Path (Join-Path $root 'scripts\install-state.txt')) {
+    Ok 'install-state.txt recorded (hidden, read-only)'
+} elseif (Test-Path (Join-Path $root 'logs\install-state.txt')) {
+    Info 'install-state.txt found in logs\: written by a version before 1.16.0'
+} else {
+    Info 'install-state.txt absent: Install.bat has not been run yet'
 }
 if ($root -match '(?i)\\Users\\|OneDrive') {
     Warn 'The folder is inside a user profile or OneDrive.'

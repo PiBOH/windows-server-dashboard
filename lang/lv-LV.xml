@@ -143,6 +143,8 @@
   <string key="srv_locked">Ievadiet paroli, lai mainītu servera opcijas.</string>
   <string key="srv_unlocked">Atbloķēts: Saglabāt ieraksta šīs opcijas settings.txt failā serverī</string>
   <string key="pwd_ph">Parole...</string>
+  <string key="pwd_title">Servera parole</string>
+  <string key="pwd_explain">Ievadiet paroli, lai mainītu servera opcijas.</string>
   <string key="logging_opt">Žurnāla faili serverī</string>
   <string key="auto_update_opt">Automātiski atjauninājumi</string>
   <string key="server_default">servera noklusējums</string>

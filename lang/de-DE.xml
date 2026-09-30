@@ -143,6 +143,8 @@
   <string key="srv_locked">Geben Sie das Passwort ein, um die Serveroptionen zu ändern.</string>
   <string key="srv_unlocked">Entsperrt: Speichern schreibt diese Optionen in settings.txt auf dem Server</string>
   <string key="pwd_ph">Passwort...</string>
+  <string key="pwd_title">Server-Passwort</string>
+  <string key="pwd_explain">Geben Sie das Passwort ein, um die Serveroptionen zu ändern.</string>
   <string key="logging_opt">Protokolldateien auf dem Server</string>
   <string key="auto_update_opt">Automatische Updates</string>
   <string key="server_default">Servervorgabe</string>

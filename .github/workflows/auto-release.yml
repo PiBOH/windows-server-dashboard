@@ -81,6 +81,9 @@ jobs:
             case "$f" in
               .github/*|.config/*|_build/*|screenshots/*) continue ;;
               .gitattributes|.gitignore)                   continue ;;
+              # legacy leftovers of the pre-1.12.0 layout: they must not
+              # travel with the release zip even if still in the repo
+              docs/CHANGELOG.md|docs/RELEASE-NOTES-*|docs/screenshots/*) continue ;;
             esac
             mkdir -p "$STAGE/$(dirname "$f")"
             cp -p "$f" "$STAGE/$f"
@@ -131,15 +134,21 @@ jobs:
                     'scripts/Repair-Autostart.bat',
                     'scripts/Show-StartupNotification.ps1',
                     'scripts/Stop-DashboardProcess.ps1', 'scripts/Test-Syntax.ps1',
+                    'scripts/Set-Password.ps1',
                     'scripts/Test-Notification.bat', 'scripts/Update-Now.bat',
                     'lang/en-US.xml', 'lang/it-IT.xml',
                     'docs/README.md', 'Changelog/CHANGELOG.md',
                     'docs/logo.png', 'LICENSE']:
               check(f, True)
-          for d in ['.github/', '.config/', '_build/', 'screenshots/']:
+          for d in ['.github/', '.config/', '_build/', 'screenshots/',
+                    '.config-do-not-delete-me/', 'docs/screenshots/']:
               if any(n.startswith(prefix + d) for n in names):
                   print('FAIL  ' + d + ' (must be absent)'); sys.exit(1)
               print('OK    ' + d + ' (absent)')
+          # local secrets and machine state must never travel with the zip
+          for f in ['settings.txt', 'settings-backup.txt', 'scripts/pwd',
+                    'scripts/install-state.txt']:
+              check(f, False)
           print('zip content validated')
           PY
 

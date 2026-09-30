@@ -143,6 +143,8 @@
   <string key="srv_locked">Zadajte heslo na zmenu možností servera.</string>
   <string key="srv_unlocked">Odomknuté: Uložiť zapíše tieto možnosti do settings.txt na serveri</string>
   <string key="pwd_ph">Heslo...</string>
+  <string key="pwd_title">Heslo servera</string>
+  <string key="pwd_explain">Zadajte heslo na zmenu možností servera.</string>
   <string key="logging_opt">Súbory protokolu na serveri</string>
   <string key="auto_update_opt">Automatické aktualizácie</string>
   <string key="server_default">predvolené zo servera</string>

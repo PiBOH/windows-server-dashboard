@@ -143,6 +143,8 @@
   <string key="srv_locked">Adja meg a jelszót a kiszolgáló beállításainak módosításához.</string>
   <string key="srv_unlocked">Feloldva: A Mentés ezeket a beállításokat írja a kiszolgáló settings.txt fájljába</string>
   <string key="pwd_ph">Jelszó...</string>
+  <string key="pwd_title">Kiszolgáló jelszava</string>
+  <string key="pwd_explain">Adja meg a jelszót a kiszolgáló beállításainak módosításához.</string>
   <string key="logging_opt">Naplófájlok a kiszolgálón</string>
   <string key="auto_update_opt">Automatikus frissítések</string>
   <string key="server_default">kiszolgáló alapértéke</string>

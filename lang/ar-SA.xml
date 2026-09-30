@@ -143,6 +143,8 @@
   <string key="srv_locked">أدخل كلمة المرور لتغيير خيارات الخادم.</string>
   <string key="srv_unlocked">تم فتح القفل: الحفظ يكتب هذه الخيارات في settings.txt على الخادم</string>
   <string key="pwd_ph">كلمة المرور...</string>
+  <string key="pwd_title">كلمة مرور الخادم</string>
+  <string key="pwd_explain">أدخل كلمة المرور لتغيير خيارات الخادم.</string>
   <string key="logging_opt">ملفات السجل على الخادم</string>
   <string key="auto_update_opt">التحديثات التلقائية</string>
   <string key="server_default">الافتراضي من الخادم</string>

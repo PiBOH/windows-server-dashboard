@@ -143,6 +143,8 @@
   <string key="srv_locked">Kirjoita salasana muokataksesi palvelimen asetuksia.</string>
   <string key="srv_unlocked">Lukitus avattu: Tallenna kirjoittaa nämä asetukset palvelimen settings.txt-tiedostoon</string>
   <string key="pwd_ph">Salasana...</string>
+  <string key="pwd_title">Palvelimen salasana</string>
+  <string key="pwd_explain">Kirjoita salasana muokataksesi palvelimen asetuksia.</string>
   <string key="logging_opt">Lokitiedostot palvelimella</string>
   <string key="auto_update_opt">Automaattiset päivitykset</string>
   <string key="server_default">palvelimen oletus</string>

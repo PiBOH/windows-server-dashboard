@@ -143,6 +143,8 @@
   <string key="srv_locked">הזן את הסיסמה כדי לשנות את אפשרויות השרת.</string>
   <string key="srv_unlocked">לא נעול: שמירה כותבת אפשרויות אלה אל settings.txt בשרת</string>
   <string key="pwd_ph">סיסמה...</string>
+  <string key="pwd_title">סיסמת השרת</string>
+  <string key="pwd_explain">הזן את הסיסמה כדי לשנות את אפשרויות השרת.</string>
   <string key="logging_opt">קבצי יומן בשרת</string>
   <string key="auto_update_opt">עדכונים אוטומטיים</string>
   <string key="server_default">ברירת המחדל של השרת</string>

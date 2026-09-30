@@ -143,6 +143,8 @@
   <string key="srv_locked">输入密码以更改服务器选项。</string>
   <string key="srv_unlocked">已解锁：保存会将这些选项写入服务器的 settings.txt</string>
   <string key="pwd_ph">密码...</string>
+  <string key="pwd_title">服务器密码</string>
+  <string key="pwd_explain">输入密码以更改服务器选项。</string>
   <string key="logging_opt">服务器上的日志文件</string>
   <string key="auto_update_opt">自动更新</string>
   <string key="server_default">服务器默认值</string>

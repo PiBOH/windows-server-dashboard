@@ -143,6 +143,8 @@
   <string key="srv_locked">Enter the password to change the server options.</string>
   <string key="srv_unlocked">Unlocked: Save writes these options to settings.txt on the server</string>
   <string key="pwd_ph">Password...</string>
+  <string key="pwd_title">Server password</string>
+  <string key="pwd_explain">Type the password to change the server options.</string>
   <string key="logging_opt">Log files on the server</string>
   <string key="auto_update_opt">Automatic updates</string>
   <string key="server_default">server default</string>
