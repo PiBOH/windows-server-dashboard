@@ -3,7 +3,7 @@
 #
 #  It runs in one of two cases:
 #    1. a push to main whose commit message starts with "v" (for example
-#       "v1.15.2 - Core Temp basic support"), or
+#       "v1.16.0 - password, update fixes"), or
 #    2. a manual run from the Actions tab ("Run workflow").
 #
 #  The version always comes from scripts/version.txt, unless the manual run

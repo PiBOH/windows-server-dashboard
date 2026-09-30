@@ -136,6 +136,15 @@
   <string key="minute">Minute</string>
   <string key="paused">Angehalten - Registerkarte im Hintergrund</string>
   <string key="readonly_server">schreibgeschützt: wird auf dem Server in settings.txt festgelegt</string>
+  <string key="srv_options">Serveroptionen</string>
+  <string key="srv_refresh">Standardaktualisierung</string>
+  <string key="unlock">Entsperren</string>
+  <string key="wrong_password">Falsches Passwort</string>
+  <string key="srv_locked">Geben Sie das Passwort ein, um die Serveroptionen zu ändern.</string>
+  <string key="srv_unlocked">Entsperrt: Speichern schreibt diese Optionen in settings.txt auf dem Server</string>
+  <string key="pwd_ph">Passwort...</string>
+  <string key="logging_opt">Protokolldateien auf dem Server</string>
+  <string key="auto_update_opt">Automatische Updates</string>
   <string key="server_default">Servervorgabe</string>
   <string key="no_data">Keine Daten verfügbar</string>
 </language>

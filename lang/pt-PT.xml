@@ -136,6 +136,15 @@
   <string key="minute">minuto</string>
   <string key="paused">Em pausa - separador em segundo plano</string>
   <string key="readonly_server">só de leitura: define-se no servidor em settings.txt</string>
+  <string key="srv_options">Opções do servidor</string>
+  <string key="srv_refresh">Atualização predefinida</string>
+  <string key="unlock">Desbloquear</string>
+  <string key="wrong_password">Palavra-passe errada</string>
+  <string key="srv_locked">Introduza a palavra-passe para alterar as opções do servidor.</string>
+  <string key="srv_unlocked">Desbloqueado: Guardar escreve estas opções no settings.txt do servidor</string>
+  <string key="pwd_ph">Palavra-passe...</string>
+  <string key="logging_opt">Ficheiros de registo no servidor</string>
+  <string key="auto_update_opt">Atualizações automáticas</string>
   <string key="server_default">predefinição do servidor</string>
   <string key="no_data">Não há dados disponíveis</string>
 </language>

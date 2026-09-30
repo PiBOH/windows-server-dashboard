@@ -136,6 +136,15 @@
   <string key="minute">minute</string>
   <string key="paused">Paused - tab in background</string>
   <string key="readonly_server">read-only: set on the server in settings.txt</string>
+  <string key="srv_options">Server options</string>
+  <string key="srv_refresh">Default refresh</string>
+  <string key="unlock">Unlock</string>
+  <string key="wrong_password">Wrong password</string>
+  <string key="srv_locked">Enter the password to change the server options.</string>
+  <string key="srv_unlocked">Unlocked: Save writes these options to settings.txt on the server</string>
+  <string key="pwd_ph">Password...</string>
+  <string key="logging_opt">Log files on the server</string>
+  <string key="auto_update_opt">Automatic updates</string>
   <string key="server_default">server default</string>
   <string key="no_data">No data available</string>
 </language>

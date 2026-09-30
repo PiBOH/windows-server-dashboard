@@ -136,6 +136,15 @@
   <string key="minute">minuto</string>
   <string key="paused">In pausa - scheda in secondo piano</string>
   <string key="readonly_server">sola lettura: si imposta sul server in settings.txt</string>
+  <string key="srv_options">Opzioni del server</string>
+  <string key="srv_refresh">Aggiornamento predefinito</string>
+  <string key="unlock">Sblocca</string>
+  <string key="wrong_password">Password errata</string>
+  <string key="srv_locked">Inserisci la password per modificare le opzioni del server.</string>
+  <string key="srv_unlocked">Sbloccato: Salva scrive queste opzioni in settings.txt sul server</string>
+  <string key="pwd_ph">Password...</string>
+  <string key="logging_opt">File di log sul server</string>
+  <string key="auto_update_opt">Aggiornamenti automatici</string>
   <string key="server_default">predefinita del server</string>
   <string key="no_data">Nessun dato disponibile</string>
 </language>

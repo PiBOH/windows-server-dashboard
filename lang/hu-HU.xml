@@ -136,6 +136,15 @@
   <string key="minute">perc</string>
   <string key="paused">Szüneteltetve - lap a háttérben</string>
   <string key="readonly_server">csak olvasható: a kiszolgálón, a settings.txt fájlban állítható</string>
+  <string key="srv_options">Kiszolgáló beállításai</string>
+  <string key="srv_refresh">Alapértelmezett frissítés</string>
+  <string key="unlock">Feloldás</string>
+  <string key="wrong_password">Hibás jelszó</string>
+  <string key="srv_locked">Adja meg a jelszót a kiszolgáló beállításainak módosításához.</string>
+  <string key="srv_unlocked">Feloldva: A Mentés ezeket a beállításokat írja a kiszolgáló settings.txt fájljába</string>
+  <string key="pwd_ph">Jelszó...</string>
+  <string key="logging_opt">Naplófájlok a kiszolgálón</string>
+  <string key="auto_update_opt">Automatikus frissítések</string>
   <string key="server_default">kiszolgáló alapértéke</string>
   <string key="no_data">Nincs elérhető adat</string>
 </language>

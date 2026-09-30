@@ -2,6 +2,11 @@
 #  Every push is parsed by the real PowerShell parser on a Windows runner.
 #  A syntax error would make the dashboard exit before writing a single line
 #  of log, so this check is the cheapest insurance there is.
+#
+#  The parse runs under Windows PowerShell 5.1 (shell: powershell) because
+#  that is the engine the scheduled task really uses: pwsh 7 accepts a few
+#  constructs that 5.1 refuses, and a file that only parses on 7 would boot
+#  straight into a dead service.
 # ---------------------------------------------------------------------------
 name: Syntax check
 
@@ -18,8 +23,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Parse the PowerShell files
-        shell: pwsh
+      - name: Parse the PowerShell files (Windows PowerShell 5.1)
+        shell: powershell
         run: |
           $bad = 0
           foreach ($f in Get-ChildItem -Path scripts -Filter *.ps1 -File) {
@@ -38,8 +43,8 @@ jobs:
           }
           if ($bad) { exit 1 }
 
-      - name: Check the language files
-        shell: pwsh
+      - name: Check the language files (Windows PowerShell 5.1)
+        shell: powershell
         run: |
           $ref = $null; $bad = 0
           foreach ($f in Get-ChildItem -Path lang -Filter *.xml -File) {

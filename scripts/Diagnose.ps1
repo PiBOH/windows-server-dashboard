@@ -217,6 +217,21 @@ foreach ($f in @('scripts\ServerDashboard.ps1','lang\en-US.xml','logs')) {
 }
 if (Test-Path (Join-Path $root 'settings.txt')) { Ok 'settings.txt' }
 else { Info 'settings.txt absent: the defaults will be used and the file recreated.' }
+$pwdFile = Join-Path $root 'pwd'
+if (Test-Path $pwdFile) {
+    $mode = 'total'
+    try {
+        foreach ($ln in (Get-Content (Join-Path $root 'settings.txt') -ErrorAction SilentlyContinue)) {
+            if ("$ln" -match '^\s*password_mode\s*=\s*(\S+)') { if ($Matches[1] -match '(?i)^part') { $mode = 'partial' } }
+        }
+    } catch { }
+    $has = $false
+    try { foreach ($ln in (Get-Content $pwdFile)) { if ("$ln".Trim()) { $has = $true; break } } } catch { }
+    if ($has) { Ok "pwd file: a password is set ($mode mode)" }
+    else { Info 'pwd file present but empty: no password, the dashboard is open' }
+} else {
+    Info 'pwd file absent: no password, the dashboard is open to everybody'
+}
 if ($root -match '(?i)\\Users\\|OneDrive') {
     Warn 'The folder is inside a user profile or OneDrive.'
     Info 'A task running as SYSTEM may not be able to read it at boot:'

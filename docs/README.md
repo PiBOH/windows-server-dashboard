@@ -1,6 +1,6 @@
 ==============================================================================
   SERVER DASHBOARD - web monitoring for Windows Server 2016
-  Version 1.15.2
+  Version 1.16.0
 ==============================================================================
 
 A monitoring dashboard you can open from any computer on the local network by
@@ -86,7 +86,7 @@ To uninstall: right-click Uninstall.bat and choose "Run as administrator".
 It reads install-state.txt and undoes exactly what was done: the task is
 deleted (or the task that existed before is restored from previous-task-
 backup.xml), the firewall rule and the URL reservation are removed only if the
-installer created them, settings.json is deleted only if it did not exist
+installer created them, settings.txt is deleted only if it did not exist
 before. Program files are never deleted.
 
 
@@ -255,14 +255,16 @@ right. Dark is the default.
 
 The gear button opens the settings panel:
 
-| Option            | Stored where                 | Who can change it  |
-|-------------------|------------------------------|--------------------|
-| Theme             | browser cache (localStorage) | every visitor      |
-| Language          | browser cache (localStorage) | every visitor      |
-| Refresh interval  | browser cache (localStorage) | every visitor      |
-| Default interval  | server, settings.txt         | only on the server |
-| Visible sections  | server, settings.txt         | only on the server |
-| Logging           | server, settings.txt         | only on the server |
+| Option            | Stored where                 | Who can change it      |
+|-------------------|------------------------------|------------------------|
+| Theme             | browser cache (localStorage) | every visitor          |
+| Language          | browser cache (localStorage) | every visitor          |
+| Refresh interval  | browser cache (localStorage) | every visitor          |
+| Default interval  | server, settings.txt         | on the server, or from |
+|                   |                              | the panel with the pwd |
+| Visible sections  | server, settings.txt         | (same as above)        |
+| Logging           | server, settings.txt         | (same as above)        |
+| Automatic updates | server, settings.txt         | (same as above)        |
 
 Defaults: dark theme, language of Windows, half a second refresh, everything
 visible, logging on.
@@ -275,12 +277,21 @@ visible, logging on.
   from half a second to five minutes: it only changes how often THEIR browser
   asks for data, it does not touch the server and it does not affect the other
   viewers. Choosing "server default" again gives back the configured value.
-- The visible sections and the logging switch belong to the server. The panel
-  shows them greyed out with the note "read-only: set on the server in
-  settings.txt", and the dashboard never posts them back: the API accepts GET
-  only and refuses any write with 403, logging the address of the caller. So
-  the restriction holds even against a handcrafted request, not only against
-  the user interface.
+- The server options (default interval, visible sections, logging, automatic
+  updates) belong to the server, and what the panel lets you do depends on
+  the password (see section 9):
+
+      no password set    -> greyed out, with the note "read-only: set on the
+                            server in settings.txt". The API refuses every
+                            write with 403 and logs the address of the
+                            caller, so the restriction holds even against a
+                            handcrafted request, not only against the page.
+      password, partial  -> the panel shows a lock: type the password, press
+                            Unlock, change the options, Save. The password
+                            travels with the save and the server refuses a
+                            wrong one with 403, logged with the caller.
+      password, total    -> you already typed the password to open the page,
+                            so the server options are editable directly.
 - To change them, edit settings.txt on the server with Notepad. The file is
   watched: the change is applied within ten seconds, no restart needed.
 - settings.txt is created automatically at the first start, already filled
@@ -292,14 +303,17 @@ visible, logging on.
       refresh_seconds = 0.5      (0.5 - 3600, dot as decimal separator)
       idle_seconds    = 0        (0 = do not sample when nobody watches)
       logging         = no       (never create a log file)
+      password_mode   = total    (with a pwd file: total = whole page,
+                                  partial = server options only)
       show_cpu        = yes
       show_events     = no
 
   Unknown or misspelled keys are ignored, missing keys keep their default, and
   a deleted file is recreated with the defaults at the next start.
-- logging = yes/no is available in settings.txt ONLY, on purpose: it is not
-  shown in the settings panel, so nobody watching the dashboard can turn the
-  log on or off. The log is rotated every day: each day has its own file
+- Without a password, logging = yes/no is available in settings.txt only, on
+  purpose: nobody watching the dashboard can turn the log on or off. With a
+  password set it can also be changed from the panel, by whoever knows it.
+  The log is rotated every day: each day has its own file
   (logs\ServerDashboard-YYYY-MM-DD.log), so no file ever grows without
   limit, and the files older than 14 days are deleted automatically. With
   logging = no no log file is ever created. The setting is read before the
@@ -362,13 +376,29 @@ NOBODY WATCHING = NOTHING RUNNING
   without any logon - the dashboard reads scripts\version.txt from the main
   branch of github.com/PiBOH/windows-server-dashboard. If the published
   version is newer, the release tagged v<version> is downloaded, unpacked and
-  copied over the current files, without ever touching settings.txt, the logs
-  folder or the local backups. The dashboard then restarts itself on the new
-  version, and writes both a log line and an entry in the Windows event log.
+  copied over the current files, without ever touching settings.txt, the pwd
+  file, the logs folder or the local backups. The dashboard then restarts
+  itself on the new version, and writes both a log line and an entry in the
+  Windows event log.
 
-  - The automatic check is switched on and off ONLY in settings.txt
-    (auto_update = yes, the default, or no): the settings panel of the page
-    shows it but cannot change it, and no visitor can.
+  Since 1.16.0 the check is ALSO repeated every 24 hours while the dashboard
+  runs, so a server that stays on for months does not need a reboot to
+  receive an update: the running instance launches, detached, the very same
+  cycle used by Update-Now.bat (download, stop, install, start), and a marker
+  file keeps a manual run and the automatic one out of each other's way.
+
+  Two more safety nets came with 1.16.0. Before handing over to a new version
+  the script verifies that version.txt on disk really changed: if an install
+  ever fails to land, the dashboard stays up on the current version instead
+  of restarting in a loop. And every start removes the leftover folders of
+  the pre-1.15.1 updater bug (the scripts\scripts nesting), which is what
+  made updates look stuck on servers updated with an old version: run
+  scripts\Update-Now.bat once with 1.16.0 and the installation cleans
+  itself.
+
+  - The automatic check is switched on and off in settings.txt
+    (auto_update = yes, the default, or no). Without a password no visitor
+    can change it from the page; with a password set, whoever knows it can.
   - scripts\Update-Now.bat is the manual way: it checks GitHub and, when a
     new release exists, does the whole cycle by itself - download, stop the
     dashboard, install, start the dashboard again and wait for its answer.
@@ -488,7 +518,7 @@ Diagnose.ps1). It changes nothing and reports the task state (Run As
 - The web server is System.Net.HttpListener, a native Windows component: IIS
   is not installed and port 80 is left alone.
 - The HTML page is embedded in ServerDashboard.ps1 (the $Html block) and
-  served from memory; the language XML files and settings.json are the only
+  served from memory; the language XML files and settings.txt are the only
   files read from disk at runtime.
 - All metrics use CIM/WMI classes whose property names are always English, so
   the script works on any localized Windows.
@@ -501,8 +531,8 @@ Diagnose.ps1). It changes nothing and reports the task state (Run As
 | /api/stats       | full JSON, handy for Zabbix or Grafana     |
 | /api/languages   | language catalog                           |
 | /lang/<code>.xml | one dictionary                             |
-| /api/settings    | GET reads, POST writes the server settings |
-| /api/health      | state and version                          |
+| /api/settings    | GET reads; POST writes only with password  |
+| /api/health      | state and version (never password asked)   |
 
 
 ------------------------------------------------------------------------------
@@ -517,7 +547,7 @@ Open the .bat files with Notepad and edit the first lines:
 
 After changing the port run Uninstall.bat and then Install.bat again, so the
 old firewall rule and URL reservation are cleaned up. The refresh interval can
-also be changed at runtime from the settings panel; delete settings.json to go
+also be changed at runtime from the settings panel; delete settings.txt to go
 back to the defaults.
 
 
@@ -530,6 +560,10 @@ back to the defaults.
 | Works locally, not from the LAN | Firewall rule missing: run as admin    |
 | Log says localhost ONLY         | Missing privileges: run as admin       |
 | Port already in use             | netstat -ano | findstr :8080           |
+| Updates never install, a       | The pre-1.15.1 updater left a          |
+|   scripts\scripts folder       | scripts\scripts nest: update once by  |
+|   exists                        | hand with Update-Now.bat (1.16.0       |
+|                                 | removes the nest by itself)            |
 | Temperature not available       | Let Core Temp run (the plain program   |
 |                                 | is enough), or check the source list   |
 | Page does not refresh           | Check the newest logs\ServerDashboard-*.log |
@@ -541,10 +575,48 @@ back to the defaults.
 9. SECURITY
 ------------------------------------------------------------------------------
 
-The dashboard has no password: anyone on the LAN who can reach port 8080 can
-see the data (system information, process, service and event lists - read
-only, no command can be executed). If the server is ever exposed to the
-Internet, restrict the firewall rule to the local subnet:
+The dashboard is read only: anyone on the LAN who can reach port 8080 can
+see the data (system information, process, service and event lists - no
+command can be executed), and without a password nothing can be changed from
+the page. An optional password can close the whole page or just the server
+options.
+
+OPTIONAL PASSWORD
+
+The password lives in a plain text file called "pwd" (no file extension)
+placed next to settings.txt: create it with Notepad, write the password on
+the first line, save. Delete the file (or empty it) to remove the password.
+Both operations apply within ten seconds, no restart needed. The key
+password_mode in settings.txt decides what it protects:
+
+    total   (default)  the whole dashboard asks for the password: the
+                       browser opens its standard login window, and without
+                       the password nothing at all is served.
+    partial            everybody can look at the dashboard, but changing the
+                       server options from the settings panel requires the
+                       password (the lock in the panel).
+
+Worth knowing:
+
+- The password itself is never sent to the browsers: /api/settings only
+  reports whether one is set and in which mode. It is never written to the
+  log either, and Diagnose.bat only reports whether it is set.
+- /api/health always stays open, even in total mode: the updater,
+  Repair-Autostart.bat and the logon notification poll it to see whether
+  the service answers, and it only carries the version number.
+- A wrong password is logged with the address of the caller: for the page
+  in total mode, and for a refused settings change in partial mode.
+- In total mode any user name is accepted: only the password is checked.
+- The pwd file is preserved by every update, is never published on GitHub
+  (it is in .gitignore, so it is not in the release zip either) and is
+  deleted by Uninstall.bat.
+- WARNING: like everything else in the dashboard, the password travels
+  unencrypted on the local network (HTTP Basic authentication). It keeps
+  curious colleagues out; it is no defense against somebody who can sniff
+  the traffic or attack the server itself.
+
+If the server is ever exposed to the Internet, restrict the firewall rule to
+the local subnet:
 
     netsh advfirewall firewall set rule name="Server Dashboard 8080" ^
           new remoteip=192.168.1.0/24
@@ -558,4 +630,4 @@ The current version is shown in the centre of the footer and returned by
 /api/health. Changes follow Semantic Versioning (MAJOR.MINOR.PATCH); see
 Changelog\CHANGELOG.md.
 
-Current version: 1.15.2
+Current version: 1.16.0

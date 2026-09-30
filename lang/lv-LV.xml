@@ -136,6 +136,15 @@
   <string key="minute">minūte</string>
   <string key="paused">Pauzēts - cilne fonā</string>
   <string key="readonly_server">tikai lasāms: iestata serverī failā settings.txt</string>
+  <string key="srv_options">Servera opcijas</string>
+  <string key="srv_refresh">Noklusējuma atsvaidzināšana</string>
+  <string key="unlock">Atbloķēt</string>
+  <string key="wrong_password">Nepareiza parole</string>
+  <string key="srv_locked">Ievadiet paroli, lai mainītu servera opcijas.</string>
+  <string key="srv_unlocked">Atbloķēts: Saglabāt ieraksta šīs opcijas settings.txt failā serverī</string>
+  <string key="pwd_ph">Parole...</string>
+  <string key="logging_opt">Žurnāla faili serverī</string>
+  <string key="auto_update_opt">Automātiski atjauninājumi</string>
   <string key="server_default">servera noklusējums</string>
   <string key="no_data">Nav pieejamu datu</string>
 </language>

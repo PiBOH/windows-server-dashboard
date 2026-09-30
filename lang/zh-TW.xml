@@ -136,6 +136,15 @@
   <string key="minute">分鐘</string>
   <string key="paused">已暫停 - 索引標籤在背景</string>
   <string key="readonly_server">唯讀：在伺服器的 settings.txt 中設定</string>
+  <string key="srv_options">伺服器選項</string>
+  <string key="srv_refresh">預設重新整理</string>
+  <string key="unlock">解鎖</string>
+  <string key="wrong_password">密碼錯誤</string>
+  <string key="srv_locked">輸入密碼以變更伺服器選項。</string>
+  <string key="srv_unlocked">已解鎖：儲存會將這些選項寫入伺服器的 settings.txt</string>
+  <string key="pwd_ph">密碼...</string>
+  <string key="logging_opt">伺服器上的記錄檔</string>
+  <string key="auto_update_opt">自動更新</string>
   <string key="server_default">伺服器預設值</string>
   <string key="no_data">沒有可用的資料</string>
 </language>

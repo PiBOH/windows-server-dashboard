@@ -136,6 +136,15 @@
   <string key="minute">dakika</string>
   <string key="paused">Duraklatıldı - sekme arka planda</string>
   <string key="readonly_server">salt okunur: sunucuda settings.txt dosyasında ayarlanır</string>
+  <string key="srv_options">Sunucu seçenekleri</string>
+  <string key="srv_refresh">Varsayılan yenileme</string>
+  <string key="unlock">Kilidi aç</string>
+  <string key="wrong_password">Yanlış parola</string>
+  <string key="srv_locked">Sunucu seçeneklerini değiştirmek için parolayı girin.</string>
+  <string key="srv_unlocked">Kilidi açık: Kaydet, bu seçenekleri sunucudaki settings.txt dosyasına yazar</string>
+  <string key="pwd_ph">Parola...</string>
+  <string key="logging_opt">Sunucudaki günlük dosyaları</string>
+  <string key="auto_update_opt">Otomatik güncellemeler</string>
   <string key="server_default">sunucu varsayılanı</string>
   <string key="no_data">Veri yok</string>
 </language>

@@ -136,6 +136,15 @@
   <string key="minute">분</string>
   <string key="paused">일시 중지됨 - 탭이 백그라운드</string>
   <string key="readonly_server">읽기 전용: 서버의 settings.txt에서 설정</string>
+  <string key="srv_options">서버 옵션</string>
+  <string key="srv_refresh">기본 새로 고침</string>
+  <string key="unlock">잠금 해제</string>
+  <string key="wrong_password">잘못된 암호</string>
+  <string key="srv_locked">서버 옵션을 변경하려면 암호를 입력하세요.</string>
+  <string key="srv_unlocked">잠금 해제됨: 저장을 누르면 이 옵션이 서버의 settings.txt에 기록됩니다</string>
+  <string key="pwd_ph">암호...</string>
+  <string key="logging_opt">서버의 로그 파일</string>
+  <string key="auto_update_opt">자동 업데이트</string>
   <string key="server_default">서버 기본값</string>
   <string key="no_data">사용할 수 있는 데이터가 없습니다</string>
 </language>

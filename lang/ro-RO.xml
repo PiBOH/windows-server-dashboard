@@ -136,6 +136,15 @@
   <string key="minute">minut</string>
   <string key="paused">Întrerupt - filă în fundal</string>
   <string key="readonly_server">doar citire: se configurează pe server în settings.txt</string>
+  <string key="srv_options">Opțiunile serverului</string>
+  <string key="srv_refresh">Reîmprospătare implicită</string>
+  <string key="unlock">Deblochează</string>
+  <string key="wrong_password">Parolă greșită</string>
+  <string key="srv_locked">Introduceți parola pentru a schimba opțiunile serverului.</string>
+  <string key="srv_unlocked">Deblocat: Salvarea scrie aceste opțiuni în settings.txt de pe server</string>
+  <string key="pwd_ph">Parolă...</string>
+  <string key="logging_opt">Fișiere jurnal pe server</string>
+  <string key="auto_update_opt">Actualizări automate</string>
   <string key="server_default">implicit de la server</string>
   <string key="no_data">Nu există date disponibile</string>
 </language>

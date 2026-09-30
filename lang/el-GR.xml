@@ -136,6 +136,15 @@
   <string key="minute">λεπτό</string>
   <string key="paused">Σε παύση - καρτέλα στο παρασκήνιο</string>
   <string key="readonly_server">μόνο για ανάγνωση: ορίζεται στον διακομιστή στο settings.txt</string>
+  <string key="srv_options">Ρυθμίσεις διακομιστή</string>
+  <string key="srv_refresh">Προεπιλεγμένη ανανέωση</string>
+  <string key="unlock">Ξεκλείδωμα</string>
+  <string key="wrong_password">Λανθασμένος κωδικός</string>
+  <string key="srv_locked">Εισαγάγετε τον κωδικό για να αλλάξετε τις ρυθμίσεις του διακομιστή.</string>
+  <string key="srv_unlocked">Ξεκλειδωμένο: Η αποθήκευση γράφει αυτές τις ρυθμίσεις στο settings.txt του διακομιστή</string>
+  <string key="pwd_ph">Κωδικός...</string>
+  <string key="logging_opt">Αρχεία καταγραφής στον διακομιστή</string>
+  <string key="auto_update_opt">Αυτόματες ενημερώσεις</string>
   <string key="server_default">προεπιλογή διακομιστή</string>
   <string key="no_data">Δεν υπάρχουν διαθέσιμα δεδομένα</string>
 </language>

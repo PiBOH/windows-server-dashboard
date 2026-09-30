@@ -136,6 +136,15 @@
   <string key="minute">minutt</string>
   <string key="paused">Satt på pause - fane i bakgrunnen</string>
   <string key="readonly_server">skrivebeskyttet: angis på serveren i settings.txt</string>
+  <string key="srv_options">Serveralternativer</string>
+  <string key="srv_refresh">Standardoppdatering</string>
+  <string key="unlock">Lås opp</string>
+  <string key="wrong_password">Feil passord</string>
+  <string key="srv_locked">Skriv inn passordet for å endre serveralternativene.</string>
+  <string key="srv_unlocked">Låst opp: Lagre skriver disse alternativene til settings.txt på serveren</string>
+  <string key="pwd_ph">Passord...</string>
+  <string key="logging_opt">Loggfiler på serveren</string>
+  <string key="auto_update_opt">Automatiske oppdateringer</string>
   <string key="server_default">serverstandard</string>
   <string key="no_data">Ingen data tilgjengelig</string>
 </language>

@@ -136,6 +136,15 @@
   <string key="minute">minutė</string>
   <string key="paused">Pristabdyta - skirtukas fone</string>
   <string key="readonly_server">tik skaitymui: nustatoma serveryje faile settings.txt</string>
+  <string key="srv_options">Serverio parinktys</string>
+  <string key="srv_refresh">Numatytasis atnaujinimas</string>
+  <string key="unlock">Atrakinti</string>
+  <string key="wrong_password">Neteisingas slaptažodis</string>
+  <string key="srv_locked">Įveskite slaptažodį, kad pakeistumėte serverio parinktis.</string>
+  <string key="srv_unlocked">Atrakinta: Išsaugoti rašo šias parinktis į settings.txt serveryje</string>
+  <string key="pwd_ph">Slaptažodis...</string>
+  <string key="logging_opt">Žurnalo failai serveryje</string>
+  <string key="auto_update_opt">Automatiniai atnaujinimai</string>
   <string key="server_default">serverio numatytoji</string>
   <string key="no_data">Nėra duomenų</string>
 </language>

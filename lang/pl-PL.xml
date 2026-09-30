@@ -136,6 +136,15 @@
   <string key="minute">minuta</string>
   <string key="paused">Wstrzymano - karta w tle</string>
   <string key="readonly_server">tylko do odczytu: ustawiane na serwerze w settings.txt</string>
+  <string key="srv_options">Opcje serwera</string>
+  <string key="srv_refresh">Domyślne odświeżanie</string>
+  <string key="unlock">Odblokuj</string>
+  <string key="wrong_password">Nieprawidłowe hasło</string>
+  <string key="srv_locked">Wprowadź hasło, aby zmienić opcje serwera.</string>
+  <string key="srv_unlocked">Odblokowano: Zapis zapisuje te opcje do settings.txt na serwerze</string>
+  <string key="pwd_ph">Hasło...</string>
+  <string key="logging_opt">Pliki dziennika na serwerze</string>
+  <string key="auto_update_opt">Aktualizacje automatyczne</string>
   <string key="server_default">domyślne serwera</string>
   <string key="no_data">Brak dostępnych danych</string>
 </language>

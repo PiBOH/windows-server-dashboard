@@ -181,6 +181,18 @@ if exist "%~dp0settings.txt" (
     echo      BEFORE : not present  ^|  AFTER : unchanged
 )
 
+REM ---- 6b. password file ----------------------------------------------------
+REM The optional password file is a local secret: it is removed with the rest.
+if exist "%~dp0pwd" (
+    del "%~dp0pwd" >nul 2>&1
+    echo  [-] pwd
+    echo      BEFORE : the optional password file
+    echo      AFTER  : deleted
+) else (
+    echo  [=] pwd
+    echo      BEFORE : not present  ^|  AFTER : unchanged
+)
+
 REM ---- 7. log file ----------------------------------------------------------
 if exist "%~dp0logs\ServerDashboard-*.log" (
     if "!LOG_BEFORE!"=="present" (

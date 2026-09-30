@@ -10,7 +10,7 @@ No agent, no IIS, no external module, no database: a single PowerShell script
 publishes the page, and you open it from any computer on the LAN by typing the
 IP of the server.
 
-[![Version](https://img.shields.io/badge/version-1.15.2-blue)](Changelog/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.16.0-blue)](Changelog/CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/Windows%20Server-2016%2B-0078D6?logo=windows)](#requirements)
 [![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)](#requirements)
 [![Languages](https://img.shields.io/badge/UI%20languages-38-brightgreen)](#-38-languages)
@@ -90,8 +90,11 @@ task that happened to have the same name.
 - **Light and dark theme**, dark by default, saved per browser.
 - **Works on any localized Windows** — every metric comes from CIM/WMI classes
   whose property names are always English.
-- **Read-only by design** — the page only displays: no command can be executed,
-  and the server settings cannot be changed from the browser.
+- **Read-only by design** — the page only displays: no command can be executed.
+  The server settings cannot be changed from the browser unless you set the
+  optional password (`pwd` file): **total** closes the whole page behind a
+  login, **partial** leaves the page open and locks only the server options,
+  editable from the dashboard after typing the password.
 
 ## 🌐 38 languages
 
@@ -165,7 +168,7 @@ scripts\Update-Now.bat                   -> check, stop, update, restart
 ```
 
 Because of this mechanism, releases must always be tagged `v<version>`
-(for example `v1.15.2`).
+(for example `v1.16.0`).
 
 ## Try it without a server
 

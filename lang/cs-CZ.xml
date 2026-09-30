@@ -136,6 +136,15 @@
   <string key="minute">minuta</string>
   <string key="paused">Pozastaveno - karta na pozadí</string>
   <string key="readonly_server">jen pro čtení: nastavuje se na serveru v settings.txt</string>
+  <string key="srv_options">Možnosti serveru</string>
+  <string key="srv_refresh">Výchozí obnovení</string>
+  <string key="unlock">Odemknout</string>
+  <string key="wrong_password">Chybné heslo</string>
+  <string key="srv_locked">Zadejte heslo pro změnu možností serveru.</string>
+  <string key="srv_unlocked">Odemčeno: Uložit zapíše tyto možnosti do settings.txt na serveru</string>
+  <string key="pwd_ph">Heslo...</string>
+  <string key="logging_opt">Soubory protokolu na serveru</string>
+  <string key="auto_update_opt">Automatické aktualizace</string>
   <string key="server_default">výchozí ze serveru</string>
   <string key="no_data">Nejsou k dispozici žádná data</string>
 </language>

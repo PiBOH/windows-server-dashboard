@@ -136,6 +136,15 @@
   <string key="minute">хвилина</string>
   <string key="paused">Призупинено - вкладка у фоні</string>
   <string key="readonly_server">лише для читання: задається на сервері у settings.txt</string>
+  <string key="srv_options">Параметри сервера</string>
+  <string key="srv_refresh">Оновлення за замовчуванням</string>
+  <string key="unlock">Розблокувати</string>
+  <string key="wrong_password">Неправильний пароль</string>
+  <string key="srv_locked">Введіть пароль, щоб змінити параметри сервера.</string>
+  <string key="srv_unlocked">Розблоковано: Зберегти записує ці параметри у settings.txt на сервері</string>
+  <string key="pwd_ph">Пароль...</string>
+  <string key="logging_opt">Файли журналів на сервері</string>
+  <string key="auto_update_opt">Автоматичні оновлення</string>
   <string key="server_default">типове значення сервера</string>
   <string key="no_data">Немає доступних даних</string>
 </language>

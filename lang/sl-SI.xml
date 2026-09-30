@@ -136,6 +136,15 @@
   <string key="minute">minuta</string>
   <string key="paused">Zaustavljeno - zavihek v ozadju</string>
   <string key="readonly_server">samo za branje: nastavi se v strežniku v settings.txt</string>
+  <string key="srv_options">Možnosti strežnika</string>
+  <string key="srv_refresh">Privzeto osveževanje</string>
+  <string key="unlock">Odkleni</string>
+  <string key="wrong_password">Napačno geslo</string>
+  <string key="srv_locked">Vnesite geslo za spreminjanje možnosti strežnika.</string>
+  <string key="srv_unlocked">Odklenjeno: Shrani zapiše te možnosti v settings.txt na strežniku</string>
+  <string key="pwd_ph">Geslo...</string>
+  <string key="logging_opt">Dnevniške datoteke na strežniku</string>
+  <string key="auto_update_opt">Samodejne posodobitve</string>
   <string key="server_default">privzeto iz strežnika</string>
   <string key="no_data">Ni podatkov</string>
 </language>

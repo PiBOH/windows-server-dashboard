@@ -9,6 +9,10 @@
     Every metric is collected through language independent CIM/WMI classes,
     so it works on any localized build of Windows.
 
+    An optional password (a plain text file called "pwd" next to
+    settings.txt) can protect the whole page (password_mode = total) or
+    just the server options (password_mode = partial).
+
     Typical start:  powershell -ExecutionPolicy Bypass -File ServerDashboard.ps1 -Port 8080
 
     The user interface is translated into 38 languages (see the \lang folder);
@@ -22,6 +26,7 @@ param(
     [double]$IdleIntervalSeconds = 0,   # when nobody is connected: 0 = do not sample at all
     [switch]$CheckUpdatesOnly,          # only REPORT whether a newer release exists, then exit
     [switch]$UpdateNow,                 # manual update: download, stop, install, start
+    [switch]$ScheduledUpdate,           # set when the periodic 24 h check launches -UpdateNow
     [string]$LogFile,
     [string]$SettingsFile
 )
@@ -45,6 +50,10 @@ $Root = if ((Split-Path -Leaf $ScriptDir) -eq 'scripts') { Split-Path -Parent $S
 $LangDir = Join-Path $Root 'lang'
 $LogDir  = Join-Path $Root 'logs'
 if (-not $SettingsFile) { $SettingsFile = Join-Path $Root 'settings.txt' }
+# Optional password: a plain text file called "pwd" (no extension) next to
+# settings.txt. First non-empty line = the password. No file / empty file =
+# no password at all and everything stays exactly as it was.
+$PwdFile = Join-Path $Root 'pwd'
 if (-not (Test-Path $LogDir)) { try { [void](New-Item -ItemType Directory -Path $LogDir -Force) } catch { } }
 
 # ----------------------------------------------------------------------------
@@ -166,7 +175,8 @@ function Get-DefaultSettings {
     return @{
         refreshSeconds = [double]$IntervalSeconds
         idleSeconds    = [double]$IdleIntervalSeconds   # 0 = no sampling while nobody is connected
-        autoUpdate     = $true                           # check GitHub for a newer release at startup
+        autoUpdate     = $true                           # check GitHub for a newer release at startup and every 24 hours
+        passwordMode   = 'total'                         # with a pwd file: total = whole page, partial = server options only
         sections       = $sec
     }
 }
@@ -201,6 +211,12 @@ function Read-Settings {
                     }
                     '^logging$'     { }   # handled before logging starts, kept here so it is not reported as unknown
                     '^auto_update$' { $cfg.autoUpdate = ($v -match '(?i)^(yes|true|1|on|si|s)$') }
+                    '^password_mode$' {
+                        # total    : the whole dashboard asks for the password
+                        # partial  : the page is open, the password is asked only
+                        #            to change the server options from the page
+                        $cfg.passwordMode = if ($v -match '(?i)^part') { 'partial' } else { 'total' }
+                    }
                     '^show_(.+)$' {
                         $sec = $Matches[1]
                         if ($cfg.sections.ContainsKey($sec)) {
@@ -222,6 +238,30 @@ function Read-Settings {
 
 # Used only to create the file the first time: the dashboard never rewrites it,
 # because the settings it contains cannot be changed from the web interface.
+function Read-FilePassword {
+    # The optional password lives in a plain text file called "pwd" (no file
+    # extension) next to settings.txt: create it with Notepad, write the
+    # password on the first line, save, done - the change is picked up within
+    # seconds, no restart needed. Remove the file (or empty it) to remove the
+    # password. The content is only ever compared, never logged and never sent
+    # to the browsers (only the fact that a password is set, and its mode).
+    try {
+        if (-not (Test-Path $PwdFile)) { return '' }
+        foreach ($line in (Get-Content -Path $PwdFile -Encoding UTF8 -ErrorAction Stop)) {
+            $t = "$line".Trim()
+            if ($t) { return $t }
+        }
+    } catch { }
+    return ''
+}
+
+function Convert-ToDoubleSafe([string]$Text, [double]$Default = -1) {
+    $n = 0.0
+    if ([double]::TryParse($Text, [System.Globalization.NumberStyles]::Float,
+                           [System.Globalization.CultureInfo]::InvariantCulture, [ref]$n)) { return $n }
+    return $Default
+}
+
 function Write-Settings($cfg) {
     try {
         $lines = New-Object System.Collections.ArrayList
@@ -248,15 +288,31 @@ function Write-Settings($cfg) {
         [void]$lines.Add('')
         [void]$lines.Add('# Write the log files in logs\: yes / no. One file per day')
         [void]$lines.Add('# (ServerDashboard-YYYY-MM-DD.log), kept for 14 days.')
-        [void]$lines.Add('# This option is available HERE ONLY: it cannot be changed from the')
-        [void]$lines.Add('# dashboard, so a visitor can never enable or disable logging.')
+        [void]$lines.Add('# Without a password this can only be changed HERE; with a')
+        [void]$lines.Add('# password set it can also be changed from the dashboard.')
         [void]$lines.Add('# With no, the log file is never created.')
         [void]$lines.Add("logging = " + $(if ($script:LogEnabled) { 'yes' } else { 'no' }))
         [void]$lines.Add('')
-        [void]$lines.Add('# Check GitHub for a newer release at every start and install it')
-        [void]$lines.Add('# automatically (the dashboard restarts itself). yes / no.')
+        [void]$lines.Add('# Check GitHub for a newer release at every start and then')
+        [void]$lines.Add('# every 24 hours, and install it automatically (the dashboard')
+        [void]$lines.Add('# restarts itself). yes / no.')
         [void]$lines.Add('# Manual check any time: scripts\\Update-Now.bat (works even with no)')
         [void]$lines.Add("auto_update = " + $(if ($cfg.autoUpdate) { 'yes' } else { 'no' }))
+        [void]$lines.Add('')
+        [void]$lines.Add('# Password protection, in two steps.')
+        [void]$lines.Add('# 1. Create a text file called "pwd" (no extension) next to this')
+        [void]$lines.Add('#    file and write the password on its first line.')
+        [void]$lines.Add('# 2. Choose what the password protects:')
+        [void]$lines.Add('#      total   = without the password the whole dashboard refuses')
+        [void]$lines.Add('#                to open (recommended)')
+        [void]$lines.Add('#      partial = everybody can look at the dashboard, but the')
+        [void]$lines.Add('#                server options can be changed from the page only')
+        [void]$lines.Add('#                with the password')
+        [void]$lines.Add('# No pwd file (or an empty one) = no password, everything open.')
+        [void]$lines.Add('# WARNING: the password travels as plain text on the local')
+        [void]$lines.Add('# network, like the dashboard data itself. It keeps curious')
+        [void]$lines.Add('# colleagues out; it is no defense against a real attacker.')
+        [void]$lines.Add("password_mode = " + $cfg.passwordMode)
         [void]$lines.Add('')
         [void]$lines.Add('# Sections shown on the page: yes / no')
         foreach ($k in $SectionKeys) {
@@ -274,6 +330,11 @@ function Write-Settings($cfg) {
 
 $Shared.Settings = Read-Settings
 $Shared.Interval = $Shared.Settings.refreshSeconds
+$Shared.Password = Read-FilePassword
+# total mode: without the password not even the page opens. partial mode:
+# the page stays open to everybody, the password is asked only to change
+# the server options from the settings panel.
+$script:PasswordTotal = [bool]$Shared.Password -and $Shared.Settings.passwordMode -ne 'partial'
 if (-not (Test-Path $SettingsFile)) { [void](Write-Settings $Shared.Settings) }
 
 # ----------------------------------------------------------------------------
@@ -286,16 +347,20 @@ if (-not (Test-Path $SettingsFile)) { [void](Write-Settings $Shared.Settings) }
 #
 # When it is newer than the local one, the release tagged v<version> is
 # downloaded, unpacked and copied over the current files - never touching
-# settings.txt, the logs\ folder or anything that belongs to this installation
-# only. The dashboard then restarts itself on the new version.
+# settings.txt, the pwd file, the logs\ folder or anything that belongs to
+# this installation only. The dashboard then restarts itself on the new
+# version.
 # Set auto_update = no in settings.txt to disable it, or run the script with
 # -CheckUpdatesOnly to trigger a check by hand.
 # ----------------------------------------------------------------------------
 $UpdateRepo    = 'PiBOH/windows-server-dashboard'
 $UpdateVersion = 'https://raw.githubusercontent.com/' + $UpdateRepo + '/main/scripts/version.txt'
 $UpdateZipFmt  = 'https://github.com/' + $UpdateRepo + '/archive/refs/tags/v{0}.zip'
-$UpdateKeep    = @('logs', 'settings.txt', 'settings-backup.txt', 'install-state.txt',
+$UpdateKeep    = @('logs', 'settings.txt', 'settings-backup.txt', 'install-state.txt', 'pwd',
                    'previous-task-backup.xml', 'ServerDashboard-*.log', 'ServerDashboard-notify-*.log')
+# The updater writes this marker while it works, so that the periodic 24 hour
+# check and a manual Update-Now.bat never install at the same time.
+$script:UpdateMarker = Join-Path $Root '.update-running'
 
 function Get-LatestVersion {
     try {
@@ -343,16 +408,26 @@ function Save-UpdatePackage([string]$Target) {
     }
 }
 
+function Remove-NestedFolders {
+    # Self healing for the nesting bug of the updaters up to v1.15.0: they
+    # copied the "scripts" folder of the update package INSIDE the existing
+    # scripts\ folder (same for lang, docs, ...), so the new files never
+    # replaced the old ones and the running version never changed. This
+    # removes every leftover nested copy, however deep it is. It runs both
+    # at every start and during an update install.
+    foreach ($n in @('scripts', 'lang', 'docs', 'Changelog', 'screenshots')) {
+        $nested = Join-Path (Join-Path $Root $n) $n
+        while (Test-Path $nested) {
+            Write-Log "Removing the leftover nested folder: $nested"
+            Remove-Item $nested -Recurse -Force -ErrorAction SilentlyContinue
+            if (Test-Path $nested) { break }   # it refused to go: no infinite loop
+        }
+    }
+}
+
 function Install-UpdatePackage([string]$SrcDir) {
     try {
-        # Clean up the nesting left by the updaters of the previous versions:
-        # up to 1.15.0 every update copied the "scripts" folder INSIDE the
-        # existing scripts\ folder (same for lang, docs, ...), one level
-        # deeper at every update: scripts\scripts\scripts\...
-        foreach ($n in @('scripts', 'lang', 'docs', 'Changelog', 'screenshots')) {
-            $nested = Join-Path (Join-Path $Root $n) $n
-            if (Test-Path $nested) { Remove-Item $nested -Recurse -Force -ErrorAction SilentlyContinue }
-        }
+        Remove-NestedFolders
         foreach ($item in @(Get-ChildItem -Path $SrcDir)) {
             if ($UpdateKeep -contains $item.Name) { continue }
             $dest = Join-Path $Root $item.Name
@@ -433,6 +508,10 @@ function Update-FromGithub {
 #   -CheckUpdatesOnly  just check and report, touch nothing
 #   nothing            the automatic check at every start, if auto_update=yes
 # ----------------------------------------------------------------------------
+# Clean up any leftover from the updaters of the versions up to 1.15.0 (the
+# scripts\scripts bug) BEFORE anything else, in every start mode.
+Remove-NestedFolders
+
 if ($CheckUpdatesOnly) {
     # pure check: it never installs and never stops anything
     $latest = Get-LatestVersion
@@ -449,66 +528,117 @@ if ($CheckUpdatesOnly) {
 }
 if ($UpdateNow) {
     # manual update, run from scripts\Update-Now.bat: an explicit request
-    # always works, even with auto_update = no in settings.txt.
+    # always works, even with auto_update = no in settings.txt. The periodic
+    # 24 hour check of a running dashboard launches this same code with
+    # -ScheduledUpdate, so the two paths are one and the same.
     # Order: download FIRST (no downtime if the download fails), then stop,
     # install and start again.
-    $latest = Get-LatestVersion
-    if (-not $latest) { Write-Host 'No update information available (offline or repository unreachable).'; exit 1 }
-    if (-not (Test-NewerVersion $latest $DashboardVersion)) { Write-Host "Version $DashboardVersion - up to date."; exit 0 }
-    Write-Host "New version available: $latest (current: $DashboardVersion). Downloading..."
-    Write-Log "Manual update to $latest requested (Update-Now.bat)."
-    $pkg = Save-UpdatePackage $latest
-    if (-not $pkg) { Write-Host 'Download failed: nothing was changed.'; exit 1 }
-    Write-Host 'Stopping the dashboard...'
-    Stop-DashboardForUpdate
-    Write-Host 'Installing the new version...'
-    $installed = Install-UpdatePackage $pkg
-    Remove-Item (Split-Path $pkg -Parent) -Recurse -Force -ErrorAction SilentlyContinue
-    if (-not $installed) { Write-Host 'Install failed: run scripts\Diagnose.bat and check the log.'; exit 1 }
-    Write-DashEvent 2 'Information' ("$BrandName updated to $latest from $UpdateRepo by hand (Update-Now.bat). " +
-        "The local settings and the logs were preserved.")
-    Write-Host 'Starting the dashboard on the new version...'
-    if (Start-DashboardAfterUpdate) {
-        Write-Host "Updated to ${latest}: the dashboard is running again."
-    } else {
-        Write-Host "Updated to $latest, but the service does not answer yet. Start it with:"
-        Write-Host '  Start-Dashboard.bat   or   schtasks /Run /TN "PiBOH Windows Server Dashboard"'
+    #
+    # One updater at a time: the marker file keeps a manual run and the
+    # periodic check out of each other's way (it goes away by itself, and
+    # after 15 minutes it is considered leftovers of a crashed run).
+    if ((Test-Path $script:UpdateMarker) -and
+        ((Get-Date) - (Get-Item $script:UpdateMarker).LastWriteTime).TotalMinutes -lt 15) {
+        Write-Host 'Another update is already running: nothing to do.'
+        exit 0
     }
-    exit 0
+    try { Set-Content -Path $script:UpdateMarker -Value (Get-Date -Format 's') -Encoding ASCII -ErrorAction SilentlyContinue } catch { }
+    $who = if ($ScheduledUpdate) { 'periodic 24 h check' } else { 'Update-Now.bat' }
+    try {
+        $latest = Get-LatestVersion
+        if (-not $latest) { Write-Host 'No update information available (offline or repository unreachable).'; exit 1 }
+        if (-not (Test-NewerVersion $latest $DashboardVersion)) { Write-Host "Version $DashboardVersion - up to date."; exit 0 }
+        Write-Host "New version available: $latest (current: $DashboardVersion). Downloading..."
+        Write-Log "Update to $latest requested ($who)."
+        $pkg = Save-UpdatePackage $latest
+        if (-not $pkg) { Write-Host 'Download failed: nothing was changed.'; exit 1 }
+        Write-Host 'Stopping the dashboard...'
+        Stop-DashboardForUpdate
+        Write-Host 'Installing the new version...'
+        $installed = Install-UpdatePackage $pkg
+        Remove-Item (Split-Path $pkg -Parent) -Recurse -Force -ErrorAction SilentlyContinue
+        if (-not $installed) { Write-Host 'Install failed: run scripts\Diagnose.bat and check the log.'; exit 1 }
+        Write-DashEvent 2 'Information' ("$BrandName updated to $latest from $UpdateRepo by the $who. " +
+            "The local settings and the logs were preserved.")
+        Write-Host 'Starting the dashboard on the new version...'
+        if (Start-DashboardAfterUpdate) {
+            Write-Host "Updated to ${latest}: the dashboard is running again."
+        } else {
+            Write-Host "Updated to $latest, but the service does not answer yet. Start it with:"
+            Write-Host '  Start-Dashboard.bat   or   schtasks /Run /TN "PiBOH Windows Server Dashboard"'
+        }
+        exit 0
+    } finally {
+        Remove-Item $script:UpdateMarker -Force -ErrorAction SilentlyContinue
+    }
 }
 $script:Updated = Update-FromGithub
 if ($script:Updated) {
-    # hand over to the new version, with the same port
+    # Safety net against update loops: hand over to the new version ONLY if
+    # the file on disk really is a new version. The updaters up to 1.15.0
+    # had a copy bug that left version.txt untouched, so every start saw
+    # the same "new" release, installed it again and spawned itself again,
+    # in an endless loop in which the port never opened: the dashboard
+    # looked like "it does not start by itself" and no update ever landed.
+    $diskVersion = ''
     try {
-        Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
-            '-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass',
-            '-File', $PSCommandPath, '-Port', "$Port"
-        ) -WindowStyle Hidden
-    } catch {
-        Write-Log 'Could not launch the new version: it will start at the next task run.' 'WARN'
+        $diskVersion = "$(Get-Content -Path (Join-Path $PSScriptRoot 'version.txt') -TotalCount 1 -ErrorAction Stop)".Trim()
+    } catch { }
+    if ($diskVersion -eq $DashboardVersion) {
+        Write-Log "Self update did not land (version.txt still $DashboardVersion): staying up on the current version." 'ERROR'
+        Write-DashEvent 3 'Error' ("$BrandName v${DashboardVersion}: the automatic update did not replace the " +
+            "local files (version.txt still says $DashboardVersion), so the dashboard stays up on the current " +
+            "version instead of restarting in a loop. Run scripts\Update-Now.bat by hand and, if it happens " +
+            "again, scripts\Diagnose.bat.")
+    } else {
+        # hand over to the new version, with the same port
+        try {
+            Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
+                '-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass',
+                '-File', $PSCommandPath, '-Port', "$Port"
+            ) -WindowStyle Hidden
+        } catch {
+            Write-Log 'Could not launch the new version: it will start at the next task run.' 'WARN'
+        }
+        exit 0
     }
-    exit 0
 }
 
 # Since the file is the only way to change these values, it is watched: edit it
 # with Notepad and the change is picked up within 10 seconds, no restart needed.
 $script:SettingsStamp = $null
-try { $script:SettingsStamp = (Get-Item $SettingsFile).LastWriteTimeUtc } catch { }
+try { $script:SettingsStamp = (Get-Item $SettingsFile -ErrorAction SilentlyContinue).LastWriteTimeUtc } catch { }
+$script:PwdStamp = $null
+try { $script:PwdStamp = (Get-Item $PwdFile -ErrorAction SilentlyContinue).LastWriteTimeUtc } catch { }
 $script:SettingsCheck = Get-Date
 
 function Update-SettingsIfChanged {
+    # Picks up edits of settings.txt AND of the pwd file within 10 seconds.
+    # The main loop calls this once per second even with nobody connected,
+    # so a password set or removed with Notepad applies without a restart.
     if (((Get-Date) - $script:SettingsCheck).TotalSeconds -lt 10) { return }
     $script:SettingsCheck = Get-Date
     try {
-        if (-not (Test-Path $SettingsFile)) { return }
-        $st = (Get-Item $SettingsFile).LastWriteTimeUtc
-        if ($script:SettingsStamp -and $st -eq $script:SettingsStamp) { return }
-        $script:SettingsStamp = $st
-        $new = Read-Settings
-        $Shared.Settings = $new
-        $Shared.Interval = $new.refreshSeconds
-        $Shared.IdleInterval = $new.idleSeconds
-        Write-Log ("settings.txt changed: refresh " + $new.refreshSeconds + "s, idle " + $new.idleSeconds + "s")
+        if (Test-Path $SettingsFile) {
+            $st = (Get-Item $SettingsFile).LastWriteTimeUtc
+            if (-not $script:SettingsStamp -or $st -ne $script:SettingsStamp) {
+                $script:SettingsStamp = $st
+                $new = Read-Settings
+                $Shared.Settings = $new
+                $Shared.Interval = $new.refreshSeconds
+                $Shared.IdleInterval = $new.idleSeconds
+                Write-Log ("settings.txt changed: refresh " + $new.refreshSeconds + "s, idle " + $new.idleSeconds + "s")
+            }
+        }
+        $pt = $null
+        if (Test-Path $PwdFile) { try { $pt = (Get-Item $PwdFile).LastWriteTimeUtc } catch { } }
+        if ("$pt" -ne "$script:PwdStamp") {
+            $script:PwdStamp = $pt
+            $Shared.Password = Read-FilePassword
+            $mode = if ($Shared.Settings.passwordMode -ne 'partial') { 'total' } else { 'partial' }
+            Write-Log ("pwd file changed: password " + $(if ($Shared.Password) { "ON ($mode mode)" } else { 'OFF' }))
+        }
+        $script:PasswordTotal = [bool]$Shared.Password -and $Shared.Settings.passwordMode -ne 'partial'
     } catch { }
 }
 
@@ -1501,6 +1631,11 @@ footer .fcenter b{color:var(--txt)}
 .seclist input{accent-color:var(--accent);width:15px;height:15px}
 .seclist input[disabled] + span, .seclist label.ro{opacity:.65;cursor:not-allowed}
 .setrow select[disabled]{opacity:.65;cursor:not-allowed}
+.lockrow{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.lockrow input{flex:1;min-width:140px;padding:6px 10px;font-size:13px;
+  background:var(--input);border:1px solid var(--border);color:var(--txt)}
+.srvnote{font-size:11.5px;margin-top:8px;min-height:14px}
+.srvnote.crit{color:var(--crit)} .srvnote.ok{color:var(--ok)}
 .modal-foot{padding:12px 18px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px}
 .modal-foot .ok{flex:1;color:var(--ok);font-size:12.5px}
 .btn{cursor:pointer;background:var(--input);border:1px solid var(--border);color:var(--txt);
@@ -1728,11 +1863,30 @@ footer .fcenter b{color:var(--txt)}
           <span class="hint" data-i18n="stored_browser"></span></label>
         <select id="setrate"></select>
       </div>
-      <div class="setrow col">
-        <label><span data-i18n="sections">Visible sections</span>
-          <span class="hint"><span data-i18n="stored_server"></span> &mdash;
-            <b data-i18n="readonly_server"></b></span></label>
+      <div class="setrow col" id="srvrow">
+        <label><span data-i18n="srv_options">Server options</span>
+          <span class="hint" data-i18n="stored_server"></span></label>
+        <div id="lockrow" class="lockrow" style="display:none">
+          <input type="password" id="srvpwd" autocomplete="off"
+            placeholder="" data-i18n-ph="pwd_ph">
+          <button id="srvunlock" class="btn" data-i18n="unlock">Unlock</button>
+        </div>
+        <div id="srvnote" class="srvnote"></div>
+        <div class="setrow" style="margin-top:10px">
+          <label><span data-i18n="srv_refresh">Default refresh</span>
+            <span class="hint" data-i18n="stored_server"></span></label>
+          <select id="setsrvrate"></select>
+        </div>
+        <div class="setrow" style="margin-top:10px">
+          <label><span data-i18n="sections">Visible sections</span></label>
+        </div>
         <div id="setsections" class="seclist"></div>
+        <div class="seclist" style="margin-top:8px">
+          <label class="ro"><input type="checkbox" id="setlogging">
+            <span data-i18n="logging_opt">Log files on the server</span></label>
+          <label class="ro"><input type="checkbox" id="setautoupd">
+            <span data-i18n="auto_update_opt">Automatic updates</span></label>
+        </div>
       </div>
     </div>
     <div class="modal-foot">
@@ -1844,7 +1998,9 @@ function buildLangGrid(){
 var SECTIONS = ['cpu','cpu_trend','ram','ram_trend','network','net_adapters','ip_config',
                 'disks','os','processes','services','events'];
 var RATES = [0.5,1,2,5,10,15,30,60,300];
-var SRV = { refreshSeconds: 0.5, idleSeconds: 0, sections: {} };
+var SRV = { refreshSeconds: 0.5, idleSeconds: 0, autoUpdate: true, logging: false,
+            sections: {}, passwordProtected: false, passwordMode: '' };
+var SRVPWD = null;   /* password typed in the unlock box (partial mode) */
 /* decimal separator of the chosen language, used for values like 0,5 */
 var DECSEP = ',';   /* server settings */
 var LOCAL = { theme: 'dark', lang: null, refresh: null };   /* refresh: null = use the server default */                         /* browser settings */
@@ -1869,14 +2025,56 @@ function loadServer(){
     .then(function(o){
       if (o && o.refreshSeconds) { SRV = o; }
       if (!SRV.sections) { SRV.sections = {}; }
+      if (!SRV.passwordProtected) { SRV.passwordProtected = false; }
+      if (!SRV.passwordMode) { SRV.passwordMode = ''; }
       return SRV;
     })
     .catch(function(){ if (!SRV.sections) SRV.sections = {}; return SRV; });
 }
-/* The server side settings (refresh interval and visible sections) are
-   READ ONLY from the browser: they live in settings.txt and only somebody with
-   access to the server can change them. Nothing is ever posted back. */
-function saveServer(){ return Promise.resolve(SRV); }
+/* The server options live in settings.txt. Without a password they are read
+   only, exactly as they always were. When a password is set:
+   - total mode: the browser already authenticated with it (Basic auth), so
+     saving posts the options directly;
+   - partial mode: the password typed in the unlock box travels in the body
+     and the server refuses the change if it is wrong. */
+function serverEditable(){
+  if (!SRV.passwordProtected) { return false; }
+  if (SRV.passwordMode !== 'partial') { return true; }
+  return (SRVPWD !== null);
+}
+function saveServer(){
+  var secs = {};
+  var boxes = document.querySelectorAll('#setsections input[data-sec-key]');
+  for (var i = 0; i < boxes.length; i++) {
+    secs['show_' + boxes[i].getAttribute('data-sec-key')] = boxes[i].checked;
+  }
+  var payload = {
+    settings: {
+      refresh_seconds: parseFloat(document.getElementById('setsrvrate').value),
+      auto_update: document.getElementById('setautoupd').checked,
+      logging: document.getElementById('setlogging').checked
+    }
+  };
+  for (var k in secs) { payload.settings[k] = secs[k]; }
+  if (SRV.passwordMode === 'partial') { payload.password = SRVPWD; }
+  return fetch('api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(function(r){
+      if (r.status === 403) { throw new Error('wrong password'); }
+      if (!r.ok) { throw new Error('http ' + r.status); }
+      return r.json();
+    }).then(function(o){
+      if (o && o.refreshSeconds) {
+        SRV = o;
+        if (!SRV.sections) { SRV.sections = {}; }
+        if (!SRV.passwordProtected) { SRV.passwordProtected = false; }
+        applySections();
+      }
+      return SRV;
+    });
+}
 
 function applySections(){
   var els = document.querySelectorAll('[data-sec]');
@@ -1915,17 +2113,47 @@ function fillRates(){
     if (el) { el.innerHTML = html; el.value = cur; }
   });
 }
+function fillSrvRate(){
+  /* the server default refresh, as proposed to every new visitor */
+  var cur = String(SRV.refreshSeconds);
+  var html = RATES.map(function(v){
+    return '<option value="'+v+'"'+(String(v)===cur?' selected':'')+'>'+rateLabel(v)+'</option>';
+  }).join('');
+  if (RATES.indexOf(SRV.refreshSeconds) < 0) {
+    html = '<option value="'+cur+'" selected>'+rateLabel(SRV.refreshSeconds)+'</option>' + html;
+  }
+  var el = document.getElementById('setsrvrate');
+  if (el) { el.innerHTML = html; el.disabled = !serverEditable(); }
+}
 function fillSettings(){
   document.getElementById('settheme').value = THEME;
   document.getElementById('setlang').innerHTML = LANGS.map(function(l){
     return '<option value="'+l.code+'"'+(l.code===CURLANG?' selected':'')+'>'+l.native+' ('+l.english+')</option>';
   }).join('');
   document.getElementById('setrate').value = (LOCAL.refresh != null) ? String(LOCAL.refresh) : '';
+  var ed = serverEditable();
+  /* lock row + status note */
+  var lockrow = document.getElementById('lockrow');
+  if (lockrow) {
+    lockrow.style.display = (SRV.passwordProtected && SRV.passwordMode === 'partial' && !ed) ? '' : 'none';
+  }
+  var note = document.getElementById('srvnote');
+  if (note) {
+    note.className = 'srvnote';
+    if (!SRV.passwordProtected) { note.textContent = T('readonly_server'); }
+    else if (ed) { note.textContent = T('srv_unlocked'); note.className = 'srvnote ok'; }
+    else { note.textContent = T('srv_locked'); }
+  }
+  fillSrvRate();
   document.getElementById('setsections').innerHTML = SECTIONS.map(function(k){
     var on = !(SRV.sections && SRV.sections[k] === false);
-    return '<label class="ro"><input type="checkbox" disabled data-sec-key="'+k+'"'+
-           (on?' checked':'')+'> <span>'+T(k)+'</span></label>';
+    return '<label class="ro"><input type="checkbox"'+(ed?'':' disabled')+
+           ' data-sec-key="'+k+'"'+(on?' checked':'')+'> <span>'+T(k)+'</span></label>';
   }).join('');
+  var lg = document.getElementById('setlogging');
+  var au = document.getElementById('setautoupd');
+  if (lg) { lg.checked = !!SRV.logging; lg.disabled = !ed; }
+  if (au) { au.checked = !!SRV.autoUpdate; au.disabled = !ed; }
   document.getElementById('setmsg').textContent = '';
 }
 function openLang(){ buildLangGrid(); document.getElementById('langmodal').className = 'modal on'; }
@@ -1934,8 +2162,9 @@ function openSettings(){ fillSettings(); document.getElementById('setmodal').cla
 function closeSettings(){ document.getElementById('setmodal').className = 'modal'; }
 
 function applySettings(){
-  /* Only the personal, browser side choices can be saved: the refresh interval
-     and the visible sections belong to the server and are not touched here. */
+  /* Personal choices are always saved in this browser. The server options are
+     posted too, but only when they are editable (password given / total mode):
+     the server itself decides whether the change is accepted. */
   var th = document.getElementById('settheme').value;
   var lg = document.getElementById('setlang').value;
   var rv = document.getElementById('setrate').value;
@@ -1944,12 +2173,20 @@ function applySettings(){
   saveLocal();
   applyRate();
   applyTheme(th, true);
+  var note = document.getElementById('srvnote');
   var p = (lg !== CURLANG) ? setLang(lg, true) : Promise.resolve();
-  return p.then(function(){
+  var q = p.then(function(){
+    if (!serverEditable()) { return null; }
+    return saveServer().catch(function(){
+      if (note) { note.className = 'srvnote crit'; note.textContent = T('wrong_password'); }
+      throw new Error('refused');
+    });
+  });
+  return q.then(function(){
     fillRates();
     document.getElementById('setmsg').textContent = T('saved_ok');
     setTimeout(function(){ var m = document.getElementById('setmsg'); if (m) m.textContent = ''; }, 2500);
-  });
+  }, function(){ /* refused: the note above already says why */ });
 }
 function resetSettings(){
   /* resets the personal choices only: dark theme, language of Windows and the
@@ -2362,6 +2599,14 @@ document.getElementById('setclose').onclick = closeSettings;
 document.getElementById('setcancel').onclick = closeSettings;
 document.getElementById('setsave').onclick = function(){ applySettings(); };
 document.getElementById('setreset').onclick = resetSettings;
+document.getElementById('srvunlock').onclick = function(){
+  /* enables the server fields locally; the real check happens on Save, when
+     the password travels to the server with the changed options */
+  var v = document.getElementById('srvpwd').value;
+  if (!v) { return; }
+  SRVPWD = v;
+  fillSettings();
+};
 document.getElementById('setmodal').onclick = function(e){ if (e.target === this) closeSettings(); };
 document.getElementById('themebtn').onclick = function(){ applyTheme(THEME === 'dark' ? 'light' : 'dark', true); };
 document.getElementById('langbtn').onclick = function(){ document.getElementById('langmodal').className = 'modal on'; };
@@ -2554,13 +2799,55 @@ Write-DashEvent 1 'Information' (@(
     'Script     : ' + $PSCommandPath,
     'Task       : PiBOH Windows Server Dashboard (at system startup, as SYSTEM)',
     'Log        : ' + $LogDir + ' (one file per day, kept for ' + $LogKeepDays + ' days)',
-    'Updates    : downloaded from github.com/' + $UpdateRepo + ' at every start',
+    'Updates    : github.com/' + $UpdateRepo + ', checked at every start and',
+    '             then every 24 hours, installed automatically when newer',
+    'Password   : ' + $(if ($Shared.Password) {
+        'yes, ' + $Shared.Settings.passwordMode + ' mode (' + $PwdFile + ')'
+    } else {
+        'no: the dashboard is open to everybody on the network'
+    }),
     'Remove     : run Uninstall.bat in ' + $Root
 ) -join "`r`n")
 
+# Next periodic update check: the one at start just happened (or did not,
+# with auto_update = no), the next one is due 24 hours from now. It launches
+# the very same -UpdateNow code used by scripts\Update-Now.bat, as a separate
+# process: it downloads, stops this instance, installs and starts the new
+# version, so the dashboard is never left half updated.
+$script:NextUpdateCheck = (Get-Date).AddHours(24)
+
+function Invoke-Housekeeping {
+    # Called by the main loop about once per second, connected or not.
+    Update-SettingsIfChanged
+    if ((Get-Date) -ge $script:NextUpdateCheck) {
+        $script:NextUpdateCheck = (Get-Date).AddHours(24)
+        if ($Shared.Settings.autoUpdate -and -not (Test-Path $script:UpdateMarker)) {
+            try {
+                Write-Log 'Periodic update check (every 24 h, auto_update = yes).'
+                Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
+                    '-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass',
+                    '-File', $PSCommandPath, '-UpdateNow', '-ScheduledUpdate'
+                ) -WindowStyle Hidden
+            } catch {
+                Write-Log ("Could not launch the periodic update check: " +
+                           $_.Exception.Message) 'WARN'
+            }
+        }
+    }
+}
+
 try {
     while ($listener.IsListening) {
-        $ctx = $listener.GetContext()
+        # Wait for the next request, but never in one single blocking piece:
+        # waking up once per second keeps the housekeeping alive even when no
+        # browser is connected (this is what reloads settings.txt and the pwd
+        # file without spectators, and what drives the 24 hour update check
+        # on a server that stays on for weeks).
+        $async = $listener.BeginGetContext($null, $null)
+        while (-not $async.AsyncWaitHandle.WaitOne(1000)) {
+            try { Invoke-Housekeeping } catch { }
+        }
+        $ctx = $listener.EndGetContext($async)
         $req = $ctx.Request
         $res = $ctx.Response
         try {
@@ -2569,64 +2856,177 @@ try {
             $path = $req.Url.AbsolutePath.ToLower()
             Update-SettingsIfChanged
 
+            # password_mode = total: everything but /api/health requires the
+            # password (HTTP Basic auth, any user name). /api/health must stay
+            # open because the updater and Repair-Autostart.bat poll it to see
+            # whether the service answers; it only carries the version number.
+            $denied = $false
+            if ($script:PasswordTotal -and $path -ne '/api/health') {
+                $ok = $false
+                $auth = $req.Headers['Authorization']
+                if ($auth -and $auth.StartsWith('Basic ', [StringComparison]::OrdinalIgnoreCase)) {
+                    try {
+                        $b64 = $auth.Substring(6)
+                        $pair = [System.Text.Encoding]::UTF8.GetString(
+                            [Convert]::FromBase64String($b64))
+                        $sep = $pair.IndexOf(':')
+                        $given = if ($sep -ge 0) { $pair.Substring($sep + 1) } else { $pair }
+                        if ($given -ceq $Shared.Password) { $ok = $true }
+                    } catch { }
+                }
+                if (-not $ok) {
+                    $denied = $true
+                    Write-Log ("Refused " + $req.HttpMethod + " " + $path + " from " +
+                               $req.RemoteEndPoint.Address + ": wrong or missing password") 'WARN'
+                    $res.StatusCode = 401
+                    $res.Headers.Add('WWW-Authenticate', 'Basic realm="ServerDashboard"')
+                    $res.ContentType = 'text/plain; charset=utf-8'
+                    $bytes = [System.Text.Encoding]::UTF8.GetBytes('401: password required')
+                }
+            }
+
             # Only real page/data requests count as "somebody is watching": a
             # language file or the favicon must not wake the collector up.
-            if ($path -match '^/(api/stats/?|)$') { $Shared.LastRequest = Get-Date }
+            if (-not $denied -and $path -match '^/(api/stats/?|)$') { $Shared.LastRequest = Get-Date }
 
-            switch -Regex ($path) {
-                '^/api/settings/?$' {
-                    # READ ONLY on purpose.
-                    # What this endpoint returns is the server configuration:
-                    # refresh_seconds is the DEFAULT interval suggested to the
-                    # visitors, while the visible sections and the logging switch
-                    # are decided here and here only. A visitor may choose a
-                    # different refresh rate for their own browser, but nothing
-                    # they do can change the configuration of the server, so any
-                    # write attempt is refused and logged.
-                    if ($req.HttpMethod -ne 'GET') {
-                        Write-Log ("Refused a $($req.HttpMethod) on /api/settings from $($req.RemoteEndPoint.Address): settings are read-only") 'WARN'
-                        $res.StatusCode = 403
-                        $res.ContentType = 'application/json; charset=utf-8'
-                        $bytes = [System.Text.Encoding]::UTF8.GetBytes('{"error":"read-only: edit settings.txt on the server"}')
-                    } else {
-                        $res.ContentType = 'application/json; charset=utf-8'
-                        $bytes = [System.Text.Encoding]::UTF8.GetBytes(($Shared.Settings | ConvertTo-Json -Depth 5 -Compress))
+            if (-not $denied) {
+                switch -Regex ($path) {
+                    '^/api/settings/?$' {
+                        # GET  : the server configuration, read only. The password
+                        #        itself is NEVER sent to the browsers: only the
+                        #        fact that one is set, and its mode.
+                        # POST : accepted only with the right password, written in
+                        #        the body or proved by the Basic auth header of
+                        #        total mode. With NO password set this endpoint
+                        #        stays read-only exactly as it always was.
+                        if ($req.HttpMethod -eq 'GET') {
+                            $res.ContentType = 'application/json; charset=utf-8'
+                            $resp = @{}
+                            foreach ($k in @($Shared.Settings.Keys)) {
+                                $resp[$k] = $Shared.Settings[$k]
+                            }
+                            $resp.passwordProtected = [bool]$Shared.Password
+                            $resp.logging = [bool]$script:LogEnabled
+                            $bytes = [System.Text.Encoding]::UTF8.GetBytes(($resp | ConvertTo-Json -Depth 5 -Compress))
+                        } elseif ($req.HttpMethod -eq 'POST') {
+                            $given = $null
+                            $json  = $null
+                            try {
+                                $body = New-Object System.IO.StreamReader(
+                                    $req.InputStream, [System.Text.Encoding]::UTF8)
+                                $json = $body.ReadToEnd() | ConvertFrom-Json
+                                if ($json) { $given = "$($json.password)" }
+                            } catch { $json = $null }
+                            # total mode: the browser already proved the password
+                            # to open this page, accept that proof as well
+                            $auth = $req.Headers['Authorization']
+                            if ((-not $given) -and $auth -and
+                                $auth.StartsWith('Basic ', [StringComparison]::OrdinalIgnoreCase)) {
+                                try {
+                                    $b64 = $auth.Substring(6)
+                                    $pair = [System.Text.Encoding]::UTF8.GetString(
+                                        [Convert]::FromBase64String($b64))
+                                    $sep = $pair.IndexOf(':')
+                                    $given = if ($sep -ge 0) { $pair.Substring($sep + 1) } else { $pair }
+                                } catch { }
+                            }
+                            if (-not $Shared.Password -or $given -cne $Shared.Password) {
+                                $why = if ($Shared.Password) { 'wrong password' }
+                                       else { 'no password set, settings are read-only' }
+                                Write-Log ("Refused a settings change from " +
+                                           $req.RemoteEndPoint.Address + ": " + $why) 'WARN'
+                                $res.StatusCode = 403
+                                $res.ContentType = 'application/json; charset=utf-8'
+                                $bytes = [System.Text.Encoding]::UTF8.GetBytes('{"error":"refused"}')
+                            } else {
+                                # apply only the known keys, then rewrite
+                                # settings.txt, so what you see is what is on disk
+                                $applied = @()
+                                $cfg = Read-Settings
+                                $s = $json.settings
+                                if ($s) {
+                                    $rv = Convert-ToDoubleSafe "$($s.refresh_seconds)"
+                                    if ($rv -ge 0) {
+                                        $cfg.refreshSeconds = [math]::Min(3600, [math]::Max(0.5, $rv))
+                                        $applied += 'refresh_seconds'
+                                    }
+                                    $iv = Convert-ToDoubleSafe "$($s.idle_seconds)"
+                                    if ($iv -ge 0) {
+                                        $cfg.idleSeconds = [math]::Min(3600, [math]::Max(0, $iv))
+                                        $applied += 'idle_seconds'
+                                    }
+                                    if ($null -ne $s.auto_update) {
+                                        $cfg.autoUpdate = [bool]$s.auto_update
+                                        $applied += 'auto_update'
+                                    }
+                                    if ($null -ne $s.logging) {
+                                        $script:LogEnabled = [bool]$s.logging
+                                        $Shared.LogEnabled = $script:LogEnabled
+                                        $applied += 'logging'
+                                    }
+                                    foreach ($k in $SectionKeys) {
+                                        $pk = 'show_' + $k
+                                        if ($null -ne $s.$pk) {
+                                            $cfg.sections[$k] = [bool]$s.$pk
+                                            $applied += $pk
+                                        }
+                                    }
+                                }
+                                if ($applied.Count) {
+                                    [void](Write-Settings $cfg)
+                                    $Shared.Settings = $cfg
+                                    $Shared.Interval = $cfg.refreshSeconds
+                                    $Shared.IdleInterval = $cfg.idleSeconds
+                                    try { $script:SettingsStamp = (Get-Item $SettingsFile).LastWriteTimeUtc } catch { }
+                                    Write-Log ("Settings changed from the dashboard by " +
+                                               $req.RemoteEndPoint.Address + ": " + ($applied -join ', '))
+                                }
+                                $okJson = '{"ok":true,"applied":' +
+                                    (ConvertTo-Json -InputObject @($applied) -Compress) + '}'
+                                $bytes = [System.Text.Encoding]::UTF8.GetBytes($okJson)
+                            }
+                        } else {
+                            Write-Log ("Refused a $($req.HttpMethod) on /api/settings from $($req.RemoteEndPoint.Address): settings are read-only") 'WARN'
+                            $res.StatusCode = 403
+                            $res.ContentType = 'application/json; charset=utf-8'
+                            $bytes = [System.Text.Encoding]::UTF8.GetBytes('{"error":"read-only: edit settings.txt on the server"}')
+                        }
                     }
-                }
-                '^/api/stats/?$' {
-                    $payload = @{
-                        Current = $Shared.Data
-                        History = @($Shared.History)
-                    } | ConvertTo-Json -Depth 8 -Compress
-                    $res.ContentType = 'application/json; charset=utf-8'
-                    $bytes = [System.Text.Encoding]::UTF8.GetBytes($payload)
-                }
-                '^/api/languages/?$' {
-                    $res.ContentType = 'application/json; charset=utf-8'
-                    $bytes = [System.Text.Encoding]::UTF8.GetBytes($LangJson)
-                }
-                '^/lang/[a-z0-9\-]+\.xml$' {
-                    $file = Join-Path $LangDir ([System.IO.Path]::GetFileName($req.Url.AbsolutePath))
-                    if (Test-Path $file) {
-                        $res.ContentType = 'application/xml; charset=utf-8'
-                        $bytes = [System.IO.File]::ReadAllBytes($file)
-                    } else {
-                        $res.StatusCode = 404
-                        $bytes = [System.Text.Encoding]::UTF8.GetBytes('<error>language file not found</error>')
+                    '^/api/stats/?$' {
+                        $payload = @{
+                            Current = $Shared.Data
+                            History = @($Shared.History)
+                        } | ConvertTo-Json -Depth 8 -Compress
+                        $res.ContentType = 'application/json; charset=utf-8'
+                        $bytes = [System.Text.Encoding]::UTF8.GetBytes($payload)
                     }
-                }
-                '^/api/health/?$' {
-                    $res.ContentType = 'text/plain; charset=utf-8'
-                    $state = if ($Shared.Paused) { 'IDLE (sampling paused, nobody watching)' } else { 'SAMPLING' }
-                    $bytes = [System.Text.Encoding]::UTF8.GetBytes("OK $($env:COMPUTERNAME) v$DashboardVersion $state $(Get-Date -Format 'HH:mm:ss')")
-                }
-                '^/favicon.ico$' {
-                    $res.StatusCode = 204
-                    $bytes = [byte[]]@()
-                }
-                default {
-                    $res.ContentType = 'text/html; charset=utf-8'
-                    $bytes = [System.Text.Encoding]::UTF8.GetBytes($Html)
+                    '^/api/languages/?$' {
+                        $res.ContentType = 'application/json; charset=utf-8'
+                        $bytes = [System.Text.Encoding]::UTF8.GetBytes($LangJson)
+                    }
+                    '^/lang/[a-z0-9\-]+\.xml$' {
+                        $file = Join-Path $LangDir ([System.IO.Path]::GetFileName($req.Url.AbsolutePath))
+                        if (Test-Path $file) {
+                            $res.ContentType = 'application/xml; charset=utf-8'
+                            $bytes = [System.IO.File]::ReadAllBytes($file)
+                        } else {
+                            $res.StatusCode = 404
+                            $bytes = [System.Text.Encoding]::UTF8.GetBytes('<error>language file not found</error>')
+                        }
+                    }
+                    '^/api/health/?$' {
+                        $res.ContentType = 'text/plain; charset=utf-8'
+                        $state = if ($Shared.Paused) { 'IDLE (sampling paused, nobody watching)' } else { 'SAMPLING' }
+                        $bytes = [System.Text.Encoding]::UTF8.GetBytes("OK $($env:COMPUTERNAME) v$DashboardVersion $state $(Get-Date -Format 'HH:mm:ss')")
+                    }
+                    '^/favicon.ico$' {
+                        $res.StatusCode = 204
+                        $bytes = [byte[]]@()
+                    }
+                    default {
+                        $res.ContentType = 'text/html; charset=utf-8'
+                        $bytes = [System.Text.Encoding]::UTF8.GetBytes($Html)
+                    }
                 }
             }
 

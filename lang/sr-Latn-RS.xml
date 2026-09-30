@@ -136,6 +136,15 @@
   <string key="minute">minut</string>
   <string key="paused">Pauzirano - kartica u pozadini</string>
   <string key="readonly_server">samo za čitanje: podešava se na serveru u settings.txt</string>
+  <string key="srv_options">Opcije servera</string>
+  <string key="srv_refresh">Podrazumevano osvežavanje</string>
+  <string key="unlock">Otključaj</string>
+  <string key="wrong_password">Pogrešna lozinka</string>
+  <string key="srv_locked">Unesite lozinku da biste promenili opcije servera.</string>
+  <string key="srv_unlocked">Otključano: Sačuvaj upisuje ove opcije u settings.txt na serveru</string>
+  <string key="pwd_ph">Lozinka...</string>
+  <string key="logging_opt">Fajlovi dnevnika na serveru</string>
+  <string key="auto_update_opt">Automatska ažuriranja</string>
   <string key="server_default">podrazumevano sa servera</string>
   <string key="no_data">Nema dostupnih podataka</string>
 </language>

@@ -136,6 +136,15 @@
   <string key="minute">минута</string>
   <string key="paused">Приостановлено - вкладка в фоне</string>
   <string key="readonly_server">только чтение: задается на сервере в settings.txt</string>
+  <string key="srv_options">Параметры сервера</string>
+  <string key="srv_refresh">Обновление по умолчанию</string>
+  <string key="unlock">Разблокировать</string>
+  <string key="wrong_password">Неверный пароль</string>
+  <string key="srv_locked">Введите пароль, чтобы изменить параметры сервера.</string>
+  <string key="srv_unlocked">Разблокировано: Сохранить записывает эти параметры в settings.txt на сервере</string>
+  <string key="pwd_ph">Пароль...</string>
+  <string key="logging_opt">Файлы журналов на сервере</string>
+  <string key="auto_update_opt">Автоматические обновления</string>
   <string key="server_default">по умолчанию с сервера</string>
   <string key="no_data">Нет доступных данных</string>
 </language>

@@ -136,6 +136,15 @@
   <string key="minute">分钟</string>
   <string key="paused">已暂停 - 标签页在后台</string>
   <string key="readonly_server">只读：在服务器的 settings.txt 中设置</string>
+  <string key="srv_options">服务器选项</string>
+  <string key="srv_refresh">默认刷新</string>
+  <string key="unlock">解锁</string>
+  <string key="wrong_password">密码错误</string>
+  <string key="srv_locked">输入密码以更改服务器选项。</string>
+  <string key="srv_unlocked">已解锁：保存会将这些选项写入服务器的 settings.txt</string>
+  <string key="pwd_ph">密码...</string>
+  <string key="logging_opt">服务器上的日志文件</string>
+  <string key="auto_update_opt">自动更新</string>
   <string key="server_default">服务器默认值</string>
   <string key="no_data">没有可用数据</string>
 </language>

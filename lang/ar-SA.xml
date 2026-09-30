@@ -136,6 +136,15 @@
   <string key="minute">دقيقة</string>
   <string key="paused">متوقف مؤقتًا - علامة التبويب في الخلفية</string>
   <string key="readonly_server">للقراءة فقط: يتم ضبطه على الخادم في settings.txt</string>
+  <string key="srv_options">خيارات الخادم</string>
+  <string key="srv_refresh">التحديث الافتراضي</string>
+  <string key="unlock">فتح القفل</string>
+  <string key="wrong_password">كلمة المرور غير صحيحة</string>
+  <string key="srv_locked">أدخل كلمة المرور لتغيير خيارات الخادم.</string>
+  <string key="srv_unlocked">تم فتح القفل: الحفظ يكتب هذه الخيارات في settings.txt على الخادم</string>
+  <string key="pwd_ph">كلمة المرور...</string>
+  <string key="logging_opt">ملفات السجل على الخادم</string>
+  <string key="auto_update_opt">التحديثات التلقائية</string>
   <string key="server_default">الافتراضي من الخادم</string>
   <string key="no_data">لا توجد بيانات متاحة</string>
 </language>

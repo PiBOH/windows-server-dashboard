@@ -136,6 +136,15 @@
   <string key="minute">דקה</string>
   <string key="paused">מושהה - כרטיסייה ברקע</string>
   <string key="readonly_server">לקריאה בלבד: נקבע בשרת בקובץ settings.txt</string>
+  <string key="srv_options">אפשרויות שרת</string>
+  <string key="srv_refresh">רענון ברירת מחדל</string>
+  <string key="unlock">בטל נעילה</string>
+  <string key="wrong_password">סיסמה שגויה</string>
+  <string key="srv_locked">הזן את הסיסמה כדי לשנות את אפשרויות השרת.</string>
+  <string key="srv_unlocked">לא נעול: שמירה כותבת אפשרויות אלה אל settings.txt בשרת</string>
+  <string key="pwd_ph">סיסמה...</string>
+  <string key="logging_opt">קבצי יומן בשרת</string>
+  <string key="auto_update_opt">עדכונים אוטומטיים</string>
   <string key="server_default">ברירת המחדל של השרת</string>
   <string key="no_data">אין נתונים זמינים</string>
 </language>

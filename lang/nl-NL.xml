@@ -136,6 +136,15 @@
   <string key="minute">minuut</string>
   <string key="paused">Gepauzeerd - tabblad op achtergrond</string>
   <string key="readonly_server">alleen-lezen: in te stellen op de server in settings.txt</string>
+  <string key="srv_options">Serveropties</string>
+  <string key="srv_refresh">Standaardverversing</string>
+  <string key="unlock">Ontgrendelen</string>
+  <string key="wrong_password">Onjuist wachtwoord</string>
+  <string key="srv_locked">Voer het wachtwoord in om de serveropties te wijzigen.</string>
+  <string key="srv_unlocked">Ontgrendeld: Opslaan schrijft deze opties naar settings.txt op de server</string>
+  <string key="pwd_ph">Wachtwoord...</string>
+  <string key="logging_opt">Logbestanden op de server</string>
+  <string key="auto_update_opt">Automatische updates</string>
   <string key="server_default">standaard van de server</string>
   <string key="no_data">Geen gegevens beschikbaar</string>
 </language>

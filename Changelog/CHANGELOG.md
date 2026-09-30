@@ -8,6 +8,51 @@ Versioning follows Semantic Versioning: MAJOR.MINOR.PATCH.
 - PATCH - fixes and tweaks that add no feature.
 
 ------------------------------------------------------------------------------
+  1.16.0 - 2026-09-29
+------------------------------------------------------------------------------
+
+Added:
+  - Optional password, stored in a plain text file called "pwd" (no file
+    extension) next to settings.txt: create the file, write the password on
+    the first line, done - no restart needed, changes apply within ten
+    seconds. password_mode in settings.txt decides what it protects:
+    total (default) asks the password for the whole dashboard (standard
+    browser login window, /api/health stays open for the updater and
+    Repair-Autostart.bat), partial leaves the page open to everybody and
+    locks only the server options, which become editable from the settings
+    panel after typing the password. Without the file everything works
+    exactly as before: the API stays read-only and every write is refused
+    with 403 and logged. The password is never sent to the browsers, never
+    written to the log, preserved by every update, excluded from GitHub
+    (.gitignore) and deleted by Uninstall.bat. New UI strings translated
+    into all the 38 languages.
+
+Changed:
+  - The automatic update check now also repeats every 24 hours while the
+    dashboard runs, so a server that stays on for months receives updates
+    without a reboot: it launches the same cycle used by Update-Now.bat,
+    and a marker file (.update-running) keeps a manual run and the
+    automatic one from racing each other.
+  - The main loop now wakes up once per second even with nobody connected:
+    settings.txt and the pwd file are reloaded within ten seconds in every
+    condition, not only when a request arrives.
+  - The CI syntax check now parses the scripts with Windows PowerShell 5.1
+    (the engine the scheduled task really uses) instead of PowerShell 7.
+
+Fixed:
+  - Endless update loop: up to 1.15.0 a failed install left version.txt
+    untouched, so every start saw the same "new" release, reinstalled it,
+    spawned itself and exited, over and over, with the port never opening -
+    the dashboard looked like "it does not start by itself" and no update
+    ever landed. Before handing over to a new version the script now
+    verifies that version.txt on disk really changed; if it did not, it
+    stays up on the current version, logs the error and writes it to the
+    Windows event log.
+  - Leftover nested folders: the scripts\scripts (and lang\lang, ...)
+    copies created by the pre-1.15.1 updater are now removed at every
+    start, in every start mode, however deep they are nested.
+
+------------------------------------------------------------------------------
   1.15.2 - 2026-09-28
 ------------------------------------------------------------------------------
 

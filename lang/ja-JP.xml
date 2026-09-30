@@ -136,6 +136,15 @@
   <string key="minute">分</string>
   <string key="paused">一時停止中 - タブがバックグラウンド</string>
   <string key="readonly_server">読み取り専用: サーバーの settings.txt で設定します</string>
+  <string key="srv_options">サーバーオプション</string>
+  <string key="srv_refresh">既定の更新</string>
+  <string key="unlock">ロック解除</string>
+  <string key="wrong_password">パスワードが違います</string>
+  <string key="srv_locked">サーバーオプションを変更するにはパスワードを入力してください。</string>
+  <string key="srv_unlocked">ロック解除: 保存するとこれらのオプションがサーバーのsettings.txtに書き込まれます</string>
+  <string key="pwd_ph">パスワード...</string>
+  <string key="logging_opt">サーバー上のログファイル</string>
+  <string key="auto_update_opt">自動更新</string>
   <string key="server_default">サーバーの既定値</string>
   <string key="no_data">データがありません</string>
 </language>

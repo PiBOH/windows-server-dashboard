@@ -136,6 +136,15 @@
   <string key="minute">minut</string>
   <string key="paused">Pausad - fliken i bakgrunden</string>
   <string key="readonly_server">skrivskyddad: ställs in på servern i settings.txt</string>
+  <string key="srv_options">Serveralternativ</string>
+  <string key="srv_refresh">Standarduppdatering</string>
+  <string key="unlock">Lås upp</string>
+  <string key="wrong_password">Fel lösenord</string>
+  <string key="srv_locked">Skriv in lösenordet för att ändra serveralternativen.</string>
+  <string key="srv_unlocked">Upplåst: Spara skriver dessa alternativ till settings.txt på servern</string>
+  <string key="pwd_ph">Lösenord...</string>
+  <string key="logging_opt">Loggfiler på servern</string>
+  <string key="auto_update_opt">Automatiska uppdateringar</string>
   <string key="server_default">serverns standardvärde</string>
   <string key="no_data">Inga data tillgängliga</string>
 </language>

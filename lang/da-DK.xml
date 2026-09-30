@@ -136,6 +136,15 @@
   <string key="minute">minut</string>
   <string key="paused">Sat på pause - fane i baggrunden</string>
   <string key="readonly_server">skrivebeskyttet: angives på serveren i settings.txt</string>
+  <string key="srv_options">Serverindstillinger</string>
+  <string key="srv_refresh">Standardopdatering</string>
+  <string key="unlock">Lås op</string>
+  <string key="wrong_password">Forkert adgangskode</string>
+  <string key="srv_locked">Indtast adgangskoden for at ændre serverindstillingerne.</string>
+  <string key="srv_unlocked">Låst op: Gem skriver disse indstillinger til settings.txt på serveren</string>
+  <string key="pwd_ph">Adgangskode...</string>
+  <string key="logging_opt">Logfiler på serveren</string>
+  <string key="auto_update_opt">Automatiske opdateringer</string>
   <string key="server_default">serverstandard</string>
   <string key="no_data">Ingen data tilgængelige</string>
 </language>

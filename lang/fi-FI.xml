@@ -136,6 +136,15 @@
   <string key="minute">minuutti</string>
   <string key="paused">Keskeytetty - välilehti taustalla</string>
   <string key="readonly_server">vain luku: asetetaan palvelimella tiedostossa settings.txt</string>
+  <string key="srv_options">Palvelimen asetukset</string>
+  <string key="srv_refresh">Oletuspäivitys</string>
+  <string key="unlock">Avaa lukitus</string>
+  <string key="wrong_password">Väärä salasana</string>
+  <string key="srv_locked">Kirjoita salasana muokataksesi palvelimen asetuksia.</string>
+  <string key="srv_unlocked">Lukitus avattu: Tallenna kirjoittaa nämä asetukset palvelimen settings.txt-tiedostoon</string>
+  <string key="pwd_ph">Salasana...</string>
+  <string key="logging_opt">Lokitiedostot palvelimella</string>
+  <string key="auto_update_opt">Automaattiset päivitykset</string>
   <string key="server_default">palvelimen oletus</string>
   <string key="no_data">Ei tietoja saatavilla</string>
 </language>

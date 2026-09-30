@@ -136,6 +136,15 @@
   <string key="minute">minuta</string>
   <string key="paused">Pauzirano - kartica u pozadini</string>
   <string key="readonly_server">samo za čitanje: postavlja se na poslužitelju u settings.txt</string>
+  <string key="srv_options">Opcije poslužitelja</string>
+  <string key="srv_refresh">Zadano osvježavanje</string>
+  <string key="unlock">Otključaj</string>
+  <string key="wrong_password">Pogrešna lozinka</string>
+  <string key="srv_locked">Unesite lozinku za promjenu opcija poslužitelja.</string>
+  <string key="srv_unlocked">Otključano: Spremi zapisuje te opcije u settings.txt na poslužitelju</string>
+  <string key="pwd_ph">Lozinka...</string>
+  <string key="logging_opt">Datoteke zapisa na poslužitelju</string>
+  <string key="auto_update_opt">Automatsko ažuriranje</string>
   <string key="server_default">zadano s poslužitelja</string>
   <string key="no_data">Nema dostupnih podataka</string>
 </language>

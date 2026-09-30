@@ -136,6 +136,15 @@
   <string key="minute">minut</string>
   <string key="paused">Peatatud - vahekaart taustal</string>
   <string key="readonly_server">kirjutuskaitstud: määratakse serveris failis settings.txt</string>
+  <string key="srv_options">Serveri valikud</string>
+  <string key="srv_refresh">Vaikimisi värskendus</string>
+  <string key="unlock">Ava lukk</string>
+  <string key="wrong_password">Vale parool</string>
+  <string key="srv_locked">Sisestage parool serveri valikute muutmiseks.</string>
+  <string key="srv_unlocked">Lukust lahti: Salvesta kirjutab need valikud serveri faili settings.txt</string>
+  <string key="pwd_ph">Parool...</string>
+  <string key="logging_opt">Logifailid serveris</string>
+  <string key="auto_update_opt">Automaatsed värskendused</string>
   <string key="server_default">serveri vaikeväärtus</string>
   <string key="no_data">Andmed puuduvad</string>
 </language>
