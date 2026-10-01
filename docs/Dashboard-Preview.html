@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PiBOH Windows Server Dashboard 1.16.2 - preview</title>
+<title>PiBOH Windows Server Dashboard 1.16.3 - preview</title>
 <style>
 :root, html[data-theme="dark"]{
   --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --border:#283040;
@@ -306,7 +306,7 @@ footer .fcenter b{color:var(--txt)}
     <button id="setbtn" title="Dashboard settings">&#9881; <span id="setlabel">Settings</span></button>
     <button id="langbtn" title="Choose the dashboard language">&#127760; Language: <b id="curlang">English</b></button>
   </div>
-  <div class="fcenter">PiBOH Windows Server Dashboard <b id="ver">1.16.2</b></div>
+  <div class="fcenter">PiBOH Windows Server Dashboard <b id="ver">1.16.3</b></div>
   <div class="fside right">
     <span id="err" class="crit"></span>
     <button id="themebtn" title="Switch light / dark theme"><span id="themeicon">&#9788;</span> <span id="themelabel">Light theme</span></button>
@@ -396,7 +396,7 @@ footer .fcenter b{color:var(--txt)}
 <script>
 /* ===================== i18n ===================== */
 var SYSLANG = "en-US";
-var VERSION = "1.16.2";
+var VERSION = "1.16.3";
 var INTERVAL = "0.5";
 /* Everything below this comment is PREVIEW ONLY: sample data and the
    language dictionaries are embedded, so the file works offline. */
@@ -427,7 +427,7 @@ function applyStatic(){
   for (var i = 0; i < els.length; i++){ els[i].textContent = T(els[i].getAttribute('data-i18n')); }
   var ph = document.querySelectorAll('[data-i18n-ph]');
   for (var j = 0; j < ph.length; j++){ ph[j].placeholder = T(ph[j].getAttribute('data-i18n-ph')); }
-  document.title = 'PiBOH Windows Server Dashboard - ' + (document.getElementById('host').textContent || '');
+  document.title = (document.getElementById('host').textContent || '') + ' - ' + T('app_title');
   var cur = null;
   for (var k = 0; k < LANGS.length; k++){ if (LANGS[k].code === CURLANG) cur = LANGS[k]; }
   if (cur){
@@ -861,11 +861,14 @@ function drawProcs(){
       return ((p.Name || '') + ' ' + (p.Desc || '') + ' ' + (p.Path || '')).toLowerCase().indexOf(f) >= 0;
   }), 'tproc');
   document.getElementById('procs').innerHTML = rows.length ? rows.map(function(p){
-     /* always the real image name, extension included; the friendly name of
-        the executable ("Task Manager" for taskmgr.exe) goes right under it;
-        the full path stays in the tooltip */
-     var nm = '<td title="'+esc(p.Path || p.Name).replace(/"/g,'&quot;')+'">'+esc(p.Name)+
-              ((p.Desc) ? '<span class="pd">'+esc(p.Desc)+'</span>' : '')+'</td>';
+     /* the friendly name of the executable ("Windows Explorer" for
+        explorer.exe) is the main line, the real image name with its
+        extension goes right under it, grayed; when there is no
+        friendly name the image name alone is shown. The full path
+        stays in the tooltip */
+     var nm = '<td title="'+esc(p.Path || p.Name).replace(/"/g,'&quot;')+'">'+
+              ((p.Desc) ? esc(p.Desc)+'<span class="pd">'+esc(p.Name)+'</span>'
+                        : esc(p.Name))+'</td>';
      return '<tr>'+nm+'<td class="num">'+p.Pid+'</td>'+
             '<td class="num '+cls(p.CpuPct)+'">'+fmt(p.CpuPct)+'</td>'+
             '<td class="num">'+fmt(p.RamMB)+'</td><td class="num">'+p.Threads+'</td><td class="num">'+p.Handles+'</td></tr>';

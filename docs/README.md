@@ -196,19 +196,19 @@ OPERATING SYSTEM
   uptime, user sessions.
 
 PROCESSES
-  All running processes with the real image name, extension included
-  (sqlservr.exe, w3wp.exe, svchost.exe), PID, CPU %, RAM (MB), threads and
-  handles, in a scrollable pane with sticky headers. Under every image name
-  the dashboard also shows the friendly name of the executable ("Task
-  Manager" under taskmgr.exe, "Windows Explorer" under explorer.exe), read
-  from the version info of the file itself: it comes already in the language
-  of the server, exactly like Task Manager shows it. The dashboard itself is
-  listed under its own name: the engine, which would otherwise be just
-  another powershell.exe, is tagged "PiBOH Windows Server Dashboard", so it
-  can be found in its own list. Hover a name to see the
-  full path of the executable; the filter searches the image name, the
-  friendly name and the path, so you can type "task manager", "exe" or a
-  folder name too.
+  All running processes, in a scrollable pane with sticky headers. The
+  main line of the first column is the friendly name of the executable
+  ("Windows Explorer" for explorer.exe, "Task Manager" for taskmgr.exe),
+  read from the version info of the file itself: it comes already in the
+  language of the server, exactly like Task Manager shows it. The real
+  image name, extension included (sqlservr.exe, w3wp.exe, svchost.exe),
+  sits right under it in gray; when an executable has no friendly name the
+  image name alone is shown. The dashboard itself is listed under its own
+  name: the engine, which would otherwise be just another powershell.exe,
+  is tagged "PiBOH Windows Server Dashboard", so it can be found in its own
+  list. Hover a name to see the full path of the executable; the filter
+  searches the image name, the friendly name and the path, so you can
+  type "task manager", "exe" or a folder name too.
 
 SERVICES
   The complete service list with display name, internal name, state, startup
@@ -396,6 +396,11 @@ NOBODY WATCHING = NOTHING RUNNING
   history, set idle_seconds in settings.txt to the number of seconds you want
   (for example 900 for a sample every 15 minutes). The default, 0, means "do
   not sample at all".
+
+  The engine keeps its own footprint small too: every 5 minutes it releases
+  the memory pages it is not using (working set trim), so what Task Manager
+  shows is the memory the dashboard really needs, not the pages it happened
+  to touch since it started.
 
 
 5-bis. SELF UPDATE
@@ -616,6 +621,11 @@ back to the defaults.
 |                                 | service end to end            |
 | Check the task state            | schtasks /Query /TN "PiBOH Windows Server Dashboard" /V |
 | Uninstall                       | Run Uninstall.bat as administrator     |
+| How do I find the dashboard     | It runs as powershell.exe (the name    |
+| in Task Manager?                | "Windows PowerShell" belongs to        |
+|                                 | the file): in the Details tab enable   |
+|                                 | the "Command line" column and look     |
+|                                 | for ServerDashboard.ps1                |
 
 
 ------------------------------------------------------------------------------

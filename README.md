@@ -45,7 +45,7 @@ and the software announces itself in the Windows event log at every start.
 | **Network** | live download and upload, history chart, per-adapter figures, link speed, MAC, active TCP connections |
 | **IP configuration** | IPv4, mask, gateway, DNS, IPv6, DHCP, per adapter |
 | **Operating system** | version and build, manufacturer, model, BIOS, serial, install date, last boot, uptime, sessions |
-| **Processes** | every process with its real image name (`sqlservr.exe`) and, right under it, the friendly name from the file ("Task Manager" for `taskmgr.exe`); PID, CPU %, RAM, threads, handles, full path in the tooltip |
+| **Processes** | every process with the friendly name from the file ("Windows Explorer" for `explorer.exe`) as the main line and, right under it, the real image name (`sqlservr.exe`); PID, CPU %, RAM, threads, handles, full path in the tooltip |
 | **Services** | the complete list with state, startup type, PID and log-on account |
 | **Events** | critical, error and warning entries of the System and Application logs of the last 24 hours |
 

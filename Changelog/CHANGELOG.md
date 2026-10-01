@@ -8,9 +8,34 @@ Versioning follows Semantic Versioning: MAJOR.MINOR.PATCH.
 - PATCH - fixes and tweaks that add no feature.
 
 ------------------------------------------------------------------------------
-  1.16.2 - 2026-10-01
+  1.16.3 - 2026-10-01
 ------------------------------------------------------------------------------
 
+Changed:
+  - Process list: the friendly name ("Windows Explorer") is now the main
+    line of the column and the image name (explorer.exe) sits right under
+    it, grayed; an executable without a friendly name shows the image name
+    alone. Filtering and sorting work exactly as before.
+  - The browser tab title is back to plain "Dashboard", in the language
+    of the page as before 1.16.2, and now shows the server name first:
+    "<server> - Dashboard". The full product name stays in the footer,
+    in the process list, in the logon notification, in the scheduled
+    task and in the event log.
+  - The engine keeps its memory footprint small: every 5 minutes it
+    collects its garbage and asks Windows to move the pages it is not
+    using out of the working set. Task Manager then shows the memory the
+    dashboard really needs, instead of the ~80 MB of pages accumulated
+    while running.
+
+Fixed:
+  - Servers that auto-updated to 1.16.2 carry a few pre-1.16.0 leftovers
+    in their docs folder (an old manual and old screenshots): they are
+    removed at the first start. A logo.png kept in the root is a personal
+    file and is never touched.
+
+------------------------------------------------------------------------------
+  1.16.2 - 2026-10-01
+------------------------------------------------------------------------------
 Fixed:
   - Slow start at boot and "I have to install twice": up to 1.16.1 the
     GitHub update check ran BEFORE the web server was started, so on a

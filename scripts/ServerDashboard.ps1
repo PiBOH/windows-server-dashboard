@@ -591,6 +591,22 @@ function Update-FromGithub {
 # scripts\scripts bug) BEFORE anything else, in every start mode.
 Remove-NestedFolders
 
+# From 1.16.0 to 1.16.2 the update archive carried a few pre-1.16.0
+# leftovers into docs\: they are not part of the package. These are
+# exact paths, and nothing else is ever touched: a logo.png that the
+# user keeps in the root is a personal file and stays there.
+foreach ($stale in @(
+    (Join-Path $Root 'docs\CHANGELOG.md'),
+    (Join-Path $Root 'docs\RELEASE-NOTES-v1.13.0.md'),
+    (Join-Path $Root 'docs\RELEASE-NOTES-v1.14.0.md'),
+    (Join-Path $Root 'docs\screenshots')
+)) {
+    if (Test-Path -LiteralPath $stale) {
+        Remove-Item -LiteralPath $stale -Recurse -Force -ErrorAction SilentlyContinue
+        Write-Log "Removed a stale file left by an old update: $stale"
+    }
+}
+
 if ($CheckUpdatesOnly) {
     # pure check: it never installs and never stops anything
     $latest = Get-LatestVersion
@@ -832,6 +848,40 @@ $CollectorScript = {
         }
         return ,@($out | Sort-Object { $_.Time } -Descending | Select-Object -First 150)
     }
+
+    # --- memory trim (since 1.16.3) ---------------------------------------
+    # A long-running PowerShell engine keeps every page it ever touched in
+    # its working set, so Task Manager ends up showing much more memory
+    # than the dashboard really needs. Every 5 minutes the engine collects
+    # its garbage and asks Windows to move the pages it is NOT using out
+    # of the working set: the number in Task Manager then shows what is
+    # actually in use. EmptyWorkingSet is pure bookkeeping: nothing that
+    # is still needed is freed, and a page comes back by itself if the
+    # engine touches it again.
+    $MemTrimOk = $false
+    try {
+        if ([System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT) {
+            if (-not ('Win32.Mem' -as [type])) {
+                Add-Type -Namespace Win32 -Name Mem -MemberDefinition `
+                    '[DllImport("psapi.dll")] public static extern int EmptyWorkingSet(IntPtr hProcess);'
+            }
+            $MemTrimOk = $true
+        }
+    } catch { $MemTrimOk = $false }
+    if ($MemTrimOk) {
+        Write-CollectorLog $Shared 'Memory trim active (working set, every 5 minutes)'
+    }
+    function Invoke-MemoryTrim {
+        if (-not $script:MemTrimOk) { return }
+        try {
+            [void][System.GC]::Collect()
+            [void][System.GC]::WaitForPendingFinalizers()
+            [void][System.GC]::Collect()
+            [void][Win32.Mem]::EmptyWorkingSet([System.Diagnostics.Process]::GetCurrentProcess().Handle)
+        } catch { }
+    }
+    # first trim one minute after the start, then every 5 minutes
+    $lastTrim = (Get-Date).AddSeconds(-240)
 
     while ($Shared.Running) {
         $t0 = Get-Date
@@ -1549,6 +1599,12 @@ $CollectorScript = {
         $watchWindow = [math]::Max(15, $Shared.Interval * 5)
         $idleFor = ((Get-Date) - $Shared.LastRequest).TotalSeconds
 
+        # memory trim, once every 5 minutes (see Invoke-MemoryTrim above)
+        if (((Get-Date) - $lastTrim).TotalSeconds -ge 300) {
+            $lastTrim = Get-Date
+            Invoke-MemoryTrim
+        }
+
         if ($idleFor -gt $watchWindow -and $Shared.IdleInterval -le 0) {
             # ---- nobody is watching: stop sampling completely ----------------
             if (-not $Shared.Paused) {
@@ -1557,6 +1613,10 @@ $CollectorScript = {
             }
             while ($Shared.Running -and ((Get-Date) - $Shared.LastRequest).TotalSeconds -gt $watchWindow) {
                 Start-Sleep -Milliseconds 250
+                if (((Get-Date) - $lastTrim).TotalSeconds -ge 300) {
+                    $lastTrim = Get-Date
+                    Invoke-MemoryTrim
+                }
             }
             if ($Shared.Paused) {
                 $Shared.Paused = $false
@@ -1609,7 +1669,7 @@ $Html = @'
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PiBOH Windows Server Dashboard - __HOST__</title>
+<title>__HOST__ - Dashboard</title>
 <style>
 :root, html[data-theme="dark"]{
   --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --border:#283040;
@@ -2028,7 +2088,7 @@ function applyStatic(){
   for (var i = 0; i < els.length; i++){ els[i].textContent = T(els[i].getAttribute('data-i18n')); }
   var ph = document.querySelectorAll('[data-i18n-ph]');
   for (var j = 0; j < ph.length; j++){ ph[j].placeholder = T(ph[j].getAttribute('data-i18n-ph')); }
-  document.title = 'PiBOH Windows Server Dashboard - ' + (document.getElementById('host').textContent || '');
+  document.title = (document.getElementById('host').textContent || '') + ' - ' + T('app_title');
   var cur = null;
   for (var k = 0; k < LANGS.length; k++){ if (LANGS[k].code === CURLANG) cur = LANGS[k]; }
   if (cur){
@@ -2496,11 +2556,14 @@ function drawProcs(){
       return ((p.Name || '') + ' ' + (p.Desc || '') + ' ' + (p.Path || '')).toLowerCase().indexOf(f) >= 0;
   }), 'tproc');
   document.getElementById('procs').innerHTML = rows.length ? rows.map(function(p){
-     /* always the real image name, extension included; the friendly name of
-        the executable ("Task Manager" for taskmgr.exe) goes right under it;
-        the full path stays in the tooltip */
-     var nm = '<td title="'+esc(p.Path || p.Name).replace(/"/g,'&quot;')+'">'+esc(p.Name)+
-              ((p.Desc) ? '<span class="pd">'+esc(p.Desc)+'</span>' : '')+'</td>';
+     /* the friendly name of the executable ("Windows Explorer" for
+        explorer.exe) is the main line, the real image name with its
+        extension goes right under it, grayed; when there is no
+        friendly name the image name alone is shown. The full path
+        stays in the tooltip */
+     var nm = '<td title="'+esc(p.Path || p.Name).replace(/"/g,'&quot;')+'">'+
+              ((p.Desc) ? esc(p.Desc)+'<span class="pd">'+esc(p.Name)+'</span>'
+                        : esc(p.Name))+'</td>';
      return '<tr>'+nm+'<td class="num">'+p.Pid+'</td>'+
             '<td class="num '+cls(p.CpuPct)+'">'+fmt(p.CpuPct)+'</td>'+
             '<td class="num">'+fmt(p.RamMB)+'</td><td class="num">'+p.Threads+'</td><td class="num">'+p.Handles+'</td></tr>';
