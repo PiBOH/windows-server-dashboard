@@ -127,7 +127,7 @@
   <string key="no_match_ev">Ölçütlerle eşleşen olay yok.</string>
   <string key="ev_recent">en son olaylar (son 24 saat)</string>
   <string key="other_devices">Diğer aygıtlar (çıkarılabilir, sanal, optik)</string>
-  <string key="notif_title">Server Dashboard</string>
+  <string key="notif_title">PiBOH Windows Server Dashboard</string>
   <string key="notif_ok">Pano başarıyla başlatıldı</string>
   <string key="notif_ok_body">Şu adreste: {0}</string>
   <string key="notif_fail">Pano çalışMIYOR</string>

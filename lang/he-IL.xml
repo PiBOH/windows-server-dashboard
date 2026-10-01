@@ -127,7 +127,7 @@
   <string key="no_match_ev">אין אירוע התואם לקריטריונים.</string>
   <string key="ev_recent">האירועים האחרונים (24 השעות האחרונות)</string>
   <string key="other_devices">התקנים אחרים (נשלפים, וירטואליים, אופטיים)</string>
-  <string key="notif_title">Server Dashboard</string>
+  <string key="notif_title">PiBOH Windows Server Dashboard</string>
   <string key="notif_ok">לוח המחוונים הופעל בהצלחה</string>
   <string key="notif_ok_body">זמין בכתובת {0}</string>
   <string key="notif_fail">לוח המחוונים אינו פועל</string>

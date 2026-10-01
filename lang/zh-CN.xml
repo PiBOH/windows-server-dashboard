@@ -127,7 +127,7 @@
   <string key="no_match_ev">没有符合条件的事件。</string>
   <string key="ev_recent">最近的事件（过去 24 小时）</string>
   <string key="other_devices">其他设备（可移动、虚拟、光驱）</string>
-  <string key="notif_title">Server Dashboard</string>
+  <string key="notif_title">PiBOH Windows Server Dashboard</string>
   <string key="notif_ok">仪表板已成功启动</string>
   <string key="notif_ok_body">访问地址：{0}</string>
   <string key="notif_fail">仪表板未运行</string>

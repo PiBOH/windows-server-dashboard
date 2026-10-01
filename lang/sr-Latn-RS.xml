@@ -127,7 +127,7 @@
   <string key="no_match_ev">Nijedan događaj ne odgovara kriterijumima.</string>
   <string key="ev_recent">najnoviji događaji (poslednja 24 sata)</string>
   <string key="other_devices">Ostali uređaji (prenosivi, virtuelni, optički)</string>
-  <string key="notif_title">Server Dashboard</string>
+  <string key="notif_title">PiBOH Windows Server Dashboard</string>
   <string key="notif_ok">Kontrolna tabla je pokrenuta</string>
   <string key="notif_ok_body">Dostupna na {0}</string>
   <string key="notif_fail">Kontrolna tabla NIJE pokrenuta</string>

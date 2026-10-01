@@ -127,7 +127,7 @@
   <string key="no_match_ev">Ingen hændelse matcher kriterierne.</string>
   <string key="ev_recent">seneste hændelser (sidste 24 timer)</string>
   <string key="other_devices">Andre enheder (flytbare, virtuelle, optiske)</string>
-  <string key="notif_title">Server Dashboard</string>
+  <string key="notif_title">PiBOH Windows Server Dashboard</string>
   <string key="notif_ok">Dashboardet er startet</string>
   <string key="notif_ok_body">Tilgængeligt på {0}</string>
   <string key="notif_fail">Dashboardet kører IKKE</string>

@@ -6,7 +6,7 @@ REM  anything else, so the dashboard comes up on its own after a power on,
 REM  with nobody logged on to the server.
 REM ===========================================================================
 setlocal EnableExtensions EnableDelayedExpansion
-title Server Dashboard - Repair autostart
+title PiBOH Windows Server Dashboard - Repair autostart
 set "PORT=8080"
 set "INTERVAL=0.5"
 set "TASKNAME=PiBOH Windows Server Dashboard"

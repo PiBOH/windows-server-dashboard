@@ -127,7 +127,7 @@
   <string key="no_match_ev">条件に一致するイベントはありません。</string>
   <string key="ev_recent">最新のイベント (過去 24 時間)</string>
   <string key="other_devices">その他のデバイス (リムーバブル、仮想、光学)</string>
-  <string key="notif_title">Server Dashboard</string>
+  <string key="notif_title">PiBOH Windows Server Dashboard</string>
   <string key="notif_ok">ダッシュボードが正常に起動しました</string>
   <string key="notif_ok_body">アクセス先: {0}</string>
   <string key="notif_fail">ダッシュボードが実行されていません</string>

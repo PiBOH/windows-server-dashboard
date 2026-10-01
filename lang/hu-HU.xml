@@ -127,7 +127,7 @@
   <string key="no_match_ev">Nincs a feltételeknek megfelelő esemény.</string>
   <string key="ev_recent">legutóbbi események (utolsó 24 óra)</string>
   <string key="other_devices">Egyéb eszközök (cserélhető, virtuális, optikai)</string>
-  <string key="notif_title">Server Dashboard</string>
+  <string key="notif_title">PiBOH Windows Server Dashboard</string>
   <string key="notif_ok">Az irányítópult elindult</string>
   <string key="notif_ok_body">Elérhető itt: {0}</string>
   <string key="notif_fail">Az irányítópult NEM fut</string>

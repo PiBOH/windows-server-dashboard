@@ -57,7 +57,8 @@ is remembered by the browser.
 ```text
 1. Copy the folder to the server, for example  C:\ServerDashboard\
 2. Right-click Install.bat  ->  Run as administrator
-3. When asked, type the optional password (or press Enter for none)
+3. When asked, type the optional password (or Enter for none) and choose
+   what it protects: the whole page or only the server options
 4. From any PC on the LAN:  http://<server-ip>:8080
 ```
 
@@ -65,7 +66,7 @@ The installer checks the machine first, applies only what is missing and prints
 every change with its **BEFORE** and **AFTER** value:
 
 ```text
- [+] Firewall rule "Server Dashboard 8080"
+ [+] Firewall rule "PiBOH Windows Server Dashboard 8080"
      BEFORE : not present  |  AFTER : created (inbound, TCP 8080)
  [=] URL reservation http://+:8080/
      BEFORE : already reserved  |  AFTER : unchanged
@@ -214,7 +215,8 @@ data. It is read only and no command can be run through it, but if the server is
 exposed to the Internet restrict the rule to your subnet:
 
 ```bat
-netsh advfirewall firewall set rule name="Server Dashboard 8080" ^
+netsh advfirewall firewall set rule ^
+      name="PiBOH Windows Server Dashboard 8080" ^
       new remoteip=192.168.1.0/24
 ```
 

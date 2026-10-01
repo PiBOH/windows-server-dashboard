@@ -78,7 +78,7 @@ settings.txt.
 3. The installer inspects the machine, applies only the missing changes and
    prints a report with the BEFORE and AFTER value of each one:
 
-       [+] Firewall rule "Server Dashboard 8080"
+       [+] Firewall rule "PiBOH Windows Server Dashboard 8080"
            BEFORE : not present  |  AFTER : created (inbound, TCP 8080)
        [=] URL reservation http://+:8080/
            BEFORE : already reserved  |  AFTER : unchanged
@@ -86,9 +86,11 @@ settings.txt.
            BEFORE : not present  |  AFTER : created, runs at boot as SYSTEM
 
    The installer also asks whether to set an optional password: type it
-   (masked, twice) or just press Enter for none. The file
-   .config-do-not-delete-me\pwd is always created: an empty file simply
-   means "no password". It can be changed at any time with
+   (masked, twice) or just press Enter for none. Right after, it asks what
+   the password must protect - the whole page (total) or only the server
+   options (partial) - and writes password_mode into settings.txt. The
+   file .config-do-not-delete-me\pwd is always created: an empty file
+   simply means "no password". Both can be changed at any time with
    scripts\Set-Password.ps1.
 
 4. From another computer on the LAN open http://SERVER-IP:8080. The name
@@ -200,7 +202,10 @@ PROCESSES
   the dashboard also shows the friendly name of the executable ("Task
   Manager" under taskmgr.exe, "Windows Explorer" under explorer.exe), read
   from the version info of the file itself: it comes already in the language
-  of the server, exactly like Task Manager shows it. Hover a name to see the
+  of the server, exactly like Task Manager shows it. The dashboard itself is
+  listed under its own name: the engine, which would otherwise be just
+  another powershell.exe, is tagged "PiBOH Windows Server Dashboard", so it
+  can be found in its own list. Hover a name to see the
   full path of the executable; the filter searches the image name, the
   friendly name and the path, so you can type "task manager", "exe" or a
   folder name too.
@@ -420,6 +425,14 @@ NOBODY WATCHING = NOTHING RUNNING
   scripts\Update-Now.bat once with 1.16.0 and the installation cleans
   itself.
 
+  Since 1.16.2 the order is "page first": the update check runs after the
+  web server is already answering, so a slow network can no longer keep
+  the port closed at boot. And an update always ends with a running
+  dashboard: the updater waits for the old instance to release the port,
+  asks the task to start again and again and, as a last resort, launches
+  the engine directly; when a hand over at boot cannot launch the new
+  version, the current instance keeps serving instead of exiting.
+
   - The automatic check is switched on and off in settings.txt
     (auto_update = yes, the default, or no). Without a password no visitor
     can change it from the page; with a password set, whoever knows it can.
@@ -437,18 +450,23 @@ NOBODY WATCHING = NOTHING RUNNING
 ------------------------------------------------------------------------------
 
 At every user logon a Windows notification says whether the dashboard started
-correctly. It is produced by Show-StartupNotification.ps1, run by the
+correctly, in the Windows display language: the text is translated into all
+the 38 languages, reading the same lang\*.xml files used by the page. It is
+produced by Show-StartupNotification.ps1, run by the
 scheduled task "PiBOH Windows Server Dashboard Notify" that Install.bat creates.
 
 - The script waits up to 90 seconds for the service to answer on /api/health,
   because at logon the machine is still starting, then shows one of two
   messages, in the language of Windows:
 
-      Server Dashboard - Dashboard started successfully
+      PiBOH Windows Server Dashboard - Dashboard started successfully
       Available at http://192.168.1.10:8080
 
-      Server Dashboard - Dashboard is NOT running
+      PiBOH Windows Server Dashboard - Dashboard is NOT running
       Check the newest logs\ServerDashboard-*.log for details
+
+  The title is always the English product name: only the message under it
+  follows the language of Windows.
 
 - Three display methods are tried in order: a real Windows toast in the Action
   Center, a tray balloon tip, and finally a window drawn like a Windows 10
@@ -591,6 +609,11 @@ back to the defaults.
 | Temperature not available       | Let Core Temp run (the plain program   |
 |                                 | is enough), or check the source list   |
 | Page does not refresh           | Check the newest logs\ServerDashboard-*.log |
+| Browser never asks the password | password_mode = partial opens |
+|                                 | the page BY DESIGN: run       |
+|                                 | scripts\Diagnose.bat, it      |
+|                                 | checks file and running       |
+|                                 | service end to end            |
 | Check the task state            | schtasks /Query /TN "PiBOH Windows Server Dashboard" /V |
 | Uninstall                       | Run Uninstall.bat as administrator     |
 
@@ -657,7 +680,8 @@ Worth knowing:
 If the server is ever exposed to the Internet, restrict the firewall rule to
 the local subnet:
 
-    netsh advfirewall firewall set rule name="Server Dashboard 8080" ^
+    netsh advfirewall firewall set rule ^
+          name="PiBOH Windows Server Dashboard 8080" ^
           new remoteip=192.168.1.0/24
 
 

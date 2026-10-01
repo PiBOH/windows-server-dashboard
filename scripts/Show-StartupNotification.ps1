@@ -49,7 +49,7 @@ NLog "--- notification script started (port $Port, test=$Test) ---"
 # ---------------------------------------------------------------------------
 function Get-Strings {
     $keys = @{
-        notif_title     = 'Server Dashboard'
+        notif_title     = 'PiBOH Windows Server Dashboard'
         notif_ok        = 'Dashboard started successfully'
         notif_ok_body   = 'Available at {0}'
         notif_fail      = 'Dashboard is NOT running'

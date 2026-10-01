@@ -127,7 +127,7 @@
   <string key="no_match_ev">Nė vienas įvykis neatitinka kriterijų.</string>
   <string key="ev_recent">naujausi įvykiai (paskutinės 24 valandos)</string>
   <string key="other_devices">Kiti įrenginiai (keičiamieji, virtualūs, optiniai)</string>
-  <string key="notif_title">Server Dashboard</string>
+  <string key="notif_title">PiBOH Windows Server Dashboard</string>
   <string key="notif_ok">Sąsaja sėkmingai paleista</string>
   <string key="notif_ok_body">Pasiekiama adresu {0}</string>
   <string key="notif_fail">Sąsaja NEVEIKIA</string>

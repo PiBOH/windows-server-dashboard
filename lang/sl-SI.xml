@@ -127,7 +127,7 @@
   <string key="no_match_ev">Noben dogodek ne ustreza merilom.</string>
   <string key="ev_recent">najnovejši dogodki (zadnjih 24 ur)</string>
   <string key="other_devices">Druge naprave (izmenljive, navidezne, optične)</string>
-  <string key="notif_title">Server Dashboard</string>
+  <string key="notif_title">PiBOH Windows Server Dashboard</string>
   <string key="notif_ok">Nadzorna plošča se je zagnala</string>
   <string key="notif_ok_body">Na voljo na {0}</string>
   <string key="notif_fail">Nadzorna plošča NE deluje</string>

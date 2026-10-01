@@ -155,6 +155,7 @@ $Shared = [hashtable]::Synchronized(@{
     Running     = $true
     Started     = Get-Date
     Port        = $Port
+    Brand       = $BrandName
     LogFile     = $(if ($script:FixedLogFile) { $script:FixedLogFile } else { $LogDir })
     LogFixed    = [bool]$script:FixedLogFile
     LogDir      = $LogDir
@@ -272,7 +273,7 @@ function Write-Settings($cfg) {
     try {
         $lines = New-Object System.Collections.ArrayList
         [void]$lines.Add('# ============================================================')
-        [void]$lines.Add('#  ServerDashboard - settings')
+        [void]$lines.Add('#  PiBOH Windows Server Dashboard - settings')
         [void]$lines.Add('# ============================================================')
         [void]$lines.Add('#  Plain text file: one "key = value" per line.')
         [void]$lines.Add('#  You can edit it with Notepad, or from the gear button of the')
@@ -368,7 +369,19 @@ $Shared.Password = Read-FilePassword
 # the page stays open to everybody, the password is asked only to change
 # the server options from the settings panel.
 $script:PasswordTotal = [bool]$Shared.Password -and $Shared.Settings.passwordMode -ne 'partial'
-if (-not (Test-Path $SettingsFile)) { [void](Write-Settings $Shared.Settings) }
+if (-not (Test-Path $SettingsFile)) {
+    [void](Write-Settings $Shared.Settings)
+} else {
+    # A settings.txt written by Set-Password.ps1 with only the password_mode
+    # key is completed with the full template at the first start: the values
+    # read from the file are kept, the missing keys get their defaults.
+    $rawSettings = ''
+    try { $rawSettings = Get-Content -Path $SettingsFile -Raw -ErrorAction Stop } catch { }
+    if ($rawSettings -notmatch '(?m)^\s*refresh_seconds\s*=') {
+        [void](Write-Settings $Shared.Settings)
+        Write-Log 'settings.txt completed with the full template (values preserved)'
+    }
+}
 
 # ----------------------------------------------------------------------------
 # Self update from GitHub.
@@ -509,9 +522,34 @@ function Stop-DashboardForUpdate {
 }
 
 function Start-DashboardAfterUpdate {
-    try { $null = & schtasks /Run /TN $BrandName 2>$null } catch { }
-    # the task needs a moment to wake the listener: wait for its answer
+    # The old instance may need a moment to disappear, and a task whose
+    # previous instance is still "Running" silently refuses to start a new
+    # one. So: wait until the port is really free, ask for the start again
+    # and again, and as a last resort launch the engine directly: a running
+    # dashboard detached from the task is better than no dashboard at all,
+    # and at the next boot the task takes over again.
+    foreach ($i in 1..15) {
+        $busy = $false
+        try { $busy = [bool](Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue) } catch { }
+        if (-not $busy) { break }
+        Start-Sleep -Seconds 1
+    }
     foreach ($i in 1..20) {
+        try { $null = & schtasks /Run /TN $BrandName 2>$null } catch { }
+        Start-Sleep -Seconds 1
+        try {
+            $r = Invoke-WebRequest -Uri ("http://localhost:{0}/api/health" -f $Port) -UseBasicParsing -TimeoutSec 3
+            if ($r.StatusCode -eq 200) { return $true }
+        } catch { }
+    }
+    Write-Log 'The task did not start the new version: launching it directly.' 'WARN'
+    try {
+        Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
+            '-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass',
+            '-File', (Join-Path $PSScriptRoot 'ServerDashboard.ps1'), '-Port', "$Port"
+        ) -WindowStyle Hidden
+    } catch { }
+    foreach ($i in 1..10) {
         Start-Sleep -Seconds 1
         try {
             $r = Invoke-WebRequest -Uri ("http://localhost:{0}/api/health" -f $Port) -UseBasicParsing -TimeoutSec 3
@@ -546,6 +584,8 @@ function Update-FromGithub {
 #   -UpdateNow         check, download, STOP, install, START (Update-Now.bat)
 #   -CheckUpdatesOnly  just check and report, touch nothing
 #   nothing            the automatic check at every start, if auto_update=yes
+#                      (since 1.16.2 it runs AFTER the web server is up: the
+#                      page answers first, the check can wait)
 # ----------------------------------------------------------------------------
 # Clean up any leftover from the updaters of the versions up to 1.15.0 (the
 # scripts\scripts bug) BEFORE anything else, in every start mode.
@@ -611,37 +651,13 @@ if ($UpdateNow) {
         Remove-Item $script:UpdateMarker -Force -ErrorAction SilentlyContinue
     }
 }
-$script:Updated = Update-FromGithub
-if ($script:Updated) {
-    # Safety net against update loops: hand over to the new version ONLY if
-    # the file on disk really is a new version. The updaters up to 1.15.0
-    # had a copy bug that left version.txt untouched, so every start saw
-    # the same "new" release, installed it again and spawned itself again,
-    # in an endless loop in which the port never opened: the dashboard
-    # looked like "it does not start by itself" and no update ever landed.
-    $diskVersion = ''
-    try {
-        $diskVersion = "$(Get-Content -Path (Join-Path $PSScriptRoot 'version.txt') -TotalCount 1 -ErrorAction Stop)".Trim()
-    } catch { }
-    if ($diskVersion -eq $DashboardVersion) {
-        Write-Log "Self update did not land (version.txt still $DashboardVersion): staying up on the current version." 'ERROR'
-        Write-DashEvent 3 'Error' ("$BrandName v${DashboardVersion}: the automatic update did not replace the " +
-            "local files (version.txt still says $DashboardVersion), so the dashboard stays up on the current " +
-            "version instead of restarting in a loop. Run scripts\Update-Now.bat by hand and, if it happens " +
-            "again, scripts\Diagnose.bat.")
-    } else {
-        # hand over to the new version, with the same port
-        try {
-            Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
-                '-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass',
-                '-File', $PSCommandPath, '-Port', "$Port"
-            ) -WindowStyle Hidden
-        } catch {
-            Write-Log 'Could not launch the new version: it will start at the next task run.' 'WARN'
-        }
-        exit 0
-    }
-}
+# The automatic update check used to run HERE, before the web server: on a
+# slow network the GitHub request could keep the port closed for up to half
+# a minute at every boot, and the dashboard looked like "it does not start
+# by itself" (and the installer reported it as not answering, which is why
+# a second run of Install.bat looked like "now it works"). Since 1.16.2 the
+# page answers first and the check runs after the listener is up, near the
+# end of this startup.
 
 # Since the file is the only way to change these values, it is watched: edit it
 # with Notepad and the change is picked up within 10 seconds, no restart needed.
@@ -1345,6 +1361,7 @@ $CollectorScript = {
                 $imgMap["$($wp.ProcessId)"] = @{
                     File = "$($wp.Name)"                 # e.g. "sqlservr.exe"
                     Path = "$($wp.ExecutablePath)"       # e.g. "C:\Program Files\...\sqlservr.exe"
+                    Cmd  = "$($wp.CommandLine)"          # full command line (self-identification)
                 }
             }
 
@@ -1362,9 +1379,22 @@ $CollectorScript = {
                         $file = ($p.Name -replace '#\d+$', '')
                         if ($file -notmatch '\.[A-Za-z0-9]{2,4}$') { $file = "$file.exe" }
                     }
+                    # Self-identification: the engine would otherwise be just
+                    # another powershell.exe ("Windows PowerShell") in the
+                    # list. Every process running ServerDashboard.ps1 - this
+                    # very process included - is tagged with the brand name
+                    # instead, so the dashboard is recognizable in its own
+                    # Processes table. ($Shared.Brand because the collector
+                    # runspace only receives $Shared, not the engine scope.)
+                    $cmdLn = ''
+                    if ($imgMap.ContainsKey($key)) { $cmdLn = $imgMap[$key].Cmd }
+                    $pDesc = & $GetDesc $path
+                    if (($key -eq "$PID") -or ($cmdLn -like '*ServerDashboard.ps1*')) {
+                        $pDesc = $Shared.Brand
+                    }
                     $procs += @{
                         Name    = $file
-                        Desc    = (& $GetDesc $path)
+                        Desc    = $pDesc
                         Path    = $path
                         Pid     = [int]$p.IDProcess
                         CpuPct  = [math]::Round([double]$p.PercentProcessorTime / $nCpu, 1)
@@ -1379,6 +1409,13 @@ $CollectorScript = {
                     $file = if ($imgMap.ContainsKey($key)) { $imgMap[$key].File } else { "$($p.ProcessName).exe" }
                     $path = if ($imgMap.ContainsKey($key)) { $imgMap[$key].Path } else { '' }
                     $desc = & $GetDesc $path
+                    # self-identification, same as above: the $PID check works
+                    # even when Win32_Process is not available at all
+                    $cmdLn = ''
+                    if ($imgMap.ContainsKey($key)) { $cmdLn = $imgMap[$key].Cmd }
+                    if (($key -eq "$PID") -or ($cmdLn -like '*ServerDashboard.ps1*')) {
+                        $desc = $Shared.Brand
+                    }
                     $procs += @{ Name=$file; Desc=$desc; Path=$path; Pid=$p.Id; CpuPct=0;
                                  RamMB=[math]::Round($p.WorkingSet64/1MB,1);
                                  Threads=$p.Threads.Count; Handles=$p.HandleCount }
@@ -1572,7 +1609,7 @@ $Html = @'
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dashboard - __HOST__</title>
+<title>PiBOH Windows Server Dashboard - __HOST__</title>
 <style>
 :root, html[data-theme="dark"]{
   --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --border:#283040;
@@ -1875,7 +1912,7 @@ footer .fcenter b{color:var(--txt)}
     <button id="setbtn" title="Dashboard settings">&#9881; <span id="setlabel">Settings</span></button>
     <button id="langbtn" title="Choose the dashboard language">&#127760; Language: <b id="curlang">English</b></button>
   </div>
-  <div class="fcenter">ServerDashboard <b id="ver">__VERSION__</b></div>
+  <div class="fcenter">PiBOH Windows Server Dashboard <b id="ver">__VERSION__</b></div>
   <div class="fside right">
     <span id="err" class="crit"></span>
     <button id="themebtn" title="Switch light / dark theme"><span id="themeicon">&#9788;</span> <span id="themelabel">Light theme</span></button>
@@ -1991,7 +2028,7 @@ function applyStatic(){
   for (var i = 0; i < els.length; i++){ els[i].textContent = T(els[i].getAttribute('data-i18n')); }
   var ph = document.querySelectorAll('[data-i18n-ph]');
   for (var j = 0; j < ph.length; j++){ ph[j].placeholder = T(ph[j].getAttribute('data-i18n-ph')); }
-  document.title = T('app_title') + ' - ' + (document.getElementById('host').textContent || '');
+  document.title = 'PiBOH Windows Server Dashboard - ' + (document.getElementById('host').textContent || '');
   var cur = null;
   for (var k = 0; k < LANGS.length; k++){ if (LANGS[k].code === CURLANG) cur = LANGS[k]; }
   if (cur){
@@ -2995,6 +3032,48 @@ function Invoke-Housekeeping {
                            $_.Exception.Message) 'WARN'
             }
         }
+    }
+}
+
+# ----------------------------------------------------------------------------
+# Automatic update check of the start: it runs AFTER the web server is up
+# (since 1.16.2), so the page answers first and the check can wait. When a
+# new version is installed the hand over happens with the port still open:
+# the new engine retries the port every 5 seconds until this process exits.
+# ----------------------------------------------------------------------------
+$script:Updated = Update-FromGithub
+if ($script:Updated) {
+    # Safety net against update loops: hand over to the new version ONLY if
+    # the file on disk really is a new version. The updaters up to 1.15.0
+    # had a copy bug that left version.txt untouched, so every start saw
+    # the same "new" release, installed it again and spawned itself again,
+    # in an endless loop in which the port never opened: the dashboard
+    # looked like "it does not start by itself" and no update ever landed.
+    $diskVersion = ''
+    try {
+        $diskVersion = "$(Get-Content -Path (Join-Path $PSScriptRoot 'version.txt') -TotalCount 1 -ErrorAction Stop)".Trim()
+    } catch { }
+    if ($diskVersion -eq $DashboardVersion) {
+        Write-Log "Self update did not land (version.txt still $DashboardVersion): staying up on the current version." 'ERROR'
+        Write-DashEvent 3 'Error' ("$BrandName v${DashboardVersion}: the automatic update did not replace the " +
+            "local files (version.txt still says $DashboardVersion), so the dashboard stays up on the current " +
+            "version instead of restarting in a loop. Run scripts\Update-Now.bat by hand and, if it happens " +
+            "again, scripts\Diagnose.bat.")
+    } else {
+        # Hand over to the new version, same port. If the launch fails this
+        # instance keeps serving: the files on disk are already the new ones,
+        # so the next boot runs them, and nobody is left without the page.
+        $handed = $false
+        try {
+            Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
+                '-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass',
+                '-File', $PSCommandPath, '-Port', "$Port"
+            ) -WindowStyle Hidden
+            $handed = $true
+        } catch {
+            Write-Log 'Could not launch the new version: staying up on the current one.' 'ERROR'
+        }
+        if ($handed) { exit 0 }
     }
 }
 

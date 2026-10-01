@@ -127,7 +127,7 @@
   <string key="no_match_ev">Neviens notikums neatbilst kritērijiem.</string>
   <string key="ev_recent">jaunākie notikumi (pēdējās 24 stundas)</string>
   <string key="other_devices">Citas ierīces (noņemamas, virtuālas, optiskas)</string>
-  <string key="notif_title">Server Dashboard</string>
+  <string key="notif_title">PiBOH Windows Server Dashboard</string>
   <string key="notif_ok">Panelis ir startēts</string>
   <string key="notif_ok_body">Pieejams: {0}</string>
   <string key="notif_fail">Panelis NEDARBOJAS</string>

@@ -127,7 +127,7 @@
   <string key="no_match_ev">Κανένα συμβάν δεν ταιριάζει στα κριτήρια.</string>
   <string key="ev_recent">πιο πρόσφατα συμβάντα (τελευταίες 24 ώρες)</string>
   <string key="other_devices">Άλλες συσκευές (αφαιρούμενες, εικονικές, οπτικές)</string>
-  <string key="notif_title">Server Dashboard</string>
+  <string key="notif_title">PiBOH Windows Server Dashboard</string>
   <string key="notif_ok">Ο πίνακας ξεκίνησε με επιτυχία</string>
   <string key="notif_ok_body">Διαθέσιμος στο {0}</string>
   <string key="notif_fail">Ο πίνακας ΔΕΝ εκτελείται</string>

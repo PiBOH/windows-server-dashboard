@@ -1,7 +1,8 @@
 <#
     Diagnose.ps1
     ---------------------------------------------------------------------------
-    Read-only diagnostics for the Server Dashboard: it changes nothing.
+    Read-only diagnostics for the PiBOH Windows Server Dashboard:
+    it changes nothing.
     Answers the usual question: why is the dashboard not reachable, and why
     does it look like it only works after logging on to the server?
 
@@ -144,9 +145,17 @@ if ($acl -match [regex]::Escape("http://+:$Port/")) {
     Info "     powershell -ExecutionPolicy Bypass -File scripts\Set-UrlAcl.ps1 -Port $Port"
     if ($acct) { Info "  or netsh http add urlacl url=http://+:$Port/ user=`"$acct`"" }
 }
-$fw = (netsh advfirewall firewall show rule name=("Server Dashboard $Port") 2>$null) -join "`n"
-if ($fw -match '(?i)Rule Name|Regola') { Ok "Firewall rule 'Server Dashboard $Port' present." }
-else { Bad "Firewall rule 'Server Dashboard $Port' missing: the LAN cannot reach the port." }
+$fw  = (netsh advfirewall firewall show rule name=("PiBOH Windows Server Dashboard $Port") 2>$null) -join "`n"
+$fwo = (netsh advfirewall firewall show rule name=("Server Dashboard $Port") 2>$null) -join "`n"
+if ($fw -match '(?i)Rule Name|Regola') {
+    Ok "Firewall rule 'PiBOH Windows Server Dashboard $Port' present."
+} elseif ($fwo -match '(?i)Rule Name|Regola') {
+    Info "Firewall rule still named 'Server Dashboard $Port' (before 1.16.2):"
+    Info "run Install.bat once to rename it to the product name."
+} else {
+    Bad "Firewall rule 'PiBOH Windows Server Dashboard $Port' missing:"
+    Bad "the LAN cannot reach the port."
+}
 
 # ---------------------------------------------------------------- 5. http answer
 Head 5 'HTTP ANSWER'
@@ -220,6 +229,7 @@ else { Info 'settings.txt absent: the defaults will be used and the file recreat
 $pwdFile = Join-Path $root '.config-do-not-delete-me\pwd'
 if (-not (Test-Path $pwdFile)) { $pwdFile = Join-Path $root 'pwd' }             # 1.16.0 kept it here
 if (-not (Test-Path $pwdFile)) { $pwdFile = Join-Path $root 'scripts\pwd' }    # first 1.16.0 builds
+$has = $false
 if (Test-Path $pwdFile) {
     $mode = 'total'
     try {
@@ -227,7 +237,6 @@ if (Test-Path $pwdFile) {
             if ("$ln" -match '^\s*password_mode\s*=\s*(\S+)') { if ($Matches[1] -match '(?i)^part') { $mode = 'partial' } }
         }
     } catch { }
-    $has = $false
     try { foreach ($ln in (Get-Content $pwdFile)) { if ("$ln".Trim()) { $has = $true; break } } } catch { }
     if ($has) { Ok "pwd file: a password is set ($mode mode)" }
     else { Info 'pwd file present but empty: no password, the dashboard is open' }
@@ -235,6 +244,26 @@ if (Test-Path $pwdFile) {
     Info 'pwd file absent: no password, the dashboard is open'
     Info '(the service recreates the file empty at its next start)'
 }
+# the RUNNING service must see the same password state as the file: a
+# mismatch means an old version is still running, or the file was moved
+# after the service started
+try {
+    $svc = Invoke-RestMethod -Uri "http://localhost:$Port/api/settings" -TimeoutSec 8
+    if ([bool]$svc.passwordProtected -ne $has) {
+        Warn 'The running service and the pwd file disagree:'
+        if ($has) {
+            Info 'the file has a password, but the service reports none. Restart'
+            Info 'the service (Stop-Dashboard.bat, then Start-Dashboard.bat) and'
+            Info 'check the version in the page footer: an old engine looks for'
+            Info 'the pwd file in a different place.'
+        } else {
+            Info 'the service reports a password, but the file looks empty.'
+        }
+    } else {
+        $svcMode = if ("$($svc.passwordMode)" -eq 'partial') { 'partial' } else { 'total' }
+        Ok ("the running service sees the password correctly ($svcMode mode)")
+    }
+} catch { }
 if (Test-Path (Join-Path $root 'scripts\Set-Password.ps1')) { Ok 'scripts\Set-Password.ps1' }
 else { Info 'scripts\Set-Password.ps1 missing: Install.bat cannot ask for a password' }
 if (Test-Path (Join-Path $root 'scripts\install-state.txt')) {

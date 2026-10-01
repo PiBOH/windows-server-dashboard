@@ -127,7 +127,7 @@
   <string key="no_match_ev">Aucun événement ne correspond aux critères.</string>
   <string key="ev_recent">événements les plus récents (dernières 24 heures)</string>
   <string key="other_devices">Autres périphériques (amovibles, virtuels, optiques)</string>
-  <string key="notif_title">Server Dashboard</string>
+  <string key="notif_title">PiBOH Windows Server Dashboard</string>
   <string key="notif_ok">Tableau de bord démarré</string>
   <string key="notif_ok_body">Disponible sur {0}</string>
   <string key="notif_fail">Le tableau de bord ne fonctionne PAS</string>

@@ -127,7 +127,7 @@
   <string key="no_match_ev">Ingen hendelse samsvarer med kriteriene.</string>
   <string key="ev_recent">nyeste hendelser (siste 24 timer)</string>
   <string key="other_devices">Andre enheter (flyttbare, virtuelle, optiske)</string>
-  <string key="notif_title">Server Dashboard</string>
+  <string key="notif_title">PiBOH Windows Server Dashboard</string>
   <string key="notif_ok">Instrumentbordet er startet</string>
   <string key="notif_ok_body">Tilgjengelig på {0}</string>
   <string key="notif_fail">Instrumentbordet kjører IKKE</string>

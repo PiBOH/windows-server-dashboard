@@ -127,7 +127,7 @@
   <string key="no_match_ev">Žiadna udalosť nezodpovedá kritériám.</string>
   <string key="ev_recent">najnovšie udalosti (posledných 24 hodín)</string>
   <string key="other_devices">Ďalšie zariadenia (vymeniteľné, virtuálne, optické)</string>
-  <string key="notif_title">Server Dashboard</string>
+  <string key="notif_title">PiBOH Windows Server Dashboard</string>
   <string key="notif_ok">Tabuľa bola spustená</string>
   <string key="notif_ok_body">Dostupná na {0}</string>
   <string key="notif_fail">Tabuľa NEBEŽÍ</string>

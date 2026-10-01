@@ -8,6 +8,55 @@ Versioning follows Semantic Versioning: MAJOR.MINOR.PATCH.
 - PATCH - fixes and tweaks that add no feature.
 
 ------------------------------------------------------------------------------
+  1.16.2 - 2026-10-01
+------------------------------------------------------------------------------
+
+Fixed:
+  - Slow start at boot and "I have to install twice": up to 1.16.1 the
+    GitHub update check ran BEFORE the web server was started, so on a
+    slow network the port stayed closed for up to half a minute at every
+    boot and right after an installation. The dashboard looked like "it
+    does not start by itself" and the installer reported it as not
+    answering - which is why a second run of Install.bat looked like "now
+    it works". Since 1.16.2 the page answers first and the update check
+    runs after it; the installer also keeps checking the health for up to
+    45 seconds instead of failing after a fixed 5.
+  - After an update the new version now starts reliably. The old instance
+    may need a moment to release the port, and a task whose previous
+    instance is still "Running" silently refuses to start a new one: the
+    updater now waits for the port to be free, asks for the start again
+    and again and, as a last resort, launches the engine directly, so the
+    dashboard is never left down. When the hand over at boot cannot launch
+    the new version, the current instance keeps serving instead of exiting.
+  - Total password mode looked broken ("the browser never asks for the
+    password") when settings.txt still carried password_mode = partial
+    from an earlier experiment: the installer had no way to choose. It now
+    asks, right after the password, what it must protect - the whole page
+    or only the server options - and writes password_mode into
+    settings.txt; scripts\Set-Password.ps1 asks the same when run alone
+    or takes -Mode total|partial. A settings.txt reduced to that single
+    key is completed with the full template at the first start.
+  - The software did not fully identify itself as "PiBOH Windows Server
+    Dashboard": the browser tab said "Dashboard", the page footer said
+    "ServerDashboard" and the logon notification was titled "Server
+    Dashboard". All of them now carry the full name; in the Processes
+    table every process running ServerDashboard.ps1 is tagged with it
+    too, so the dashboard is finally visible in its own list - with the
+    same name the scheduled task and the event log always used. The
+    firewall rule is renamed as well (the old one is migrated by
+    Install.bat and removed by Uninstall.bat), together with the window
+    titles of the .bat files and the header of settings.txt.
+
+Changed:
+  - Diagnose now also compares the password state reported by the running
+    service with the pwd file, and says exactly what to do when the two
+    disagree.
+  - The manual states that the logon notification is translated into all
+    the 38 languages: it reads the same lang\*.xml files of the page.
+  - Diagnose recognizes a firewall rule still named the pre-1.16.2 way
+    and says to run Install.bat once to rename it.
+
+------------------------------------------------------------------------------
   1.16.1 - 2026-09-30
 ------------------------------------------------------------------------------
 

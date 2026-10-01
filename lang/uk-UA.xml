@@ -127,7 +127,7 @@
   <string key="no_match_ev">Жодна подія не відповідає критеріям.</string>
   <string key="ev_recent">найновіші події (останні 24 години)</string>
   <string key="other_devices">Інші пристрої (знімні, віртуальні, оптичні)</string>
-  <string key="notif_title">Server Dashboard</string>
+  <string key="notif_title">PiBOH Windows Server Dashboard</string>
   <string key="notif_ok">Панель успішно запущено</string>
   <string key="notif_ok_body">Доступна за адресою {0}</string>
   <string key="notif_fail">Панель НЕ працює</string>

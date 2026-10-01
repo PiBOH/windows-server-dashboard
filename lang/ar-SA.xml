@@ -127,7 +127,7 @@
   <string key="no_match_ev">لا يوجد حدث مطابق للمعايير.</string>
   <string key="ev_recent">أحدث الأحداث (آخر 24 ساعة)</string>
   <string key="other_devices">أجهزة أخرى (قابلة للإزالة، ظاهرية، ضوئية)</string>
-  <string key="notif_title">Server Dashboard</string>
+  <string key="notif_title">PiBOH Windows Server Dashboard</string>
   <string key="notif_ok">تم تشغيل لوحة المعلومات بنجاح</string>
   <string key="notif_ok_body">متاحة على {0}</string>
   <string key="notif_fail">لوحة المعلومات لا تعمل</string>

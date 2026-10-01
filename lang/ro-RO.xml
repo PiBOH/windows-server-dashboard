@@ -127,7 +127,7 @@
   <string key="no_match_ev">Niciun eveniment nu corespunde criteriilor.</string>
   <string key="ev_recent">cele mai recente evenimente (ultimele 24 de ore)</string>
   <string key="other_devices">Alte dispozitive (amovibile, virtuale, optice)</string>
-  <string key="notif_title">Server Dashboard</string>
+  <string key="notif_title">PiBOH Windows Server Dashboard</string>
   <string key="notif_ok">Tabloul de bord a pornit</string>
   <string key="notif_ok_body">Disponibil la {0}</string>
   <string key="notif_fail">Tabloul de bord NU rulează</string>

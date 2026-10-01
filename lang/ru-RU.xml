@@ -127,7 +127,7 @@
   <string key="no_match_ev">Нет событий, соответствующих критериям.</string>
   <string key="ev_recent">последние события (за 24 часа)</string>
   <string key="other_devices">Другие устройства (съемные, виртуальные, оптические)</string>
-  <string key="notif_title">Server Dashboard</string>
+  <string key="notif_title">PiBOH Windows Server Dashboard</string>
   <string key="notif_ok">Панель мониторинга запущена</string>
   <string key="notif_ok_body">Доступна по адресу {0}</string>
   <string key="notif_fail">Панель мониторинга НЕ работает</string>

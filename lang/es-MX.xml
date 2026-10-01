@@ -127,7 +127,7 @@
   <string key="no_match_ev">Ningún evento coincide con los criterios.</string>
   <string key="ev_recent">eventos más recientes (últimas 24 horas)</string>
   <string key="other_devices">Otros dispositivos (extraíbles, virtuales, ópticos)</string>
-  <string key="notif_title">Server Dashboard</string>
+  <string key="notif_title">PiBOH Windows Server Dashboard</string>
   <string key="notif_ok">Panel iniciado correctamente</string>
   <string key="notif_ok_body">Disponible en {0}</string>
   <string key="notif_fail">El panel NO está en ejecución</string>

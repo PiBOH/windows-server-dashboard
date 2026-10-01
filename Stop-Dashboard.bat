@@ -1,6 +1,6 @@
 @echo off
 setlocal EnableExtensions
-title Stop Server Dashboard
+title Stop PiBOH Windows Server Dashboard
 
 REM ===========================================================================
 REM  Stop-Dashboard.bat - stops the dashboard (scheduled task and/or process)

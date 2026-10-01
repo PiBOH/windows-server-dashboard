@@ -1,6 +1,6 @@
 @echo off
 setlocal EnableExtensions
-title Server Dashboard - Monitoring
+title PiBOH Windows Server Dashboard - Monitoring
 
 REM ===========================================================================
 REM  Start-Dashboard.bat
@@ -60,10 +60,11 @@ netsh http add urlacl url=http://+:%PORT%/ user="NT AUTHORITY\SYSTEM" >nul 2>&1
 netsh http add urlacl url=http://+:%PORT%/ user="%USERDOMAIN%\%USERNAME%" >nul 2>&1
 
 REM ---- inbound firewall rule ------------------------------------------------
-netsh advfirewall firewall show rule name="Server Dashboard %PORT%" >nul 2>&1
+netsh advfirewall firewall show rule name="PiBOH Windows Server Dashboard %PORT%" >nul 2>&1
 if errorlevel 1 (
+    netsh advfirewall firewall delete rule name="Server Dashboard %PORT%" >nul 2>&1
     echo    Creating the firewall rule for port %PORT%...
-    netsh advfirewall firewall add rule name="Server Dashboard %PORT%" dir=in action=allow protocol=TCP localport=%PORT% profile=any >nul 2>&1
+    netsh advfirewall firewall add rule name="PiBOH Windows Server Dashboard %PORT%" dir=in action=allow protocol=TCP localport=%PORT% profile=any >nul 2>&1
 )
 
 REM ---- launch the PowerShell service ----------------------------------------
@@ -71,7 +72,7 @@ if "%HIDDEN%"=="1" (
     powershell -NoProfile -ExecutionPolicy Bypass -Command ^
       "Start-Process powershell -WindowStyle Hidden -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File','\"%PS1%\"','-Port','%PORT%','-IntervalSeconds','%INTERVAL%'"
 ) else (
-    start "Server Dashboard" powershell -NoProfile -ExecutionPolicy Bypass -File "%PS1%" -Port %PORT% -IntervalSeconds %INTERVAL%
+    start "PiBOH Windows Server Dashboard" powershell -NoProfile -ExecutionPolicy Bypass -File "%PS1%" -Port %PORT% -IntervalSeconds %INTERVAL%
 )
 
 REM ---- show the access URLs -------------------------------------------------

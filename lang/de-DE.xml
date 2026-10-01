@@ -127,7 +127,7 @@
   <string key="no_match_ev">Kein Ereignis entspricht den Kriterien.</string>
   <string key="ev_recent">neueste Ereignisse (letzte 24 Stunden)</string>
   <string key="other_devices">Weitere Geräte (Wechselmedien, virtuell, optisch)</string>
-  <string key="notif_title">Server Dashboard</string>
+  <string key="notif_title">PiBOH Windows Server Dashboard</string>
   <string key="notif_ok">Dashboard erfolgreich gestartet</string>
   <string key="notif_ok_body">Verfügbar unter {0}</string>
   <string key="notif_fail">Dashboard wird NICHT ausgeführt</string>

@@ -19,7 +19,11 @@
           Install.bat uses, so reinstalling keeps the current password.
 
       powershell -ExecutionPolicy Bypass -File Set-Password.ps1 -Password x
-          Sets the given password without asking ('' removes it).
+          Sets the given password without asking ('' removes it). Without
+          -Mode the script also asks what the password must protect (the
+          whole page or only the server options) and writes password_mode
+          into settings.txt; -Mode total|partial answers the question in
+          advance, for scripted use.
 
     Exit codes: 0 = password set (or already set), 2 = no password,
     1 = the file could not be written.
@@ -28,7 +32,8 @@
 param(
     [string]$Password,
     [switch]$KeepExisting,
-    [string]$File
+    [string]$File,
+    [string]$Mode            # total | partial: written to settings.txt
 )
 
 $ErrorActionPreference = 'Stop'
@@ -55,6 +60,47 @@ function Get-PwdText([string]$Path) {
     return ''
 }
 
+function Get-PasswordMode {
+    # what settings.txt currently says (total when missing or unreadable)
+    $settings = Join-Path $root 'settings.txt'
+    try {
+        if (Test-Path -LiteralPath $settings) {
+            foreach ($ln in (Get-Content -LiteralPath $settings)) {
+                if ("$ln" -match '^\s*password_mode\s*=\s*(\S+)') {
+                    if ($Matches[1] -match '(?i)^part') { return 'partial' }
+                }
+            }
+        }
+    } catch { }
+    return 'total'
+}
+
+function Set-PasswordMode([string]$NewMode) {
+    # writes password_mode into settings.txt; when the file does not exist
+    # yet it is created with this single key and the service completes it
+    # with the full template at its first start
+    if ($NewMode -ne 'total' -and $NewMode -ne 'partial') { return $false }
+    $settings = Join-Path $root 'settings.txt'
+    $line = 'password_mode = ' + $NewMode
+    try {
+        if (Test-Path -LiteralPath $settings) {
+            $lines = @(Get-Content -LiteralPath $settings)
+            $done = $false
+            for ($i = 0; $i -lt $lines.Count; $i++) {
+                if ("$($lines[$i])" -match '^\s*password_mode\s*=') { $lines[$i] = $line; $done = $true; break }
+            }
+            if (-not $done) { $lines += $line }
+            Set-Content -LiteralPath $settings -Value $lines -Encoding UTF8
+        } else {
+            Set-Content -LiteralPath $settings -Value @(
+                '# ServerDashboard - settings (completed with every key by the service at its first start)',
+                $line
+            ) -Encoding UTF8
+        }
+        return $true
+    } catch { return $false }
+}
+
 function Read-Masked([string]$Prompt) {
     $sec = Read-Host -AsSecureString $Prompt
     $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)
@@ -76,7 +122,8 @@ foreach ($legacy in @((Join-Path $PSScriptRoot 'pwd'), (Join-Path $root 'pwd')))
 
 if ($KeepExisting -and ((Get-PwdText $File) -ne '')) {
     Write-Host '  [=] Password: already set - kept as it is.'
-    Write-Host '      To change it: scripts\Set-Password.ps1, or edit the pwd file.'
+    Write-Host ('      Current mode: ' + (Get-PasswordMode) +
+                ' - change it in settings.txt (password_mode = total | partial).')
     exit 0
 }
 
@@ -114,6 +161,18 @@ if ($pw -eq '') {
     exit 2
 }
 Write-Host '  [+] Password: saved to .config-do-not-delete-me\pwd.'
-Write-Host '      The dashboard picks it up within ten seconds, no restart needed.'
+
+# What must the password protect? Asked only when a password was just set
+# and the caller did not answer the question in advance with -Mode.
+if (-not $Mode) {
+    $ans = Read-Host 'Protect the whole page or only the server options? [W]hole page (default) / [S]erver options only'
+    if ("$ans".Trim() -match '^(?i)s|server') { $Mode = 'partial' } else { $Mode = 'total' }
+}
+if (Set-PasswordMode $Mode) {
+    Write-Host ('  [+] Password mode: ' + $Mode + ' (written to settings.txt)')
+} else {
+    Write-Host '  [!] Could not write password_mode to settings.txt: set it by hand.'
+}
+Write-Host '      The dashboard picks up both within ten seconds, no restart needed.'
 exit 0
 

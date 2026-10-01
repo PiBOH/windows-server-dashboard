@@ -127,7 +127,7 @@
   <string key="no_match_ev">ไม่มีเหตุการณ์ที่ตรงกับเงื่อนไข</string>
   <string key="ev_recent">เหตุการณ์ล่าสุด (24 ชั่วโมงที่ผ่านมา)</string>
   <string key="other_devices">อุปกรณ์อื่น ๆ (แบบถอดได้ เสมือน ออปติคัล)</string>
-  <string key="notif_title">Server Dashboard</string>
+  <string key="notif_title">PiBOH Windows Server Dashboard</string>
   <string key="notif_ok">เริ่มแดชบอร์ดสำเร็จแล้ว</string>
   <string key="notif_ok_body">ใช้งานได้ที่ {0}</string>
   <string key="notif_fail">แดชบอร์ดไม่ได้ทำงาน</string>

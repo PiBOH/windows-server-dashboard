@@ -127,7 +127,7 @@
   <string key="no_match_ev">Ingen händelse matchar kriterierna.</string>
   <string key="ev_recent">senaste händelserna (senaste 24 timmarna)</string>
   <string key="other_devices">Övriga enheter (flyttbara, virtuella, optiska)</string>
-  <string key="notif_title">Server Dashboard</string>
+  <string key="notif_title">PiBOH Windows Server Dashboard</string>
   <string key="notif_ok">Instrumentpanelen har startat</string>
   <string key="notif_ok_body">Tillgänglig på {0}</string>
   <string key="notif_fail">Instrumentpanelen körs INTE</string>

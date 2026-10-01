@@ -127,7 +127,7 @@
   <string key="no_match_ev">Żadne zdarzenie nie spełnia kryteriów.</string>
   <string key="ev_recent">najnowsze zdarzenia (ostatnie 24 godziny)</string>
   <string key="other_devices">Inne urządzenia (wymienne, wirtualne, optyczne)</string>
-  <string key="notif_title">Server Dashboard</string>
+  <string key="notif_title">PiBOH Windows Server Dashboard</string>
   <string key="notif_ok">Pulpit nawigacyjny uruchomiony</string>
   <string key="notif_ok_body">Dostępny pod adresem {0}</string>
   <string key="notif_fail">Pulpit nawigacyjny NIE działa</string>

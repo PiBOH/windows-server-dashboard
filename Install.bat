@@ -1,11 +1,11 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
-title Server Dashboard - Installer
+title PiBOH Windows Server Dashboard - Installer
 color 0B
 
 REM ===========================================================================
 REM  Install.bat
-REM  Installs the Server Dashboard as a scheduled task that starts at boot.
+REM  Installs the PiBOH Windows Server Dashboard as a scheduled task at boot.
 REM
 REM  Everything this installer touches is recorded in scripts\install-state.txt
 REM  (created hidden and read-only) so that Uninstall.bat can put the machine
@@ -100,8 +100,13 @@ echo.
 
 REM ---- 2. read the CURRENT state (the "BEFORE" values) ----------------------
 set "FW_BEFORE=absent"
-netsh advfirewall firewall show rule name="Server Dashboard %PORT%" >nul 2>&1
+netsh advfirewall firewall show rule name="PiBOH Windows Server Dashboard %PORT%" >nul 2>&1
 if not errorlevel 1 set "FW_BEFORE=present"
+
+rem firewall rule name used before 1.16.2: section 5 renames it
+set "FW_OLD=absent"
+netsh advfirewall firewall show rule name="Server Dashboard %PORT%" >nul 2>&1
+if not errorlevel 1 set "FW_OLD=present"
 
 set "ACL_BEFORE=absent"
 netsh http show urlacl url=http://+:%PORT%/ 2>nul | find /i "http://+:%PORT%/" >nul 2>&1
@@ -126,7 +131,7 @@ REM  The file is written in one piece and then made hidden and read-only, so
 REM  that nobody deletes or edits it by mistake. A re-install clears the
 REM  attributes first: a read-only file cannot be overwritten.
 attrib -h -r "%STATE%" >nul 2>&1
-> "%STATE%" echo # Server Dashboard - state recorded before installation
+> "%STATE%" echo # PiBOH Windows Server Dashboard - state recorded before installation
 >>"%STATE%" echo # Created by Install.bat on %DATE% %TIME% - do NOT delete, Uninstall.bat needs it
 >>"%STATE%" echo PORT=%PORT%
 >>"%STATE%" echo TASKNAME=%TASKNAME%
@@ -156,7 +161,9 @@ REM  The password protects the server options (password_mode = partial) or
 REM  the whole page (password_mode = total, the default - see settings.txt).
 REM  The file .config-do-not-delete-me\pwd always exists: empty = no
 REM  password at all. A password set on a previous installation is never
-REM  overwritten.
+REM  overwritten. After a password is typed the same script asks what it
+REM  must protect: the whole page (total) or only the server options
+REM  (partial), and writes password_mode into settings.txt.
 if exist "%~dp0scripts\Set-Password.ps1" (
     echo  PASSWORD ^(optional^)
     powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\Set-Password.ps1" -KeepExisting
@@ -174,15 +181,20 @@ echo   CHANGES APPLIED
 echo  ------------------------------------------------------------
 
 REM ---- 5. firewall rule -----------------------------------------------------
+if "%FW_OLD%"=="present" (
+    netsh advfirewall firewall delete rule name="Server Dashboard %PORT%" >nul 2>&1
+    echo  [~] Firewall rule "Server Dashboard %PORT%" - name used before
+    echo      1.16.2, removed and replaced by the product name below
+)
 if "%FW_BEFORE%"=="present" (
-    echo  [=] Firewall rule "Server Dashboard %PORT%"
+    echo  [=] Firewall rule "PiBOH Windows Server Dashboard %PORT%"
     echo      BEFORE : already present  ^|  AFTER : unchanged ^(left as it was^)
 ) else (
-    netsh advfirewall firewall add rule name="Server Dashboard %PORT%" dir=in action=allow protocol=TCP localport=%PORT% profile=any >nul 2>&1
+    netsh advfirewall firewall add rule name="PiBOH Windows Server Dashboard %PORT%" dir=in action=allow protocol=TCP localport=%PORT% profile=any >nul 2>&1
     if errorlevel 1 (
-        echo  [x] Firewall rule "Server Dashboard %PORT%" could NOT be created.
+        echo  [x] Firewall rule "PiBOH Windows Server Dashboard %PORT%" could NOT be created.
     ) else (
-        echo  [+] Firewall rule "Server Dashboard %PORT%"
+        echo  [+] Firewall rule "PiBOH Windows Server Dashboard %PORT%"
         echo      BEFORE : not present  ^|  AFTER : created ^(inbound, TCP %PORT%, all profiles^)
     )
 )
@@ -312,10 +324,15 @@ echo  ------------------------------------------------------------
 set "HEALTH=fail"
 REM  The check is written to a temporary .ps1: a PowerShell one-liner with
 REM  single quotes inside a FOR /F loop breaks the batch parser.
-> "%TEMP%\sd_health.ps1" echo try {
->>"%TEMP%\sd_health.ps1" echo   $r = Invoke-WebRequest -Uri "http://localhost:%PORT%/api/health" -UseBasicParsing -TimeoutSec 8
->>"%TEMP%\sd_health.ps1" echo   if ($r.StatusCode -eq 200) { "ok" } else { "fail" }
->>"%TEMP%\sd_health.ps1" echo } catch { "fail" }
+> "%TEMP%\sd_health.ps1" echo $ok = 'fail'
+>>"%TEMP%\sd_health.ps1" echo foreach ($i in 1..15) {
+>>"%TEMP%\sd_health.ps1" echo   try {
+>>"%TEMP%\sd_health.ps1" echo     $r = Invoke-WebRequest -Uri "http://localhost:%PORT%/api/health" -UseBasicParsing -TimeoutSec 3
+>>"%TEMP%\sd_health.ps1" echo     if ($r.StatusCode -eq 200) { $ok = 'ok'; break }
+>>"%TEMP%\sd_health.ps1" echo   } catch { }
+>>"%TEMP%\sd_health.ps1" echo   Start-Sleep -Seconds 2
+>>"%TEMP%\sd_health.ps1" echo }
+>>"%TEMP%\sd_health.ps1" echo $ok
 for /f "usebackq delims=" %%R in (`powershell -NoProfile -ExecutionPolicy Bypass -File "%TEMP%\sd_health.ps1"`) do set "HEALTH=%%R"
 del "%TEMP%\sd_health.ps1" >nul 2>&1
 if "%HEALTH%"=="ok" (

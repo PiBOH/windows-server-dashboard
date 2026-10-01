@@ -1,6 +1,6 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
-title Server Dashboard - Uninstaller
+title PiBOH Windows Server Dashboard - Uninstaller
 color 0E
 
 REM ===========================================================================
@@ -124,18 +124,34 @@ if errorlevel 1 (
 )
 
 REM ---- 4. firewall rule -----------------------------------------------------
-netsh advfirewall firewall show rule name="Server Dashboard %PORT%" >nul 2>&1
+netsh advfirewall firewall show rule name="PiBOH Windows Server Dashboard %PORT%" >nul 2>&1
 if errorlevel 1 (
-    echo  [=] Firewall rule "Server Dashboard %PORT%"
+    echo  [=] Firewall rule "PiBOH Windows Server Dashboard %PORT%"
     echo      BEFORE : not present  ^|  AFTER : unchanged
 ) else (
     if "!FW_BEFORE!"=="present" (
-        echo  [=] Firewall rule "Server Dashboard %PORT%"
+        echo  [=] Firewall rule "PiBOH Windows Server Dashboard %PORT%"
+        echo      BEFORE : already existed before the installation
+        echo      AFTER  : LEFT IN PLACE on purpose ^(not created by this tool^)
+    ) else (
+        netsh advfirewall firewall delete rule name="PiBOH Windows Server Dashboard %PORT%" >nul 2>&1
+        echo  [-] Firewall rule "PiBOH Windows Server Dashboard %PORT%"
+        echo      BEFORE : inbound allow rule created by the installer
+        echo      AFTER  : deleted - port %PORT% is closed again
+    )
+)
+
+rem installations before 1.16.2 used the rule name "Server Dashboard":
+rem remove that one too, so the port is closed again on every machine
+netsh advfirewall firewall show rule name="Server Dashboard %PORT%" >nul 2>&1
+if not errorlevel 1 (
+    if "!FW_BEFORE!"=="present" (
+        echo  [=] Firewall rule "Server Dashboard %PORT%" - old name
         echo      BEFORE : already existed before the installation
         echo      AFTER  : LEFT IN PLACE on purpose ^(not created by this tool^)
     ) else (
         netsh advfirewall firewall delete rule name="Server Dashboard %PORT%" >nul 2>&1
-        echo  [-] Firewall rule "Server Dashboard %PORT%"
+        echo  [-] Firewall rule "Server Dashboard %PORT%" - old name
         echo      BEFORE : inbound allow rule created by the installer
         echo      AFTER  : deleted - port %PORT% is closed again
     )
