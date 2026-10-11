@@ -12,9 +12,10 @@
 #  screenshots) and without the repository housekeeping files, so what the
 #  user downloads is exactly what he has to copy on the server.
 #
-#  The tag is created by the release step itself: pushing the commit is
-#  enough, no git tag is needed. The auto-updater of the dashboard downloads
-#  the zip attached to that tag, so the tag name must stay "v" + version.
+#  The tag is created on the commit that records the build (see the
+#  "Record the build commit" step), so the archive the dashboard downloads
+#  carries the build commit in the second line of scripts/version.txt.
+#  The tag name must stay "v" + version.
 # ---------------------------------------------------------------------------
 name: auto-release.yml
 
@@ -52,7 +53,7 @@ jobs:
         shell: bash
         run: |
           V='${{ github.event.inputs.version }}'
-          if [ -z "$V" ]; then V="$(tr -d ' \t\r\n' < scripts/version.txt)"; fi
+          if [ -z "$V" ]; then V="$(head -n 1 scripts/version.txt | tr -d ' \t\r\n')"; fi
           if [ -z "$V" ]; then echo "no version found"; exit 1; fi
           echo "version=$V" >> "$GITHUB_OUTPUT"
           case "$V" in
@@ -60,6 +61,28 @@ jobs:
             * )  echo "prerelease=false" >> "$GITHUB_OUTPUT" ;;
           esac
           echo "releasing $V"
+
+      - name: Record the build commit in version.txt
+        shell: bash
+        run: |
+          set -eu
+          VERSION='${{ steps.ver.outputs.version }}'
+          SHA='${{ github.sha }}'
+          printf '%s\r\n%s\r\n' "$VERSION" "$SHA" > scripts/version.txt
+          git config user.name  'release bot'
+          git config user.email 'release-bot@users.noreply.github.com'
+          git add scripts/version.txt
+          if git diff --cached --quiet; then
+            echo "version.txt already carries this build commit"
+          else
+            git commit -m "chore: record the build commit of v$VERSION [skip ci]"
+          fi
+          # The tag must point to THIS commit, so that the GitHub archive
+          # (what the dashboard downloads) carries the commit too. Only
+          # the tag is pushed: main keeps the one-line version.txt, which
+          # every older dashboard can still read.
+          git tag -f "v$VERSION"
+          git push --force origin "v$VERSION"
 
       - name: Build the release notes file name
         id: notes
@@ -90,7 +113,7 @@ jobs:
           done
           # the manual input may release a different number: the zip must
           # always tell the truth
-          printf '%s' "$VERSION" > "$STAGE/scripts/version.txt"
+          printf '%s\r\n%s\r\n' "$VERSION" '${{ github.sha }}' > "$STAGE/scripts/version.txt"
 
       - name: Make the zip
         shell: bash
@@ -161,6 +184,17 @@ jobs:
           sha512sum "windows-server-dashboard-$VERSION.zip" \
               > "windows-server-dashboard-$VERSION.zip.sha512"
           cat "windows-server-dashboard-$VERSION.zip.sha512"
+
+      - name: Remove a previous release of this version, if any
+        shell: bash
+        run: |
+          TAG="v${{ steps.ver.outputs.version }}"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "deleting the old release $TAG (the tag stays where it is)"
+            gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish the release
         uses: softprops/action-gh-release@v2

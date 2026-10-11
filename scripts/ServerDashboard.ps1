@@ -89,10 +89,18 @@ Remove-OldLogs $LogDir
 
 # The version lives in version.txt, next to this script: it is the single
 # source of truth, read by the dashboard, the updater and the docs.
+# Since 1.16.4 the file can carry a second line, the build commit
+# (written by the release workflow): the updater uses it as a fallback
+# to notice a version that was published again with new content.
 $DashboardVersion = '0.0.0'
+$script:DashboardCommit = ''
 try {
     $vfile = Join-Path $PSScriptRoot 'version.txt'
-    if (Test-Path $vfile) { $DashboardVersion = (Get-Content $vfile -Raw).Trim() }
+    if (Test-Path $vfile) {
+        $vlines = @(Get-Content -Path $vfile -ErrorAction Stop)
+        if ($vlines.Count -gt 0) { $DashboardVersion = "$($vlines[0])".Trim() }
+        if ($vlines.Count -gt 1) { $script:DashboardCommit = "$($vlines[1])".Trim() }
+    }
 } catch { }
 $ErrorActionPreference = 'Continue'
 [System.Threading.Thread]::CurrentThread.CurrentCulture = [System.Globalization.CultureInfo]::InvariantCulture
@@ -125,7 +133,8 @@ function Write-Log {
     try { Add-Content -Path (Get-DailyLogPath) -Value $line -Encoding UTF8 -ErrorAction SilentlyContinue } catch { }
 }
 
-Write-Log "=== Starting PiBOH Windows Server Dashboard v$DashboardVersion on port $Port ==="
+$verBuildTxt = if ($script:DashboardCommit) { " (commit $($script:DashboardCommit))" } else { '' }
+Write-Log "=== Starting PiBOH Windows Server Dashboard v$DashboardVersion$verBuildTxt on port $Port ==="
 
 # ----------------------------------------------------------------------------
 # Windows Event Log: the dashboard introduces itself to whoever opens Event
@@ -398,12 +407,21 @@ if (-not (Test-Path $SettingsFile)) {
 # the installer state (scripts\install-state.txt) are never in the GitHub
 # archive, so the copy leaves them alone by itself. The dashboard then
 # restarts itself on the new version.
+# Since 1.16.4 version.txt carries a second line, the build commit: when
+# the same version is published again with different content the commit
+# changes, and the update runs even if the version number does not. The
+# comparison reads the version.txt of the published tag, so a re-released
+# version is recognized (the main branch keeps a one-line version.txt,
+# which every older dashboard can still read).
 # Set auto_update = no in settings.txt to disable it, or run the script with
 # -CheckUpdatesOnly to trigger a check by hand.
 # ----------------------------------------------------------------------------
 $UpdateRepo    = 'PiBOH/windows-server-dashboard'
 $UpdateVersion = 'https://raw.githubusercontent.com/' + $UpdateRepo + '/main/scripts/version.txt'
 $UpdateZipFmt  = 'https://github.com/' + $UpdateRepo + '/archive/refs/tags/v{0}.zip'
+# version.txt as it is INSIDE the published tag: its second line carries
+# the commit that release was built from (the overwrite fallback).
+$UpdateTagVerFmt = 'https://raw.githubusercontent.com/' + $UpdateRepo + '/v{0}/scripts/version.txt'
 $UpdateKeep    = @('logs', 'settings.txt', 'settings-backup.txt', 'install-state.txt', 'pwd',
                    'previous-task-backup.xml', 'ServerDashboard-*.log', 'ServerDashboard-notify-*.log')
 # The GitHub archive of a tag also carries the repository folders that are
@@ -413,12 +431,53 @@ $UpdateSkip    = @('.github', '.config', '_build', 'screenshots', '.config-do-no
 # check and a manual Update-Now.bat never install at the same time.
 $script:UpdateMarker = Join-Path $Root '.update-running'
 
+function ConvertFrom-VersionText([string]$Text) {
+    # version.txt has two lines since 1.16.4: the version and the build
+    # commit. In the repository the second line is not there yet (which
+    # commit a file will belong to cannot be known while committing it):
+    # the release workflow writes it into the packages it publishes, and
+    # a file with the version alone keeps working for every older
+    # dashboard.
+    $lines = @("$Text" -split "`r?`n")
+    if ($lines.Count -lt 1) { return $null }
+    $v = "$($lines[0])".Trim()
+    $c = if ($lines.Count -gt 1) { "$($lines[1])".Trim() } else { '' }
+    if ($v -match '^\d+\.(\d+\.)?\d+$') { return @{ Version = $v; Commit = $c } }
+    return $null
+}
+
 function Get-LatestVersion {
     try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        $v = (Invoke-WebRequest -Uri $script:UpdateVersion -UseBasicParsing -TimeoutSec 20).Content.Trim()
-        if ($v -match '^\d+\.(\d+\.)?\d+$') { return $v }
+        $txt = (Invoke-WebRequest -Uri $script:UpdateVersion -UseBasicParsing -TimeoutSec 20).Content
+        return (ConvertFrom-VersionText $txt)
     } catch { }
+    return $null
+}
+
+function Get-TagBuildCommit([string]$Version) {
+    # The version.txt inside the published tag: its second line says
+    # which commit that release was built from. Read only when the
+    # version is the same, to notice a version published again with
+    # new content. $null = no answer or no commit there.
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        $txt = (Invoke-WebRequest -Uri ($script:UpdateTagVerFmt -f $Version) -UseBasicParsing -TimeoutSec 20).Content
+        $info = ConvertFrom-VersionText $txt
+        if ($info -and $info.Commit) { return $info.Commit }
+    } catch { }
+    return $null
+}
+
+function Test-UpdateReason($Remote) {
+    # 'version' = the remote version is newer (the normal way)
+    # 'commit'  = same version, but built again from a different commit
+    # $null     = nothing to update
+    if (Test-NewerVersion $Remote.Version $DashboardVersion) { return 'version' }
+    if ($Remote.Version -eq $DashboardVersion -and $script:DashboardCommit) {
+        $tagCommit = Get-TagBuildCommit $Remote.Version
+        if ($tagCommit -and $tagCommit -ne $script:DashboardCommit) { return 'commit' }
+    }
     return $null
 }
 
@@ -528,21 +587,51 @@ function Start-DashboardAfterUpdate {
     # and again, and as a last resort launch the engine directly: a running
     # dashboard detached from the task is better than no dashboard at all,
     # and at the next boot the task takes over again.
+    $portFreed = $true
     foreach ($i in 1..15) {
         $busy = $false
         try { $busy = [bool](Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue) } catch { }
         if (-not $busy) { break }
         Start-Sleep -Seconds 1
     }
+    try {
+        $stillBusy = [bool](Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue)
+    } catch { $stillBusy = $false }
+    if ($stillBusy) {
+        # The old instance could not be stopped (an update started
+        # without admin rights ends up here): try once more, then say
+        # so in the log - the old version keeps serving, the new one
+        # takes over at the next boot.
+        try {
+            $stopper = Join-Path $PSScriptRoot 'Stop-DashboardProcess.ps1'
+            if (Test-Path $stopper) { & $stopper -Port $Port | Out-Null }
+        } catch { }
+        Start-Sleep -Seconds 3
+        try {
+            $stillBusy = [bool](Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue)
+        } catch { }
+        if ($stillBusy) { $portFreed = $false }
+    }
     foreach ($i in 1..20) {
         try { $null = & schtasks /Run /TN $BrandName 2>$null } catch { }
         Start-Sleep -Seconds 1
         try {
             $r = Invoke-WebRequest -Uri ("http://localhost:{0}/api/health" -f $Port) -UseBasicParsing -TimeoutSec 3
-            if ($r.StatusCode -eq 200) { return $true }
+            if ($r.StatusCode -eq 200) {
+                if (-not $portFreed) {
+                    Write-Log 'The port never freed: the OLD version is still the one answering. The new one takes over at the next boot, or with Start-Dashboard.bat.' 'WARN'
+                }
+                return $true
+            }
         } catch { }
     }
     Write-Log 'The task did not start the new version: launching it directly.' 'WARN'
+    try {
+        # A process of the current user can listen on http://+:<port>
+        # only if the URL is reserved for that user too: add the same
+        # reservation Start-Dashboard.bat adds, then launch.
+        $null = & netsh http add urlacl ("url=http://+:{0}/" -f $Port) ("user={0}\{1}" -f $env:USERDOMAIN, $env:USERNAME) 2>$null
+    } catch { }
     try {
         Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
             '-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass',
@@ -553,7 +642,12 @@ function Start-DashboardAfterUpdate {
         Start-Sleep -Seconds 1
         try {
             $r = Invoke-WebRequest -Uri ("http://localhost:{0}/api/health" -f $Port) -UseBasicParsing -TimeoutSec 3
-            if ($r.StatusCode -eq 200) { return $true }
+            if ($r.StatusCode -eq 200) {
+                if (-not $portFreed) {
+                    Write-Log 'The port never freed: the answer may still come from the OLD version. The new one takes over at the next boot, or with Start-Dashboard.bat.' 'WARN'
+                }
+                return $true
+            }
         } catch { }
     }
     return $false
@@ -564,14 +658,20 @@ function Update-FromGithub {
     if (-not $Shared.Settings.autoUpdate) { return $false }
     $latest = Get-LatestVersion
     if (-not $latest) { Write-Log 'No update information available (offline or repository unreachable).'; return $false }
-    if (-not (Test-NewerVersion $latest $DashboardVersion)) {
-        Write-Log "Up to date (version $DashboardVersion)."
+    $why = Test-UpdateReason $latest
+    if (-not $why) {
+        $upBuild = if ($script:DashboardCommit) { " build $($script:DashboardCommit)" } else { '' }
+        Write-Log "Up to date (version $DashboardVersion$upBuild)."
         return $false
     }
-    Write-Log "New version available on GitHub: $latest (current: $DashboardVersion). Downloading..."
-    if (Invoke-SelfUpdate $latest) {
-        Write-Log "Updated to $latest. Restarting on the new version."
-        Write-DashEvent 2 'Information' ("$BrandName updated itself to $latest from $UpdateRepo. " +
+    if ($why -eq 'commit') {
+        Write-Log "Version $DashboardVersion was built again on GitHub (different commit): updating to the newer build."
+    } else {
+        Write-Log "New version available on GitHub: $($latest.Version) (current: $DashboardVersion). Downloading..."
+    }
+    if (Invoke-SelfUpdate $latest.Version) {
+        Write-Log "Updated to $($latest.Version). Restarting on the new version."
+        Write-DashEvent 2 'Information' ("$BrandName updated itself to $($latest.Version) from $UpdateRepo. " +
             "The new version restarts automatically; the local settings and the logs were preserved.")
         return $true
     }
@@ -614,8 +714,13 @@ if ($CheckUpdatesOnly) {
         Write-Host 'No update information available (offline or repository unreachable).'
         exit 1
     }
-    if (Test-NewerVersion $latest $DashboardVersion) {
-        Write-Host "UPDATE AVAILABLE: $latest (current: $DashboardVersion)."
+    $why = Test-UpdateReason $latest
+    if ($why -eq 'version') {
+        Write-Host "UPDATE AVAILABLE: $($latest.Version) (current: $DashboardVersion)."
+        exit 3
+    }
+    if ($why -eq 'commit') {
+        Write-Host "UPDATE AVAILABLE: version $DashboardVersion was built again on GitHub (newer build of the same version)."
         exit 3
     }
     Write-Host "Version $DashboardVersion - up to date."
@@ -642,10 +747,15 @@ if ($UpdateNow) {
     try {
         $latest = Get-LatestVersion
         if (-not $latest) { Write-Host 'No update information available (offline or repository unreachable).'; exit 1 }
-        if (-not (Test-NewerVersion $latest $DashboardVersion)) { Write-Host "Version $DashboardVersion - up to date."; exit 0 }
-        Write-Host "New version available: $latest (current: $DashboardVersion). Downloading..."
-        Write-Log "Update to $latest requested ($who)."
-        $pkg = Save-UpdatePackage $latest
+        $why = Test-UpdateReason $latest
+        if (-not $why) { Write-Host "Version $DashboardVersion - up to date."; exit 0 }
+        if ($why -eq 'commit') {
+            Write-Host "Version $DashboardVersion was built again on GitHub: updating to the newer build..."
+        } else {
+            Write-Host "New version available: $($latest.Version) (current: $DashboardVersion). Downloading..."
+        }
+        Write-Log "Update to $($latest.Version) requested ($who, reason: $why)."
+        $pkg = Save-UpdatePackage $latest.Version
         if (-not $pkg) { Write-Host 'Download failed: nothing was changed.'; exit 1 }
         Write-Host 'Stopping the dashboard...'
         Stop-DashboardForUpdate
@@ -653,13 +763,13 @@ if ($UpdateNow) {
         $installed = Install-UpdatePackage $pkg
         Remove-Item (Split-Path $pkg -Parent) -Recurse -Force -ErrorAction SilentlyContinue
         if (-not $installed) { Write-Host 'Install failed: run scripts\Diagnose.bat and check the log.'; exit 1 }
-        Write-DashEvent 2 'Information' ("$BrandName updated to $latest from $UpdateRepo by the $who. " +
+        Write-DashEvent 2 'Information' ("$BrandName updated to $($latest.Version) from $UpdateRepo by the $who. " +
             "The local settings and the logs were preserved.")
         Write-Host 'Starting the dashboard on the new version...'
         if (Start-DashboardAfterUpdate) {
-            Write-Host "Updated to ${latest}: the dashboard is running again."
+            Write-Host "Updated to $($latest.Version): the dashboard is running again."
         } else {
-            Write-Host "Updated to $latest, but the service does not answer yet. Start it with:"
+            Write-Host "Updated to $($latest.Version), but the service does not answer yet. Start it with:"
             Write-Host '  Start-Dashboard.bat   or   schtasks /Run /TN "PiBOH Windows Server Dashboard"'
         }
         exit 0

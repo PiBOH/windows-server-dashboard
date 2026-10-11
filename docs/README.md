@@ -430,6 +430,15 @@ NOBODY WATCHING = NOTHING RUNNING
   scripts\Update-Now.bat once with 1.16.0 and the installation cleans
   itself.
 
+  Since 1.16.4 version.txt in every release carries a second line, the
+  build commit written by the release workflow. The rule stays "the
+  newer version wins", but when the version is the SAME and the commit
+  differs the dashboard updates anyway: republishing the same number,
+  which used to need a hand with the version file, now reaches every
+  server by itself. The main branch keeps the one-line file, so every
+  older version keeps reading it. The startup log also says which
+  build commit is running.
+
   Since 1.16.2 the order is "page first": the update check runs after the
   web server is already answering, so a slow network can no longer keep
   the port closed at boot. And an update always ends with a running
@@ -445,7 +454,11 @@ NOBODY WATCHING = NOTHING RUNNING
     new release exists, does the whole cycle by itself - download, stop the
     dashboard, install, start the dashboard again and wait for its answer.
     With no new release it prints "up to date" and changes nothing. It works
-    even with auto_update = no, because it is an explicit request.
+    even with auto_update = no, because it is an explicit request. Since
+    1.16.4 it restarts itself as administrator, exactly like Diagnose.bat:
+    stopping and starting the scheduled task, which runs as SYSTEM, needs
+    those rights, and without them the old version would keep serving
+    while the update looked successful.
   - ServerDashboard.ps1 -CheckUpdatesOnly only reports whether a new release
     exists (exit code 3 = available) and touches nothing.
   - Releases must be tagged v<version> for the updater to find them.

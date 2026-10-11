@@ -10,7 +10,7 @@ No agent, no IIS, no external module, no database: a single PowerShell script
 publishes the page, and you open it from any computer on the LAN by typing the
 IP of the server.
 
-[![Version](https://img.shields.io/badge/version-1.16.0-blue)](Changelog/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.16.4-blue)](Changelog/CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/Windows%20Server-2016%2B-0078D6?logo=windows)](#requirements)
 [![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)](#requirements)
 [![Languages](https://img.shields.io/badge/UI%20languages-38-brightgreen)](#-38-languages)
@@ -165,6 +165,11 @@ repository. When the remote version is newer it downloads the release tagged
 touching `settings.txt` or the logs**, then restarts itself on the new version.
 Everything is written to the log, and to the Windows event log under the source
 *PiBOH Windows Server Dashboard*.
+
+Since 1.16.4 each release also records its build commit, so republishing the
+same version updates every dashboard too, and `scripts\Update-Now.bat` now
+restarts itself as administrator - stopping and restarting the scheduled
+task needs those rights.
 
 ```text
 auto_update = no        in settings.txt  -> disable it

@@ -8,6 +8,30 @@ Versioning follows Semantic Versioning: MAJOR.MINOR.PATCH.
 - PATCH - fixes and tweaks that add no feature.
 
 ------------------------------------------------------------------------------
+  1.16.4 - 2026-10-01
+------------------------------------------------------------------------------
+
+Changed:
+  - version.txt in every release now carries a second line, the build
+    commit written by the release workflow. When the same version is
+    published again with different content the commit changes, and
+    every dashboard updates anyway instead of waiting for a number
+    that will never come. The main branch keeps the one-line file, so
+    every older version keeps reading it.
+  - The startup log now says which build commit the running version is.
+
+Fixed:
+  - Manual update: scripts\Update-Now.bat now restarts itself as
+    administrator, like Diagnose.bat. Without those rights the old
+    instance could not be stopped and the task could not be started
+    again: the update looked successful while the OLD version kept
+    serving, and the new one only appeared at the next boot.
+  - The restart after an update got two more safeties: if the port
+    never frees, the log now says that the old version is still the
+    one answering; and the direct launch of the last resort reserves
+    the URL first, so it can really listen.
+
+------------------------------------------------------------------------------
   1.16.3 - 2026-10-01
 ------------------------------------------------------------------------------
 
