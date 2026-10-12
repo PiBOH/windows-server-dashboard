@@ -109,6 +109,7 @@
   <string key="restore_defaults">Standaardwaarden herstellen</string>
   <string key="saved_ok">Instellingen opgeslagen</string>
   <string key="stored_browser">opgeslagen in deze browser</string>
+  <string key="storwarn">Deze browser kan voorkeuren hier niet opslaan: je keuze gaat verloren wanneer de pagina opnieuw wordt geopend.</string>
   <string key="stored_server">opgeslagen op de server (voor iedereen)</string>
   <string key="seconds">seconden</string>
   <string key="minutes">minuten</string>

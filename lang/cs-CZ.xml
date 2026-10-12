@@ -109,6 +109,7 @@
   <string key="restore_defaults">Obnovit výchozí</string>
   <string key="saved_ok">Nastavení uloženo</string>
   <string key="stored_browser">uloženo v tomto prohlížeči</string>
+  <string key="storwarn">Tento prohlížeč zde nemůže ukládat předvolby: volba se při opětovném otevření stránky ztratí.</string>
   <string key="stored_server">uloženo na serveru (platí pro všechny)</string>
   <string key="seconds">sekund</string>
   <string key="minutes">minut</string>

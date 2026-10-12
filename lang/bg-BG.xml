@@ -109,6 +109,7 @@
   <string key="restore_defaults">Възстанови по подразбиране</string>
   <string key="saved_ok">Настройките са записани</string>
   <string key="stored_browser">записано в този браузър</string>
+  <string key="storwarn">Този браузър не може да съхранява настройки тук: изборът се губи при повторно отваряне на страницата.</string>
   <string key="stored_server">записано на сървъра (важи за всички)</string>
   <string key="seconds">секунди</string>
   <string key="minutes">минути</string>

@@ -109,6 +109,7 @@
   <string key="restore_defaults">Repor predefinições</string>
   <string key="saved_ok">Definições guardadas</string>
   <string key="stored_browser">guardado neste navegador</string>
+  <string key="storwarn">Este navegador não pode guardar preferências aqui: a escolha é perdida quando a página é reaberta.</string>
   <string key="stored_server">guardado no servidor (para todos)</string>
   <string key="seconds">segundos</string>
   <string key="minutes">minutos</string>

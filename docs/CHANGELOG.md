@@ -8,6 +8,317 @@ Versioning follows Semantic Versioning: MAJOR.MINOR.PATCH.
 - PATCH - fixes and tweaks that add no feature.
 
 ------------------------------------------------------------------------------
+  1.16.5 - 2026-10-12
+------------------------------------------------------------------------------
+
+Added:
+  - Network card: a legend under the traffic chart (green square =
+    Download, orange square = Upload, the same colours as the two lines),
+    the headline values are coloured to match, and the adapter table
+    spells the words out instead of an arrow alone ("Download KB/s",
+    "Upload KB/s"). The totals keep their RX / TX names. Everything
+    reuses the download and upload keys already translated in all 38
+    languages, so no new string was needed for the chart and the columns.
+  - The Processes table highlights the dashboard's own row (left bar and
+    tinted background, the same treatment as the event rows). With about
+    two hundred processes sorted by CPU the engine was findable only
+    through the filter box. The server marks the row with a new "Self"
+    field in /api/stats, so nothing depends on a name written twice.
+
+Changed:
+  - The Process column now sorts by the name it SHOWS: the friendly name
+    ("Windows Explorer") instead of the image name (explorer.exe), which
+    is what the column displays as its main line since 1.16.3. The
+    tie-break uses it too. Services and Events are untouched: they keep
+    sorting on the value of their own column (service name, message time).
+
+Fixed:
+  - The personal refresh interval could be lost without a trace: it was
+    kept in localStorage only, and a browser that refuses localStorage
+    (privacy mode, storage policy) silently dropped it, so the next visit
+    showed the server default again with no explanation. The choice is
+    now written to a cookie as well and read from it when localStorage
+    comes back empty; when neither store accepts a write, the settings
+    panel says so under the refresh interval instead of losing the choice.
+
+Language files:
+  - New key storwarn, translated in all 38 languages.
+
+------------------------------------------------------------------------------
+  1.16.4 - 2026-10-01
+------------------------------------------------------------------------------
+
+Changed:
+  - version.txt in every release now carries a second line, the build
+    commit written by the release workflow. When the same version is
+    published again with different content the commit changes, and
+    every dashboard updates anyway instead of waiting for a number
+    that will never come. The main branch keeps the one-line file, so
+    every older version keeps reading it.
+  - The startup log now says which build commit the running version is.
+
+Fixed:
+  - Manual update: scripts\Update-Now.bat now restarts itself as
+    administrator, like Diagnose.bat. Without those rights the old
+    instance could not be stopped and the task could not be started
+    again: the update looked successful while the OLD version kept
+    serving, and the new one only appeared at the next boot.
+  - The restart after an update got two more safeties: if the port
+    never frees, the log now says that the old version is still the
+    one answering; and the direct launch of the last resort reserves
+    the URL first, so it can really listen.
+
+------------------------------------------------------------------------------
+  1.16.3 - 2026-10-01
+------------------------------------------------------------------------------
+
+Changed:
+  - Process list: the friendly name ("Windows Explorer") is now the main
+    line of the column and the image name (explorer.exe) sits right under
+    it, grayed; an executable without a friendly name shows the image name
+    alone. Filtering and sorting work exactly as before.
+  - The browser tab title is back to plain "Dashboard", in the language
+    of the page as before 1.16.2, and now shows the server name first:
+    "<server> - Dashboard". The full product name stays in the footer,
+    in the process list, in the logon notification, in the scheduled
+    task and in the event log.
+  - The engine keeps its memory footprint small: every 5 minutes it
+    collects its garbage and asks Windows to move the pages it is not
+    using out of the working set. Task Manager then shows the memory the
+    dashboard really needs, instead of the ~80 MB of pages accumulated
+    while running.
+
+Fixed:
+  - Servers that auto-updated to 1.16.2 carry a few pre-1.16.0 leftovers
+    in their docs folder (an old manual and old screenshots): they are
+    removed at the first start. A logo.png kept in the root is a personal
+    file and is never touched.
+
+------------------------------------------------------------------------------
+  1.16.2 - 2026-10-01
+------------------------------------------------------------------------------
+Fixed:
+  - Slow start at boot and "I have to install twice": up to 1.16.1 the
+    GitHub update check ran BEFORE the web server was started, so on a
+    slow network the port stayed closed for up to half a minute at every
+    boot and right after an installation. The dashboard looked like "it
+    does not start by itself" and the installer reported it as not
+    answering - which is why a second run of Install.bat looked like "now
+    it works". Since 1.16.2 the page answers first and the update check
+    runs after it; the installer also keeps checking the health for up to
+    45 seconds instead of failing after a fixed 5.
+  - After an update the new version now starts reliably. The old instance
+    may need a moment to release the port, and a task whose previous
+    instance is still "Running" silently refuses to start a new one: the
+    updater now waits for the port to be free, asks for the start again
+    and again and, as a last resort, launches the engine directly, so the
+    dashboard is never left down. When the hand over at boot cannot launch
+    the new version, the current instance keeps serving instead of exiting.
+  - Total password mode looked broken ("the browser never asks for the
+    password") when settings.txt still carried password_mode = partial
+    from an earlier experiment: the installer had no way to choose. It now
+    asks, right after the password, what it must protect - the whole page
+    or only the server options - and writes password_mode into
+    settings.txt; scripts\Set-Password.ps1 asks the same when run alone
+    or takes -Mode total|partial. A settings.txt reduced to that single
+    key is completed with the full template at the first start.
+  - The software did not fully identify itself as "PiBOH Windows Server
+    Dashboard": the browser tab said "Dashboard", the page footer said
+    "ServerDashboard" and the logon notification was titled "Server
+    Dashboard". All of them now carry the full name; in the Processes
+    table every process running ServerDashboard.ps1 is tagged with it
+    too, so the dashboard is finally visible in its own list - with the
+    same name the scheduled task and the event log always used. The
+    firewall rule is renamed as well (the old one is migrated by
+    Install.bat and removed by Uninstall.bat), together with the window
+    titles of the .bat files and the header of settings.txt.
+
+Changed:
+  - Diagnose now also compares the password state reported by the running
+    service with the pwd file, and says exactly what to do when the two
+    disagree.
+  - The manual states that the logon notification is translated into all
+    the 38 languages: it reads the same lang\*.xml files of the page.
+  - Diagnose recognizes a firewall rule still named the pre-1.16.2 way
+    and says to run Install.bat once to rename it.
+
+------------------------------------------------------------------------------
+  1.16.1 - 2026-09-30
+------------------------------------------------------------------------------
+
+Changed:
+  - The local files of an installation now live together in the
+    .config-do-not-delete-me folder at the root of the package: the
+    password file (pwd) and the settings backup written by Install.bat
+    (settings-backup.txt). The existing pwd file is moved there
+    automatically at the first start of the new version (from the
+    package root, where 1.16.0 kept it), so no password is ever lost.
+    An empty file still means "no password" and everything else works
+    exactly as before.
+  - Partial password mode, reworked: the settings panel no longer shows
+    a lock. The server options look normal and a small popup asks for
+    the password only at the moment one of them is clicked, never
+    before; the server checks it immediately (a wrong one is refused in
+    red, inside the popup) and after that the options stay editable and
+    Save writes them to settings.txt.
+  - install-state.txt (the file Uninstall.bat uses to revert everything)
+    moved from logs\ into the scripts folder, created hidden and
+    read-only so that it is not deleted or edited by mistake. The
+    uninstaller still finds it in the old location too.
+  - The self updater no longer copies the repository folders that are
+    not part of the package (.github, screenshots, ...) when it
+    downloads the GitHub archive of a release.
+
+Added:
+  - Install.bat asks whether to set the password during the installation
+    (masked input, Enter alone = none) and never overwrites a password
+    that is already set; scripts\Set-Password.ps1 sets, changes or
+    removes it at any time.
+  - No browser will ever offer to save the password - Chrome, Edge,
+    Safari, Firefox, desktop and mobile: where supported the popup field
+    is technically not a password field at all (it only looks like one),
+    elsewhere it belongs to no form and is never submitted.
+  - The password popup and the language window close also by clicking
+    outside them, like the settings window always did.
+
+Fixed:
+  - Language window: closing it with a click on the dark background
+    around it (instead of the X button) left an empty copy of the window
+    at the bottom of the page. It now disappears, exactly like a close
+    with the X button.
+
+------------------------------------------------------------------------------
+  1.16.0 - 2026-09-29
+------------------------------------------------------------------------------
+
+Added:
+  - Optional password, stored in a plain text file called "pwd" (no file
+    extension) next to settings.txt: create the file, write the password on
+    the first line, done - no restart needed, changes apply within ten
+    seconds. password_mode in settings.txt decides what it protects:
+    total (default) asks the password for the whole dashboard (standard
+    browser login window, /api/health stays open for the updater and
+    Repair-Autostart.bat), partial leaves the page open to everybody and
+    locks only the server options, which become editable from the settings
+    panel after typing the password. Without the file everything works
+    exactly as before: the API stays read-only and every write is refused
+    with 403 and logged. The password is never sent to the browsers, never
+    written to the log, preserved by every update, excluded from GitHub
+    (.gitignore) and deleted by Uninstall.bat. New UI strings translated
+    into all the 38 languages.
+
+Changed:
+  - The automatic update check now also repeats every 24 hours while the
+    dashboard runs, so a server that stays on for months receives updates
+    without a reboot: it launches the same cycle used by Update-Now.bat,
+    and a marker file (.update-running) keeps a manual run and the
+    automatic one from racing each other.
+  - The main loop now wakes up once per second even with nobody connected:
+    settings.txt and the pwd file are reloaded within ten seconds in every
+    condition, not only when a request arrives.
+  - The CI syntax check now parses the scripts with Windows PowerShell 5.1
+    (the engine the scheduled task really uses) instead of PowerShell 7.
+
+Fixed:
+  - Endless update loop: up to 1.15.0 a failed install left version.txt
+    untouched, so every start saw the same "new" release, reinstalled it,
+    spawned itself and exited, over and over, with the port never opening -
+    the dashboard looked like "it does not start by itself" and no update
+    ever landed. Before handing over to a new version the script now
+    verifies that version.txt on disk really changed; if it did not, it
+    stays up on the current version, logs the error and writes it to the
+    Windows event log.
+  - Leftover nested folders: the scripts\scripts (and lang\lang, ...)
+    copies created by the pre-1.15.1 updater are now removed at every
+    start, in every start mode, however deep they are nested.
+
+------------------------------------------------------------------------------
+  1.15.2 - 2026-09-28
+------------------------------------------------------------------------------
+
+Changed:
+  - The release notes moved under the changelog folder: they now live in
+    Changelog\\release-notes\\RELEASE-NOTES-vX.Y.Z.md, one file per
+    release, next to the only changelog file.
+  - Core Temp compatibility no longer needs anything but Core Temp itself:
+    up to 1.15.1 the dashboard only understood Core Temp through its
+    optional "WMI provider" add-on, now it reads the shared memory block
+    that the plain program publishes while it runs - no add-on, no server
+    plug-in, nothing to enable. The block holds a fixed C struct without
+    pointers, so it is read the same way on 32-bit and 64-bit (Core Temp
+    and the dashboard may even mix bitnesses), with one reading per core,
+    multi-socket labels (CPU0 Core0, CPU1 Core0, ...) and Fahrenheit
+    converted back to Celsius automatically. The WMI provider add-on is
+    still read, right after the plain one, because WMI also crosses logon
+    sessions.
+  - Out-of-range readings (0 or above 150 degrees) and incoherent headers
+    are discarded instead of being shown as a temperature.
+
+Fixed:
+  - Multi-socket label rounding: a PowerShell [int] cast rounds 1.5 to 2,
+    which would print "CPU2 Core1" on a two-socket machine; the label now
+    uses Floor.
+
+------------------------------------------------------------------------------
+  1.15.1 - 2026-09-28
+------------------------------------------------------------------------------
+
+Added:
+  - Project logo (docs/logo.png), shown at the top of the GitHub page and
+    shipped inside the release zip.
+
+Fixed:
+  - Self update no longer digs a nested hole. Up to 1.15.0, the updater
+    copied the "scripts" folder INSIDE the existing scripts\ folder (and the
+    same for lang, docs, ...), because Copy-Item nests a source folder into
+    an existing destination folder: the result was scripts\scripts\,
+    one level deeper at every update, with the new files landing in the
+    wrong place and the running version never changing. The updater now
+    copies the CONTENTS of every folder, so an update lands exactly where
+    the old files are, and it also removes the nesting left behind by the
+    previous versions.
+  - Update-Now.bat now does the whole cycle by itself: check, download,
+    stop the dashboard, install, start the dashboard again and wait for its
+    answer on /api/health. Before, it installed the files while the old
+    dashboard kept running and then asked the user to stop and restart the
+    service by hand.
+  - The manual update works even with auto_update = no: it is an explicit
+    request, so the settings switch only gates the AUTOMATIC check at boot.
+    Before, with auto_update = no the manual updater lied "up to date"
+    without even looking at GitHub.
+  - -CheckUpdatesOnly now only checks and reports (exit code 3 when a new
+    release exists), without installing anything.
+  - The update package is unpacked through GetTempPath(), which never comes
+    back empty, instead of the TEMP environment variable.
+  - If launching the new version after a self update fails, the error is
+    logged instead of stopping the script: the service will come back at
+    the next task run.
+
+------------------------------------------------------------------------------
+  1.15.0 - 2026-09-28
+------------------------------------------------------------------------------
+
+Added:
+  - The process list shows the friendly name of every executable too, right
+    under the image name: "Task Manager" under taskmgr.exe, "Windows
+    Explorer" under explorer.exe, exactly like Task Manager does. The
+    description is read from the version info of the executable itself, so
+    it is already in the language of the server, and it is cached per path:
+    while a process runs, its description cannot change, so the file is
+    read only once. The filter of the section searches the description as
+    well, and the full path stays in the tooltip.
+
+Changed:
+  - The changelog moved to its own folder: Changelog\CHANGELOG.md is now the
+    only changelog file of the project.
+  - .gitignore also ignores the local folder .ignore\.
+  - The process collector is more robust: when a CIM class cannot be
+    queried at all, the answer used to look like "one empty element" and
+    the Get-Process fallback never ran, leaving the process list empty.
+    A null answer is now filtered out, so the fallback works again (this
+    was visible only where CIM is missing, never on a healthy Windows).
+
+------------------------------------------------------------------------------
   1.14.0 - 2026-09-28
 ------------------------------------------------------------------------------
 

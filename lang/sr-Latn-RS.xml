@@ -109,6 +109,7 @@
   <string key="restore_defaults">Vrati podrazumevano</string>
   <string key="saved_ok">Podešavanja su sačuvana</string>
   <string key="stored_browser">sačuvano u ovom pregledaču</string>
+  <string key="storwarn">Ovaj pregledač ne može da sačuva podešavanja ovde: izbor se gubi ponovnim otvaranjem stranice.</string>
   <string key="stored_server">sačuvano na serveru (važi za sve)</string>
   <string key="seconds">sekundi</string>
   <string key="minutes">minuta</string>

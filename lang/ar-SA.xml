@@ -109,6 +109,7 @@
   <string key="restore_defaults">استعادة الإعدادات الافتراضية</string>
   <string key="saved_ok">تم حفظ الإعدادات</string>
   <string key="stored_browser">محفوظ في هذا المستعرض</string>
+  <string key="storwarn">هذا المتصفح لا يمكنه حفظ التفضيلات هنا: تضيع الاختيارات عند إعادة فتح الصفحة.</string>
   <string key="stored_server">محفوظ على الخادم (ينطبق على الجميع)</string>
   <string key="seconds">ثانية</string>
   <string key="minutes">دقيقة</string>

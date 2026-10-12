@@ -10,7 +10,7 @@ No agent, no IIS, no external module, no database: a single PowerShell script
 publishes the page, and you open it from any computer on the LAN by typing the
 IP of the server.
 
-[![Version](https://img.shields.io/badge/version-1.16.4-blue)](Changelog/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.16.5-blue)](Changelog/CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/Windows%20Server-2016%2B-0078D6?logo=windows)](#requirements)
 [![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)](#requirements)
 [![Languages](https://img.shields.io/badge/UI%20languages-38-brightgreen)](#-38-languages)
@@ -42,15 +42,16 @@ and the software announces itself in the Windows event log at every start.
 | **CPU** | total load, per-core bars, real clock speed, socket/core/thread count, temperature, trend chart |
 | **Memory** | used / free / total, page file, installed modules (slot, size, speed), trend chart |
 | **Disks** | one box per physical disk with bus and media type, containing its partitions: space used, file system and live read / write / busy per partition |
-| **Network** | live download and upload, history chart, per-adapter figures, link speed, MAC, active TCP connections |
+| **Network** | live download and upload with a colour legend on the chart (green = download, orange = upload), per-adapter figures, link speed, MAC, active TCP connections |
 | **IP configuration** | IPv4, mask, gateway, DNS, IPv6, DHCP, per adapter |
 | **Operating system** | version and build, manufacturer, model, BIOS, serial, install date, last boot, uptime, sessions |
-| **Processes** | every process with the friendly name from the file ("Windows Explorer" for `explorer.exe`) as the main line and, right under it, the real image name (`sqlservr.exe`); PID, CPU %, RAM, threads, handles, full path in the tooltip |
+| **Processes** | every process with the friendly name from the file ("Windows Explorer" for `explorer.exe`) as the main line and, right under it, the real image name (`sqlservr.exe`); PID, CPU %, RAM, threads, handles, full path in the tooltip; the dashboard's own row is highlighted so it can be spotted while scrolling |
 | **Services** | the complete list with state, startup type, PID and log-on account |
 | **Events** | critical, error and warning entries of the System and Application logs of the last 24 hours |
 
 Tables sort by clicking the column headers, File Explorer style, and the choice
-is remembered by the browser.
+is remembered by the browser. The Process column sorts by the name it shows,
+the friendly name.
 
 ## Quick start
 

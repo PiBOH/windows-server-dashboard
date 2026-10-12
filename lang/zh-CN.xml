@@ -109,6 +109,7 @@
   <string key="restore_defaults">恢复默认值</string>
   <string key="saved_ok">设置已保存</string>
   <string key="stored_browser">保存在此浏览器中</string>
+  <string key="storwarn">此浏览器无法在此保存偏好设置：重新打开页面时所选设置会丢失。</string>
   <string key="stored_server">保存在服务器上（对所有人生效）</string>
   <string key="seconds">秒</string>
   <string key="minutes">分钟</string>

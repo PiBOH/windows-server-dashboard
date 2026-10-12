@@ -109,6 +109,7 @@
   <string key="restore_defaults">Standardwerte wiederherstellen</string>
   <string key="saved_ok">Einstellungen gespeichert</string>
   <string key="stored_browser">in diesem Browser gespeichert</string>
+  <string key="storwarn">Dieser Browser kann Einstellungen hier nicht speichern: Die Auswahl geht beim erneuten Öffnen der Seite verloren.</string>
   <string key="stored_server">auf dem Server gespeichert (gilt für alle)</string>
   <string key="seconds">Sekunden</string>
   <string key="minutes">Minuten</string>

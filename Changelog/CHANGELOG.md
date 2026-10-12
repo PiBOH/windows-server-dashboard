@@ -8,6 +8,43 @@ Versioning follows Semantic Versioning: MAJOR.MINOR.PATCH.
 - PATCH - fixes and tweaks that add no feature.
 
 ------------------------------------------------------------------------------
+  1.16.5 - 2026-10-12
+------------------------------------------------------------------------------
+
+Added:
+  - Network card: a legend under the traffic chart (green square =
+    Download, orange square = Upload, the same colours as the two lines),
+    the headline values are coloured to match, and the adapter table
+    spells the words out instead of an arrow alone ("Download KB/s",
+    "Upload KB/s"). The totals keep their RX / TX names. Everything
+    reuses the download and upload keys already translated in all 38
+    languages, so no new string was needed for the chart and the columns.
+  - The Processes table highlights the dashboard's own row (left bar and
+    tinted background, the same treatment as the event rows). With about
+    two hundred processes sorted by CPU the engine was findable only
+    through the filter box. The server marks the row with a new "Self"
+    field in /api/stats, so nothing depends on a name written twice.
+
+Changed:
+  - The Process column now sorts by the name it SHOWS: the friendly name
+    ("Windows Explorer") instead of the image name (explorer.exe), which
+    is what the column displays as its main line since 1.16.3. The
+    tie-break uses it too. Services and Events are untouched: they keep
+    sorting on the value of their own column (service name, message time).
+
+Fixed:
+  - The personal refresh interval could be lost without a trace: it was
+    kept in localStorage only, and a browser that refuses localStorage
+    (privacy mode, storage policy) silently dropped it, so the next visit
+    showed the server default again with no explanation. The choice is
+    now written to a cookie as well and read from it when localStorage
+    comes back empty; when neither store accepts a write, the settings
+    panel says so under the refresh interval instead of losing the choice.
+
+Language files:
+  - New key storwarn, translated in all 38 languages.
+
+------------------------------------------------------------------------------
   1.16.4 - 2026-10-01
 ------------------------------------------------------------------------------
 

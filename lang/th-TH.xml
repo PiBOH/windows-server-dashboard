@@ -109,6 +109,7 @@
   <string key="restore_defaults">คืนค่าเริ่มต้น</string>
   <string key="saved_ok">บันทึกการตั้งค่าแล้ว</string>
   <string key="stored_browser">บันทึกในเบราว์เซอร์นี้</string>
+  <string key="storwarn">เบราว์เซอร์นี้ไม่สามารถบันทึกค่ากำหนดที่นี่ได้: ตัวเลือกจะหายไปเมื่อเปิดหน้านี้อีกครั้ง</string>
   <string key="stored_server">บันทึกบนเซิร์ฟเวอร์ (มีผลกับทุกคน)</string>
   <string key="seconds">วินาที</string>
   <string key="minutes">นาที</string>

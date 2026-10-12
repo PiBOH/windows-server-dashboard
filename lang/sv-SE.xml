@@ -109,6 +109,7 @@
   <string key="restore_defaults">Återställ standardvärden</string>
   <string key="saved_ok">Inställningarna sparades</string>
   <string key="stored_browser">sparat i denna webbläsare</string>
+  <string key="storwarn">Den här webbläsaren kan inte spara inställningar här: valet försvinner när sidan öppnas igen.</string>
   <string key="stored_server">sparat på servern (gäller alla)</string>
   <string key="seconds">sekunder</string>
   <string key="minutes">minuter</string>

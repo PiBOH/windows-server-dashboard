@@ -109,6 +109,7 @@
   <string key="restore_defaults">Varsayılanları geri yükle</string>
   <string key="saved_ok">Ayarlar kaydedildi</string>
   <string key="stored_browser">bu tarayıcıya kaydedildi</string>
+  <string key="storwarn">Bu tarayıcı tercihleri burada kaydedemez: seçim, sayfa yeniden açıldığında kaybolur.</string>
   <string key="stored_server">sunucuya kaydedildi (herkes için geçerli)</string>
   <string key="seconds">saniye</string>
   <string key="minutes">dakika</string>

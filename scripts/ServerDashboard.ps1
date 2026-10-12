@@ -1549,12 +1549,15 @@ $CollectorScript = {
                     $cmdLn = ''
                     if ($imgMap.ContainsKey($key)) { $cmdLn = $imgMap[$key].Cmd }
                     $pDesc = & $GetDesc $path
+                    $isSelf = $false
                     if (($key -eq "$PID") -or ($cmdLn -like '*ServerDashboard.ps1*')) {
                         $pDesc = $Shared.Brand
+                        $isSelf = $true
                     }
                     $procs += @{
                         Name    = $file
                         Desc    = $pDesc
+                        Self    = $isSelf
                         Path    = $path
                         Pid     = [int]$p.IDProcess
                         CpuPct  = [math]::Round([double]$p.PercentProcessorTime / $nCpu, 1)
@@ -1569,14 +1572,16 @@ $CollectorScript = {
                     $file = if ($imgMap.ContainsKey($key)) { $imgMap[$key].File } else { "$($p.ProcessName).exe" }
                     $path = if ($imgMap.ContainsKey($key)) { $imgMap[$key].Path } else { '' }
                     $desc = & $GetDesc $path
+                    $isSelf = $false
                     # self-identification, same as above: the $PID check works
                     # even when Win32_Process is not available at all
                     $cmdLn = ''
                     if ($imgMap.ContainsKey($key)) { $cmdLn = $imgMap[$key].Cmd }
                     if (($key -eq "$PID") -or ($cmdLn -like '*ServerDashboard.ps1*')) {
                         $desc = $Shared.Brand
+                        $isSelf = $true
                     }
-                    $procs += @{ Name=$file; Desc=$desc; Path=$path; Pid=$p.Id; CpuPct=0;
+                    $procs += @{ Name=$file; Desc=$desc; Self=$isSelf; Path=$path; Pid=$p.Id; CpuPct=0;
                                  RamMB=[math]::Round($p.WorkingSet64/1MB,1);
                                  Threads=$p.Threads.Count; Handles=$p.HandleCount }
                 }
@@ -1842,6 +1847,10 @@ canvas{width:100%;height:120px;display:block}
 #tev td:last-child{max-width:640px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
 #tev tr.crit td:first-child{box-shadow:inset 3px 0 0 var(--crit)}
 #tev tr.warn td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
+/* the engine identifies itself in the Processes table: same left bar as the
+   event rows, so the row is recognisable while scrolling the list */
+#tproc tr.selfrow td{background:var(--sortbg)}
+#tproc tr.selfrow td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .scroll-proc th{position:sticky;top:0;z-index:2;background:var(--thead);box-shadow:0 1px 0 var(--border)}
 th.sortable{cursor:pointer;user-select:none;-webkit-user-select:none;white-space:nowrap;transition:color .15s,background .15s}
 th.sortable:hover{color:var(--txt);background:var(--hover)}
@@ -1960,12 +1969,14 @@ footer .fcenter b{color:var(--txt)}
   <div data-sec="network" class="card">
     <h2 data-i18n="network">Network</h2>
     <div style="display:flex;gap:24px">
-      <div><div class="sub">&#11015; <span data-i18n="download">Download</span></div>
-        <div class="big" style="font-size:26px"><span id="netdn">-</span></div></div>
-      <div><div class="sub">&#11014; <span data-i18n="upload">Upload</span></div>
-        <div class="big" style="font-size:26px"><span id="netup">-</span></div></div>
+      <div><div class="sub" style="color:#3fb950;font-weight:700">&#11015; <span data-i18n="download">Download</span></div>
+        <div class="big" style="font-size:26px;color:#3fb950"><span id="netdn">-</span></div></div>
+      <div><div class="sub" style="color:#f0883e;font-weight:700">&#11014; <span data-i18n="upload">Upload</span></div>
+        <div class="big" style="font-size:26px;color:#f0883e"><span id="netup">-</span></div></div>
     </div>
     <canvas id="netchart"></canvas>
+    <div class="sub"><span style="color:#3fb950">&#9632;</span> <span data-i18n="download">Download</span>
+      &nbsp;&nbsp;<span style="color:#f0883e">&#9632;</span> <span data-i18n="upload">Upload</span></div>
     <div class="row"><span data-i18n="tcp_conn">Active TCP connections</span><b id="tcp">-</b></div>
   </div>
 
@@ -2001,7 +2012,8 @@ footer .fcenter b{color:var(--txt)}
     <div class="scroll">
       <table><thead><tr>
         <th data-i18n="adapter_c">Adapter</th><th data-i18n="status">Status</th>
-        <th class="num">&#11015; KB/s</th><th class="num">&#11014; KB/s</th>
+        <th class="num">&#11015; <span data-i18n="download">Download</span> KB/s</th>
+        <th class="num">&#11014; <span data-i18n="upload">Upload</span> KB/s</th>
         <th class="num" data-i18n="total_rx">Total RX</th><th class="num" data-i18n="total_tx">Total TX</th>
       </tr></thead><tbody id="nics"></tbody></table>
     </div>
@@ -2110,6 +2122,7 @@ footer .fcenter b{color:var(--txt)}
         <label><span data-i18n="refresh_interval">Refresh interval</span>
           <span class="hint" data-i18n="stored_browser"></span></label>
         <select id="setrate"></select>
+        <div id="storwarn" class="hint" style="color:var(--warn);display:none;flex-basis:100%;margin-top:6px" data-i18n="storwarn">This browser cannot store preferences here: the choice is lost when the page is reopened.</div>
       </div>
       <div class="setrow col" id="srvrow">
         <label><span data-i18n="srv_options">Server options</span>
@@ -2269,7 +2282,10 @@ var LOCAL = { theme: 'dark', lang: null, refresh: null };   /* refresh: null = u
 
 function loadLocal(){
   try {
-    var raw = localStorage.getItem('dashsettings');
+    var raw = null;
+    try { raw = localStorage.getItem('dashsettings'); } catch(e){ raw = null; }
+    if (!raw) { try { var cm = document.cookie.match(/(?:^|; )dashprefs=([^;]*)/);
+                      if (cm) raw = decodeURIComponent(cm[1]); } catch(e){ } }
     if (raw) { var o = JSON.parse(raw); if (o && typeof o === 'object') {
       if (o.theme) LOCAL.theme = o.theme;
       if (o.lang)  LOCAL.lang  = o.lang;
@@ -2278,7 +2294,23 @@ function loadLocal(){
   } catch(e){ }
   return LOCAL;
 }
-function saveLocal(){ try { localStorage.setItem('dashsettings', JSON.stringify(LOCAL)); } catch(e){ } }
+function saveLocal(){
+  /* The choice is written to localStorage AND to a cookie: a browser that
+     refuses localStorage (privacy mode, storage policy) would otherwise drop
+     the personal refresh interval silently, and the next visit would show the
+     server default again with no explanation. */
+  var json = JSON.stringify(LOCAL);
+  try { localStorage.setItem('dashsettings', json); } catch(e){ }
+  try { document.cookie = 'dashprefs=' + encodeURIComponent(json) + ';path=/;max-age=31536000'; } catch(e){ }
+}
+function storageOK(){
+  /* true when at least one of the two stores accepts a write: the settings
+     panel says so instead of losing the choice at the next visit */
+  try { localStorage.setItem('dashtest','1'); localStorage.removeItem('dashtest'); return true; } catch(e){ }
+  try { document.cookie = 'dashtest=1;path=/;max-age=60';
+        var ok = /(?:^|; )dashtest=1/.test(document.cookie);
+        document.cookie = 'dashtest=;path=/;max-age=0'; return ok; } catch(e){ return false; }
+}
 
 function loadServer(){
   /* If the server has no settings file (or it cannot be read) the built-in
@@ -2487,6 +2519,8 @@ function fillSettings(){
     return '<option value="'+l.code+'"'+(l.code===CURLANG?' selected':'')+'>'+l.native+' ('+l.english+')</option>';
   }).join('');
   document.getElementById('setrate').value = (LOCAL.refresh != null) ? String(LOCAL.refresh) : '';
+  var sw = document.getElementById('storwarn');
+  if (sw) { sw.style.display = storageOK() ? 'none' : 'block'; }
   var ed = serverEditable();
   var prot = !!SRV.passwordProtected;
   /* status note only: read-only / password needed / unlocked. In partial
@@ -2626,9 +2660,13 @@ function sortRows(rows, id){
     else if (k === 'StartMode') { var o = {Auto:0, Manual:1, Disabled:2};
                                   x = (o[a.StartMode] === undefined ? 3 : o[a.StartMode]);
                                   y = (o[b.StartMode] === undefined ? 3 : o[b.StartMode]); }
+    /* the Process column shows the friendly name as the main line: sorting by
+       it must follow THAT text, not the image name under it (explorer.exe).
+       The other tables keep sorting on the value of their own column. */
+    if (k === 'Name' && id === 'tproc') { x = a.Desc || a.Name; y = b.Desc || b.Name; }
     if (NUMKEYS[k] || typeof x === 'number') { r = (parseFloat(x)||0) - (parseFloat(y)||0); }
     else { r = String(x==null?'':x).toLowerCase().localeCompare(String(y==null?'':y).toLowerCase()); }
-    if (r === 0) { var sa = (a.Display || a.Name || ''), sb = (b.Display || b.Name || '');
+    if (r === 0) { var sa = (a.Display || a.Desc || a.Name || ''), sb = (b.Display || b.Desc || b.Name || '');
                    return sa.toLowerCase().localeCompare(sb.toLowerCase()); }
     return r * d;
   });
@@ -2674,7 +2712,7 @@ function drawProcs(){
      var nm = '<td title="'+esc(p.Path || p.Name).replace(/"/g,'&quot;')+'">'+
               ((p.Desc) ? esc(p.Desc)+'<span class="pd">'+esc(p.Name)+'</span>'
                         : esc(p.Name))+'</td>';
-     return '<tr>'+nm+'<td class="num">'+p.Pid+'</td>'+
+     return '<tr'+(p.Self?' class="selfrow"':'')+'>'+nm+'<td class="num">'+p.Pid+'</td>'+
             '<td class="num '+cls(p.CpuPct)+'">'+fmt(p.CpuPct)+'</td>'+
             '<td class="num">'+fmt(p.RamMB)+'</td><td class="num">'+p.Threads+'</td><td class="num">'+p.Handles+'</td></tr>';
   }).join('') : '<tr><td colspan="6" class="sub">'+T('no_match_proc')+'</td></tr>';

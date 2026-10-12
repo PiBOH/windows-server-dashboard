@@ -109,6 +109,7 @@
   <string key="restore_defaults">Przywróć domyślne</string>
   <string key="saved_ok">Ustawienia zapisane</string>
   <string key="stored_browser">zapisane w tej przeglądarce</string>
+  <string key="storwarn">Ta przeglądarka nie może tutaj zapisywać preferencji: wybór zostaje utracony po ponownym otwarciu strony.</string>
   <string key="stored_server">zapisane na serwerze (dla wszystkich)</string>
   <string key="seconds">sekund</string>
   <string key="minutes">minut</string>

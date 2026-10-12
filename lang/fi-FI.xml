@@ -109,6 +109,7 @@
   <string key="restore_defaults">Palauta oletusasetukset</string>
   <string key="saved_ok">Asetukset tallennettu</string>
   <string key="stored_browser">tallennettu tähän selaimeen</string>
+  <string key="storwarn">Tämä selain ei voi tallentaa asetuksia tähän: valinta katoaa, kun sivu avataan uudelleen.</string>
   <string key="stored_server">tallennettu palvelimelle (koskee kaikkia)</string>
   <string key="seconds">sekuntia</string>
   <string key="minutes">minuuttia</string>

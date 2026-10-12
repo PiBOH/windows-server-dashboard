@@ -109,6 +109,7 @@
   <string key="restore_defaults">Επαναφορά προεπιλογών</string>
   <string key="saved_ok">Οι ρυθμίσεις αποθηκεύτηκαν</string>
   <string key="stored_browser">αποθηκεύτηκε σε αυτό το πρόγραμμα περιήγησης</string>
+  <string key="storwarn">Αυτός ο περιηγητής δεν μπορεί να αποθηκεύει προτιμήσεις εδώ: η επιλογή χάνεται όταν ξανανοίγει η σελίδα.</string>
   <string key="stored_server">αποθηκεύτηκε στον διακομιστή (για όλους)</string>
   <string key="seconds">δευτερόλεπτα</string>
   <string key="minutes">λεπτά</string>

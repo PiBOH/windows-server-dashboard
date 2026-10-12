@@ -109,6 +109,7 @@
   <string key="restore_defaults">기본값 복원</string>
   <string key="saved_ok">설정이 저장되었습니다</string>
   <string key="stored_browser">이 브라우저에 저장됨</string>
+  <string key="storwarn">이 브라우저는 여기에 환경설정을 저장할 수 없습니다. 페이지를 다시 열면 선택 내용이 사라집니다.</string>
   <string key="stored_server">서버에 저장됨(모두에게 적용)</string>
   <string key="seconds">초</string>
   <string key="minutes">분</string>

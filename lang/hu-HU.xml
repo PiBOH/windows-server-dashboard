@@ -109,6 +109,7 @@
   <string key="restore_defaults">Alapértelmezések visszaállítása</string>
   <string key="saved_ok">A beállítások mentve</string>
   <string key="stored_browser">ebben a böngészőben mentve</string>
+  <string key="storwarn">Ez a böngésző nem tud itt beállításokat menteni: a választás az oldal újranyitásakor elveszik.</string>
   <string key="stored_server">a kiszolgálón mentve (mindenkire érvényes)</string>
   <string key="seconds">másodperc</string>
   <string key="minutes">perc</string>
