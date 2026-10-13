@@ -51,8 +51,10 @@ Fixed:
     With a real browser refreshing every 0.5 s and nine minutes of
     observation, Task Manager's Memory column swung between 35.5 and 203.9
     MB and the private bytes sat between 202.7 and 239.7 MB; on the same
-    machine and the same protocol the same build now stays between 15.2 and
-    127.1 MB of Memory and between 156.0 and 159.8 MB of private bytes. Two
+    machine and the same protocol, with the trim still on its old timer,
+    the same build stayed between 15.2 and 127.1 MB of Memory and between
+    156.0 and 159.8 MB of private bytes (the budget that replaced that
+    timer is measured in the Changed entry below). Two
     calls were
     responsible. The Disks section called Get-PhysicalDisk and
     Get-Partition, and the Network section called Get-NetAdapter,
@@ -84,8 +86,8 @@ Fixed:
     deliberately fattened process). The trim is not free either way: it
     costs 26-36 ms to run and makes the first read of the pages it sent
     away about 23% slower (303 -> 373 ms on a deliberately touched 96 MB
-    block), which is why it stays on its own five minute schedule and off
-    the request path.
+    block), which is why it never runs on the request path. When it runs
+    is the budget, changed in this release (see below).
   - What the descriptions of the executables cost was measured instead of
     assumed, because it looked like the biggest remaining item: on the
     test server 210 processes map to only 46 distinct executable paths, so
@@ -106,6 +108,32 @@ Fixed:
     update now.
 
 Changed:
+  - The memory trim is a budget now, not a timetable: as soon as the
+    process goes over mem_budget in settings.txt (20 MB by default, 0 =
+    never) the pages it is not using are released, checked once per
+    sampling cycle, instead of every five minutes whatever the number
+    says. Measured side by side on a real Windows 11 machine, both builds
+    answering the same request stream at 0.5 s for seven minutes (840
+    requests each, 116 KB of JSON per reply, working set sampled four
+    times a second): with the timer Task Manager's Memory column ran
+    21.4-156.5 MB, median 118.6, 6.2% of a core; with the budget 7.7-67.9
+    MB, median 44.6, 11.8% of a core. The 20 MB asked for is NOT held
+    while a page refreshes - 83% of the samples are over it, by +24.6 MB
+    at the median (a real browser tab, which asks once a second because a
+    browser throttles an unfocused window, is the friendlier case at 54%)
+    - because one sampling cycle puts a median of 30.0 MB back into the
+    working set in under a second. Those MB are pages, not retained heap:
+    across every trim and refill the private bytes of the process do not
+    move at all (the same 119.8 MB at the trough right after a trim and at
+    the peak of the cycle that follows, against a 64 MB swing of the
+    working set), so no reduction of the per-cycle churn would bring the
+    figure down. A budget under that figure re-reads
+    the same pages at every cycle, which is where the doubled CPU, the 80
+    trims a minute and the 27% slower request landing in the second after
+    a trim (3.7 against 2.9 ms) come from. At 90 MB, same protocol, the
+    number settles at a median of 72.9 MB (p95 88.2, 1.2% of the samples
+    over it) with about 6 trims a minute and the CPU back to 6.2%: the
+    setting caps the peak, and settings.txt says so in its own comment.
   - /api/stats no longer rebuilds its 115 KB JSON document at every
     request. The collector serializes the snapshot once per cycle and the
     web thread serves those exact bytes, so a page refreshing twice a

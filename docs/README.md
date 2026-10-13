@@ -369,6 +369,9 @@ visible, logging on.
 
       refresh_seconds = 0.5      (0.5 - 3600, dot as decimal separator)
       idle_seconds    = 0        (0 = do not sample when nobody watches)
+      mem_budget      = 20       (working set budget in MB, what Task Manager
+                                  shows: over it the pages not in use are
+                                  released. 0 = no budget)
       logging         = no       (never create a log file)
       coretemp_log    =          (full path of Core Temp's CT-Log*.csv,
                                   empty = search its install folders)
@@ -437,10 +440,12 @@ NOBODY WATCHING = NOTHING RUNNING
   (for example 900 for a sample every 15 minutes). The default, 0, means "do
   not sample at all".
 
-  The engine keeps its own footprint small too: every 5 minutes it releases
-  the memory pages it is not using (working set trim), so what Task Manager
-  shows is the memory the dashboard really needs, not the pages it happened
-  to touch since it started.
+  The engine keeps its own footprint small too, and what decides when is the
+  figure Task Manager shows, not a clock: as soon as the process goes over the
+  working set budget (mem_budget in settings.txt, 20 MB by default) the pages
+  it is not using are released on the spot. Nothing that is still needed is
+  freed, and a page comes back by itself the moment the engine touches it
+  again.
 
   What the engine keeps for itself, in exchange for all of that, is measured
   rather than assumed. Since 1.16.6 nothing here loads the Storage, NetAdapter
@@ -456,16 +461,48 @@ NOBODY WATCHING = NOTHING RUNNING
   and that compilation alone cost about 5 MB of working set, while assigning
   the process its own MaxWorkingSet trims the same way with nothing to compile.
   Measured on a Windows 11 machine with Core Temp running and a real browser
-  refreshing every 0.5 s (220 processes, 279 services), over nine minutes of
-  observation: Task Manager's Memory column 35.5-203.9 MB before, 15.2-127.1 MB
-  after; private bytes 202.7-239.7 MB before, 156.0-159.8 MB after; handle count
-  804-960 before, 664-710 after; median time to fetch and parse a full /api/stats
-  4.7 ms instead of 10.2 ms.
+  refreshing every 0.5 s (220 processes, 279 services): the median time to fetch
+  and parse a full /api/stats is 4.7 ms against 10.2 ms, and the handle count is
+  steady at 664-710 against 804-960. What the working set does is measured
+  separately, because it is the number Task Manager shows.
 
-  The trim is not free, and that was measured too: it costs 26-36 ms to run and
-  makes the first read of the pages it sent away about 23% slower (303 -> 373 ms
-  on a deliberately touched 96 MB block), which is why it stays on its own five
-  minute schedule and off the request path. The same was done for the friendly
+  That measurement was a side by side one: two builds of this dashboard on the
+  same machine, each answering the same request stream at 0.5 s for seven
+  minutes (840 requests each, 116 KB of JSON per reply, none failed), with the
+  working set sampled four times a second. With the old five minute timer Task
+  Manager's Memory column ran 21.4-156.5 MB, median 118.6, private bytes up to
+  192.0 MB, 6.2% of a core; with the budget at its 20 MB default it ran 7.7-67.9
+  MB, median 44.6, private bytes up to 158.4 MB, 11.8% of a core. A real browser
+  tab on the same build is the friendlier case - it asks once a second, because
+  a browser throttles the timers of a window that is not focused - and there the
+  column ran 5.4-73.6 MB, median 21.1, 6.0% of a core.
+
+  So the budget does what it says - the second after a trim really is 4-15 MB,
+  and with nobody watching the process sits at 11 MB - but 20 MB is NOT held
+  while a page is refreshing: 83% of the samples are above it (54% even in the
+  friendlier browser case), by +24.6 MB at the median. The cause was measured as
+  well: one sampling cycle puts a median of 30.0 MB (up to 42.5) back into the
+  working set in under a second, and those are the pages that cycle needs
+  resident - CIM machinery, managed heap, its own code - not the 116 KB reply,
+  which at two requests a second is 0.23 MB/s. That they are pages and not
+  retained heap was checked the same way: the private bytes of the process are
+  the same 119.8 MB at the trough right after a trim and at the peak of the
+  cycle that follows, while the working set swings by 64 MB in between. The
+  committed heap does not move with the sawtooth, which is why no reduction of
+  the per-cycle churn would bring the figure down. A budget under what a cycle
+  touches means the engine releases and re-reads the same pages at every cycle:
+  it doubles the CPU (6.2% -> 11.8%), it leaves about 80 trims a minute, and a
+  request landing in the second after a trim costs 27% more (3.7 ms against
+  2.9 ms median, on the request path). With the budget at 90 MB, same protocol,
+  the number settles at a median of 72.9 MB (p95 88.2, 1.2% of the samples over
+  90) with about 6 trims a minute and the CPU back to 6.2%: that is what the
+  setting is for, capping the peak instead of asking for a figure the engine
+  cannot hold.
+
+  The trim is not free on its own either: it costs 26-36 ms to run and makes
+  the first read of the pages it sent away about 23% slower (303 -> 373 ms on a
+  deliberately touched 96 MB block), which is why it never runs on the request
+  path. The same was done for the friendly
   names of the executables, which looked like the biggest remaining item: on the
   test server 210 processes map to only 46 distinct paths, so the once-per-path
   cache already avoids 57 of the 103 possible reads, and the whole set of

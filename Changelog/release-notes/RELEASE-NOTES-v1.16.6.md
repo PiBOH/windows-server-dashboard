@@ -60,6 +60,26 @@ The dashboard starts **at boot as SYSTEM**, no interactive logon needed.
   "10.0.26200.9457 (build 26200)". Win32_OperatingSystem reports neither
   of the two, and its ProductName still says "Windows 10" on Windows 11,
   so the name keeps coming from the Caption.
+- **The memory trim follows a budget, not a timetable.** `mem_budget` in
+  settings.txt (20 MB by default, 0 = never) is the working set the
+  engine keeps itself within: as soon as it goes over, and only then, the
+  pages it is not using are released, checked once per sampling cycle.
+  Measured side by side on a real Windows 11 machine - two builds, the
+  same request stream at 0.5 s for seven minutes each, 840 requests,
+  116 KB of JSON per reply, working set sampled four times a second -
+  Task Manager's Memory column ran **21.4-156.5 MB, median 118.6, 6.2% of
+  a core with the old five minute timer and 7.7-67.9 MB, median 44.6,
+  11.8% of a core with the budget**. 20 MB is *not* held while a page is
+  refreshing (83% of the samples are above it, by +24.6 MB at the median;
+  with a real browser tab, which asks once a second, 54%) because a single
+  sampling cycle puts a median of 30.0 MB back in under a second. Those MB
+  are pages, not retained heap: the private bytes are the same 119.8 MB at
+  the trough after a trim and at the peak of the cycle that follows, while
+  the working set swings by 64 MB. At
+  90 MB the same protocol settles at a median of 72.9 MB (p95 88.2) with
+  6 trims a minute and 6.2% of a core: the budget caps the peak at a
+  figure the engine can hold, and settings.txt says exactly that next to
+  the key.
 
 Fixed:
 
@@ -77,10 +97,12 @@ Fixed:
   same values, and the words the cmdlets added are put back from the
   documented Windows values, so the page shows exactly what it showed
   before. Measured on a real Windows 11 machine with Core Temp running and
-  a browser refreshing every 0.5 s, over nine minutes: **Task Manager's
-  Memory column swung between 35.5 and 203.9 MB before, and now stays
-  between 15.2 and 127.1 MB**, while private bytes went from 202.7-239.7 MB
-  to 156.0-159.8 MB. The request loop also releases the wait handle and the
+  a browser refreshing every 0.5 s, over nine minutes, with the trim still
+  on its old timer: **Task Manager's Memory column swung between 35.5 and
+  203.9 MB before, and stayed between 15.2 and 127.1 MB after**, while
+  private bytes went from 202.7-239.7 MB to 156.0-159.8 MB (what the
+  budget that replaced that timer does is measured in the entry above).
+  The request loop also releases the wait handle and the
   response it creates per request now (handle count steady at 664-710
   against 804-960 before), `/api/stats` is serialized once per collector
   cycle instead of once per request (median fetch and parse: 4.7 ms against

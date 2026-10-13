@@ -177,6 +177,7 @@ $Shared = [hashtable]::Synchronized(@{
     LogKeepDays = $LogKeepDays
     Interval    = $IntervalSeconds
     IdleInterval= $IdleIntervalSeconds
+    MemBudgetMB = 20
     LastRequest = Get-Date
     LogEnabled  = $true
     Paused      = $false
@@ -198,6 +199,7 @@ function Get-DefaultSettings {
         idleSeconds    = [double]$IdleIntervalSeconds   # 0 = no sampling while nobody is connected
         autoUpdate     = $true                           # check GitHub for a newer release at startup and every 24 hours
         coretempLog    = ''                              # Core Temp's own CSV log, when its log folder is not the install folder
+        memBudgetMB    = 20                              # working set budget in MB: what Task Manager shows, 0 = no budget
         passwordMode   = 'total'                         # with a pwd file: total = whole page, partial = server options only
         sections       = $sec
     }
@@ -233,6 +235,15 @@ function Read-Settings {
                     }
                     '^logging$'     { }   # handled before logging starts, kept here so it is not reported as unknown
                     '^auto_update$' { $cfg.autoUpdate = ($v -match '(?i)^(yes|true|1|on|si|s)$') }
+                    '^mem_budget$' {
+                        # The working set the engine must keep itself within, in
+                        # MB - the number Task Manager shows. 0 = no budget.
+                        [double]$n = 0
+                        if ([double]::TryParse($v, [System.Globalization.NumberStyles]::Float,
+                                               [System.Globalization.CultureInfo]::InvariantCulture, [ref]$n)) {
+                            $cfg.memBudgetMB = $n
+                        }
+                    }
                     '^coretemp_log$' {
                         # Optional: the CSV log of Core Temp, when the log folder
                         # was moved somewhere else in its own options. Empty =
@@ -262,6 +273,7 @@ function Read-Settings {
     if ($cfg.refreshSeconds -lt 0.5)  { $cfg.refreshSeconds = 0.5 }
     if ($cfg.refreshSeconds -gt 3600) { $cfg.refreshSeconds = 3600 }
     if ($cfg.idleSeconds -lt 0)       { $cfg.idleSeconds = 0 }
+    if ($cfg.memBudgetMB -lt 0)       { $cfg.memBudgetMB = 0 }
     return $cfg
 }
 
@@ -315,6 +327,20 @@ function Write-Settings($cfg) {
         [void]$lines.Add('#   0  = do not sample at all (default, zero CPU cost)')
         [void]$lines.Add('#   >0 = keep sampling every N seconds, to build history')
         [void]$lines.Add("idle_seconds = " + ([double]$cfg.idleSeconds).ToString($inv))
+        [void]$lines.Add('')
+        [void]$lines.Add('# Working set budget, in MB: the figure Task Manager shows for the')
+        [void]$lines.Add('# engine. As soon as it goes over this, the pages the engine is NOT')
+        [void]$lines.Add('# using are sent away, on the spot - there is no timer, the number')
+        [void]$lines.Add('# itself is what triggers it. Nothing that is still needed is freed:')
+        [void]$lines.Add('# a page comes back by itself if it is touched again. 0 = no budget.')
+        [void]$lines.Add('# Measured: one sampling cycle puts a median of 30 MB (up to 42) back')
+        [void]$lines.Add('# into the working set in under a second, so the engine settles at')
+        [void]$lines.Add('# about 44 MB with 20 (over the budget 83% of the samples, CPU')
+        [void]$lines.Add('# doubled) and at about 73 MB with 90 (6 trims a minute, no extra')
+        [void]$lines.Add('# CPU). Keep this at or above what a cycle needs: below it the engine')
+        [void]$lines.Add('# re-reads the same pages at every cycle, which costs CPU and latency')
+        [void]$lines.Add('# without changing what is really in use. 20 is the default.')
+        [void]$lines.Add("mem_budget = " + ([double]$cfg.memBudgetMB).ToString($inv))
         [void]$lines.Add('')
         [void]$lines.Add('# Write the log files in logs\: yes / no. One file per day')
         [void]$lines.Add('# (ServerDashboard-YYYY-MM-DD.log), kept for 14 days.')
@@ -397,6 +423,7 @@ if (-not (Test-Path -LiteralPath $PwdFile)) {
 
 $Shared.Settings = Read-Settings
 $Shared.Interval = $Shared.Settings.refreshSeconds
+$Shared.MemBudgetMB = $Shared.Settings.memBudgetMB
 $Shared.Password = Read-FilePassword
 # total mode: without the password not even the page opens. partial mode:
 # the page stays open to everybody, the password is asked only to change
@@ -836,7 +863,8 @@ function Update-SettingsIfChanged {
                 $Shared.Settings = $new
                 $Shared.Interval = $new.refreshSeconds
                 $Shared.IdleInterval = $new.idleSeconds
-                Write-Log ("settings.txt changed: refresh " + $new.refreshSeconds + "s, idle " + $new.idleSeconds + "s")
+                $Shared.MemBudgetMB = $new.memBudgetMB
+                Write-Log ("settings.txt changed: refresh " + $new.refreshSeconds + "s, idle " + $new.idleSeconds + "s, mem budget " + $new.memBudgetMB + " MB")
             }
         }
         $pt = $null
@@ -1095,11 +1123,14 @@ $CollectorScript = {
     # --- memory trim (since 1.16.3) ---------------------------------------
     # A long-running PowerShell engine keeps every page it ever touched in
     # its working set, so Task Manager ends up showing much more memory
-    # than the dashboard really needs. Every 5 minutes the engine collects
-    # its garbage and asks Windows to move the pages it is NOT using out
-    # of the working set: the number in Task Manager then shows what is
-    # actually in use. Nothing that is still needed is freed, and a page
-    # comes back by itself if the engine touches it again.
+    # than the dashboard really needs. The engine collects its garbage and
+    # asks Windows to move the pages it is NOT using out of the working set:
+    # the number in Task Manager then shows what is actually in use. Nothing
+    # that is still needed is freed, and a page comes back by itself if the
+    # engine touches it again.
+    #
+    # WHEN that happens is decided by Invoke-MemoryBudget below, from the
+    # mem_budget setting: the working set itself is the trigger, not a clock.
     #
     # This used to call EmptyWorkingSet from psapi.dll, which has to be
     # declared with Add-Type: that compiles a small C# assembly at runtime,
@@ -1108,14 +1139,17 @@ $CollectorScript = {
     # the process its own MaxWorkingSet asks Windows for exactly the same
     # trim with no compilation at all, and measured it trims at least as
     # well (7.3 MB against 13.5 MB on the same deliberately fattened
-    # process). The trim itself is NOT free: it costs 26 to 36 ms, which is
-    # why it runs once every 5 minutes and never on the request path.
+    # process). The trim itself is NOT free: it costs 26 to 36 ms, and the
+    # first read of the pages it sent away is about 23% slower (303 -> 373 ms
+    # on a deliberately touched 96 MB block), which is why it never runs on
+    # the request path and why the budget is not set to a figure the engine
+    # cannot hold.
     $MemTrimOk = $false
     try {
         if ([System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT) { $MemTrimOk = $true }
     } catch { $MemTrimOk = $false }
-    if ($MemTrimOk) {
-        Write-CollectorLog $Shared 'Memory trim active (working set, every 5 minutes, without compiling anything)'
+    if ($MemTrimOk -and $Shared.MemBudgetMB -gt 0) {
+        Write-CollectorLog $Shared ('Working set budget active: ' + $Shared.MemBudgetMB + ' MB, checked at every cycle, nothing to compile')
     }
     function Invoke-MemoryTrim {
         if (-not $script:MemTrimOk) { return }
@@ -1125,6 +1159,42 @@ $CollectorScript = {
             [void][System.GC]::Collect()
             $me = [System.Diagnostics.Process]::GetCurrentProcess()
             $me.MaxWorkingSet = $me.MaxWorkingSet
+        } catch { }
+    }
+
+    # --- the working set budget (since 1.16.6) --------------------------------
+    # This is what decides WHEN the trim above runs, and it is the number
+    # Task Manager shows that decides it, not a clock: as soon as the process
+    # has grown past the budget, the pages it is not using are sent away and
+    # the figure comes back down. The check runs on every collector cycle,
+    # which is also the only moment at which the working set can grow, so no
+    # separate timer is involved at all.
+    #
+    # Measured with a page-like request stream at 0.5 s for seven minutes
+    # (840 requests, 116 KB of JSON each, working set sampled four times a
+    # second): one trim leaves 4 to 15 MB, and a single sampling cycle puts a
+    # median of 30.0 MB (up to 42.5) back in before a second has passed. A
+    # budget below what a cycle needs therefore asks for the trim at every
+    # cycle: with the default 20 MB the process is over it in 83% of the
+    # samples, the CPU doubles (6.2% -> 11.8%) and a request landing in the
+    # second after a trim costs 27% more (3.7 against 2.9 ms) - none of which
+    # is memory that was really in use. What the MB over the budget are was
+    # measured too: the private bytes of the process are the same 119.8 MB at
+    # the trough right after a trim and at the peak of the cycle after it,
+    # while the working set swings 64 MB - pages, not retained heap, which is
+    # why no churn reduction would bring the figure down. At 90 MB, the same protocol settles at
+    # a median of 72.9 MB (p95 88.2) with about 6 trims a minute and the CPU
+    # back at 6.2%. The trim itself costs 26-36 ms, which is why it stays off
+    # the request path.
+    function Invoke-MemoryBudget {
+        param($sh)
+        try {
+            $budgetMB = [double]$sh.MemBudgetMB
+            if ($budgetMB -le 0) { return }
+            $me = [System.Diagnostics.Process]::GetCurrentProcess()
+            $me.Refresh()
+            if ($me.WorkingSet64 -le ($budgetMB * 1MB)) { return }
+            Invoke-MemoryTrim
         } catch { }
     }
     # --- Core Temp's own log file (CT-Log*.csv) ------------------------------
@@ -1227,8 +1297,6 @@ $CollectorScript = {
         return $out
     }
 
-    # first trim one minute after the start, then every 5 minutes
-    $lastTrim = (Get-Date).AddSeconds(-240)
 
     while ($Shared.Running) {
         $t0 = Get-Date
@@ -2054,11 +2122,9 @@ $CollectorScript = {
         $watchWindow = [math]::Max(15, $Shared.Interval * 5)
         $idleFor = ((Get-Date) - $Shared.LastRequest).TotalSeconds
 
-        # memory trim, once every 5 minutes (see Invoke-MemoryTrim above)
-        if (((Get-Date) - $lastTrim).TotalSeconds -ge 300) {
-            $lastTrim = Get-Date
-            Invoke-MemoryTrim
-        }
+        # working set budget: the trim runs when the number goes over it (see
+        # Invoke-MemoryBudget above), never on a clock
+        Invoke-MemoryBudget $Shared
 
         if ($idleFor -gt $watchWindow -and $Shared.IdleInterval -le 0) {
             # ---- nobody is watching: stop sampling completely ----------------
@@ -2068,10 +2134,10 @@ $CollectorScript = {
             }
             while ($Shared.Running -and ((Get-Date) - $Shared.LastRequest).TotalSeconds -gt $watchWindow) {
                 Start-Sleep -Milliseconds 250
-                if (((Get-Date) - $lastTrim).TotalSeconds -ge 300) {
-                    $lastTrim = Get-Date
-                    Invoke-MemoryTrim
-                }
+                # nobody is watching: the working set only shrinks, but nothing
+                # prevents a check - it costs one property read and only acts
+                # if the budget is really exceeded
+                Invoke-MemoryBudget $Shared
             }
             if ($Shared.Paused) {
                 $Shared.Paused = $false
@@ -3785,6 +3851,7 @@ try {
                                     $Shared.Settings = $cfg
                                     $Shared.Interval = $cfg.refreshSeconds
                                     $Shared.IdleInterval = $cfg.idleSeconds
+                                    $Shared.MemBudgetMB = $cfg.memBudgetMB
                                     try { $script:SettingsStamp = (Get-Item $SettingsFile).LastWriteTimeUtc } catch { }
                                     Write-Log ("Settings changed from the dashboard by " +
                                                $req.RemoteEndPoint.Address + ": " + ($applied -join ', '))
