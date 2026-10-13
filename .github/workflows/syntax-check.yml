@@ -113,8 +113,19 @@ jobs:
               Write-Host '::error ::/api/health does not report the 32-bit engine'
               $failed = $true
             }
-            $stats = Invoke-RestMethod 'http://localhost:8123/api/stats' -TimeoutSec 15
-            $cpu = $stats.Current.Cpu
+            # /api/stats carries the CPU section only after the first sampling
+            # cycle has finished, and on a busy runner that cycle can take
+            # longer than the health answer: asking once made this job fail
+            # with "carries no CPU section" while the same commit passed on a
+            # re-run. Wait for it, with the same assertions afterwards.
+            $cpu = $null
+            foreach ($i in 1..30) {
+              try {
+                $stats = Invoke-RestMethod 'http://localhost:8123/api/stats' -TimeoutSec 15
+                if ($stats.Current.Cpu) { $cpu = $stats.Current.Cpu; break }
+              } catch { }
+              Start-Sleep -Seconds 2
+            }
             if (-not $cpu) { Write-Host '::error ::/api/stats carries no CPU section'; $failed = $true }
             else {
               Write-Host ("CPU: load {0} %, {1} core(s), temperature source '{2}', {3} sensor(s)" -f

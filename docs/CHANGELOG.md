@@ -8,6 +8,22 @@ Versioning follows Semantic Versioning: MAJOR.MINOR.PATCH.
 - PATCH - fixes and tweaks that add no feature.
 
 ------------------------------------------------------------------------------
+  1.16.9 - 2026-10-13
+------------------------------------------------------------------------------
+
+Fixed:
+  - The check that starts the dashboard with the 32-bit engine no longer
+    fails on a slow runner. It asked /api/stats once, right after /api/health
+    answered; the CPU section appears only once the first sampling cycle has
+    finished, and on a busy runner that cycle takes longer than the health
+    answer - so the same commit went red once and then passed on a re-run.
+    The check now waits, up to a minute, for the CPU section and keeps the
+    same assertions afterwards: the field must be there, the temperature
+    source must be there, the page must carry the temperature row, and the
+    log must name the engine and the temperature chain. The dashboard itself
+    is unchanged.
+
+------------------------------------------------------------------------------
   1.16.8 - 2026-10-13
 ------------------------------------------------------------------------------
 
