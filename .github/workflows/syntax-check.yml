@@ -59,3 +59,93 @@ jobs:
             Write-Host ("{0,-14} {1,3} keys" -f $f.Name, $keys.Count)
           }
           if ($bad) { exit 1 }
+
+  bitness:
+    # The dashboard has to work on 32-bit Windows too, and it is the SAME
+    # script there: what changes is the engine that runs it. A 64-bit runner
+    # still ships the 32-bit Windows PowerShell (%WINDIR%\SysWOW64\...), so
+    # starting the dashboard with that executable exercises the whole path on
+    # a 32-bit engine: the HTTP listener, CIM/WMI, the Core Temp shared memory
+    # read, the temperature chain, the JSON.
+    name: Run the dashboard on the 32-bit engine
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start it with %WINDIR%\SysWOW64 Windows PowerShell
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ps32 = Join-Path $env:WINDIR 'SysWOW64\WindowsPowerShell\v1.0\powershell.exe'
+          if (-not (Test-Path $ps32)) {
+            Write-Host '::error ::this runner has no 32-bit Windows PowerShell'
+            exit 1
+          }
+          # No update check in a test: it would talk to GitHub and could even
+          # overwrite the checkout. settings.txt is not part of the package.
+          Set-Content -Path settings.txt -Value 'auto_update = no' -Encoding UTF8
+          $out = Join-Path $env:RUNNER_TEMP 'dash32.out.log'
+          $err = Join-Path $env:RUNNER_TEMP 'dash32.err.log'
+          $proc = Start-Process -FilePath $ps32 -PassThru `
+              -RedirectStandardOutput $out -RedirectStandardError $err `
+              -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass',
+                              (Join-Path $PWD 'scripts\ServerDashboard.ps1'),
+                              '-Port','8123','-IntervalSeconds','1')
+          $failed = $false
+          try {
+            $health = $null
+            foreach ($i in 1..30) {
+              Start-Sleep -Seconds 2
+              try {
+                $health = (Invoke-WebRequest 'http://localhost:8123/api/health' `
+                           -UseBasicParsing -TimeoutSec 3).Content
+                break
+              } catch { }
+            }
+            if (-not $health) {
+              Write-Host '::error ::the dashboard never answered under the 32-bit engine'
+              if (Test-Path $out) { Get-Content $out -Tail 40 }
+              if (Test-Path $err) { Get-Content $err -Tail 20 }
+              exit 1
+            }
+            Write-Host "health: $health"
+            if ($health -notmatch '32-bit engine') {
+              Write-Host '::error ::/api/health does not report the 32-bit engine'
+              $failed = $true
+            }
+            $stats = Invoke-RestMethod 'http://localhost:8123/api/stats' -TimeoutSec 15
+            $cpu = $stats.Current.Cpu
+            if (-not $cpu) { Write-Host '::error ::/api/stats carries no CPU section'; $failed = $true }
+            else {
+              Write-Host ("CPU: load {0} %, {1} core(s), temperature source '{2}', {3} sensor(s)" -f
+                          $cpu.TotalLoad, $cpu.PerCore.Count, $cpu.TempSource, $cpu.Temperatures.Count)
+              # the reading it may be empty (no sensor on a cloud VM), the FIELD
+              # must be there: the page decides between a number and its own
+              # wording, and it needs to know that the chain was tried
+              if ($cpu.PSObject.Properties.Name -notcontains 'TempSource') {
+                Write-Host '::error ::/api/stats no longer carries Cpu.TempSource'; $failed = $true
+              }
+            }
+            $page = (Invoke-WebRequest 'http://localhost:8123/' -UseBasicParsing -TimeoutSec 15).Content
+            if ($page -notmatch 'id="cputemp"') {
+              Write-Host '::error ::the page does not carry the temperature row'; $failed = $true
+            }
+            $log = Get-ChildItem -Path logs -Filter 'ServerDashboard-*.log' -File -ErrorAction SilentlyContinue |
+                   Sort-Object LastWriteTime -Descending | Select-Object -First 1
+            if (-not $log) { Write-Host '::error ::no log file was written'; $failed = $true }
+            else {
+              $txt = Get-Content $log.FullName -Raw
+              if ($txt -notmatch '32-bit engine on') {
+                Write-Host '::error ::the log does not report the 32-bit engine'; $failed = $true
+              }
+              if ($txt -notmatch 'CPU temperature') {
+                Write-Host '::error ::the log says nothing about the temperature chain'
+                $failed = $true
+              }
+            }
+            if ($failed) { exit 1 }
+            Write-Host 'the dashboard ran on the 32-bit engine'
+          } finally {
+            try { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue } catch { }
+            try { Remove-Item -LiteralPath settings.txt -Force -ErrorAction SilentlyContinue } catch { }
+          }

@@ -10,7 +10,7 @@ No agent, no IIS, no external module, no database: a single PowerShell script
 publishes the page, and you open it from any computer on the LAN by typing the
 IP of the server.
 
-[![Version](https://img.shields.io/badge/version-1.16.5-blue)](Changelog/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.16.6-blue)](Changelog/CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/Windows%20Server-2016%2B-0078D6?logo=windows)](#requirements)
 [![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)](#requirements)
 [![Languages](https://img.shields.io/badge/UI%20languages-38-brightgreen)](#-38-languages)
@@ -44,14 +44,16 @@ and the software announces itself in the Windows event log at every start.
 | **Disks** | one box per physical disk with bus and media type, containing its partitions: space used, file system and live read / write / busy per partition |
 | **Network** | live download and upload with a colour legend on the chart (green = download, orange = upload), per-adapter figures, link speed, MAC, active TCP connections |
 | **IP configuration** | IPv4, mask, gateway, DNS, IPv6, DHCP, per adapter |
-| **Operating system** | version and build, manufacturer, model, BIOS, serial, install date, last boot, uptime, sessions |
+| **Operating system** | Windows release (23H2, 25H2, ...), version and revision, build, manufacturer, model, BIOS, serial, install date, last boot, uptime, sessions |
 | **Processes** | every process with the friendly name from the file ("Windows Explorer" for `explorer.exe`) as the main line and, right under it, the real image name (`sqlservr.exe`); PID, CPU %, RAM, threads, handles, full path in the tooltip; the dashboard's own row is highlighted so it can be spotted while scrolling |
 | **Services** | the complete list with state, startup type, PID and log-on account |
 | **Events** | critical, error and warning entries of the System and Application logs of the last 24 hours |
 
 Tables sort by clicking the column headers, File Explorer style, and the choice
 is remembered by the browser. The Process column sorts by the name it shows,
-the friendly name.
+the friendly name, and the process table opens in that order (A to Z) instead
+of by CPU: with two hundred rows, a list that reorders itself at every refresh
+is hard to read.
 
 ## Quick start
 
@@ -87,7 +89,14 @@ task that happened to have the same name.
 - **Light on the server** — metrics are sampled in tiers (CPU/RAM/network every
   cycle, processes every 5 s, disks every 10 s, services every 30 s, events every
   60 s) and **when nobody is watching the collector stops sampling completely**,
-  waking up within 250 ms of the first request.
+  waking up within 250 ms of the first request. Since 1.16.6 nothing loads the
+  Storage, NetAdapter or NetTCPIP module any more (the disk and network metrics
+  come from the same WMI classes those cmdlets read, but without paying for the
+  modules), and the JSON the browsers receive is built once per cycle instead of
+  once per request. On a Windows 11 machine with Core Temp running and a browser
+  refreshing every 0.5 s, over nine minutes, Task Manager's Memory column went
+  from 35.5-203.9 MB to 15.2-127.1 MB and private bytes from 202.7-239.7 MB to
+  156.0-159.8 MB.
 - **Live by default**: the refresh interval is **0.5 s** out of the box and can
   be set per browser from 0.5 s to 5 min; the server only sets the default.
 - **Light and dark theme**, dark by default, saved per browser.
@@ -191,9 +200,12 @@ both themes included. Nothing is installed and no network is used.
 - Windows Server 2016 or newer (works on Windows 10/11 too)
 - PowerShell 5.1, the one already in the box
 - Administrator rights for the installation only
+- 32-bit and 64-bit Windows both work: it is one script, run by
+  whichever Windows PowerShell is installed
 - CPU temperature needs a sensor: BIOS/ACPI, or just
   [Core Temp](https://www.alcpu.com/CoreTemp/) running (the plain program, 32-bit or
-  64-bit - no add-on), LibreHardwareMonitor or HWiNFO
+  64-bit - no add-on, its own CSV log works too), LibreHardwareMonitor or
+  HWiNFO; the page always names the source it used
 
 ## Troubleshooting
 

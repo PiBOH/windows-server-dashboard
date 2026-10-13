@@ -8,6 +8,133 @@ Versioning follows Semantic Versioning: MAJOR.MINOR.PATCH.
 - PATCH - fixes and tweaks that add no feature.
 
 ------------------------------------------------------------------------------
+  1.16.6 - 2026-10-13
+------------------------------------------------------------------------------
+
+Added:
+  - The CPU temperature says where it comes from: the page prints the name
+    of the source after the reading (Core Temp, Core Temp (log file),
+    BIOS/ACPI, LibreHardwareMonitor, OpenHardwareMonitor, HWiNFO), the
+    payload of /api/stats carries it as Cpu.TempSource, and the log gets
+    one line the moment the source appears, changes or disappears -
+    naming every source that was tried when none of them answers. A
+    reading is never shown without its source, and a missing temperature
+    is no longer silent.
+  - Core Temp's own log file is a temperature source: the newest
+    CT-Log*.csv of the Core Temp folder is read by COLUMN NAME (the "Cur."
+    columns only, one per core), so a different set of sensors or a new
+    Core Temp keeps working, and only while the file is being written -
+    three logging periods taken from Core Temp's own LogInt, never less
+    than a minute - because an old log is a session that ended, not a
+    current reading. This covers what the shared memory cannot: Core Temp
+    started by the logged on user while the dashboard runs as SYSTEM in
+    another logon session. New key in settings.txt: coretemp_log = the
+    full path of that file (empty = look in the Core Temp folders).
+  - CoreTempMappingObjectEx is read as well, the shared memory block of
+    current Core Temp versions, together with the Global\ copies that
+    "enable global shared memory" creates in its Advanced options: those
+    are the ones a dashboard running as a service in another session can
+    see. The Fahrenheit flag is read at the offset of the structure the
+    opened name belongs to (2684 ANSI, 2784 Unicode).
+  - The log and /api/health state which engine is running ("32-bit engine
+    on 64-bit Windows"): the same script serves 32-bit and 64-bit Windows,
+    and the answer to "which one is it?" no longer needs a guess.
+  - A second CI job starts the whole dashboard with the 32-bit Windows
+    PowerShell (%WINDIR%\SysWOW64\WindowsPowerShell\v1.0\powershell.exe)
+    on every push - listener, CIM/WMI, temperature chain, JSON, page - so
+    the 32-bit path cannot break unnoticed.
+
+Fixed:
+  - The dashboard used far more memory than it needed, and the cause was
+    measured one step at a time on a real Windows 11 machine with Core
+    Temp running (220 processes, 279 services, refresh every 0.5 s).
+    With a real browser refreshing every 0.5 s and nine minutes of
+    observation, Task Manager's Memory column swung between 35.5 and 203.9
+    MB and the private bytes sat between 202.7 and 239.7 MB; on the same
+    machine and the same protocol the same build now stays between 15.2 and
+    127.1 MB of Memory and between 156.0 and 159.8 MB of private bytes. Two
+    calls were
+    responsible. The Disks section called Get-PhysicalDisk and
+    Get-Partition, and the Network section called Get-NetAdapter,
+    Get-NetAdapterStatistics and Get-NetTCPConnection: those five cmdlets
+    load the Storage, NetAdapter and NetTCPIP modules, and the assemblies
+    of those modules stay in the process for the rest of its life - 33, 12
+    and 8 MB respectively, of which Remove-Module gives back only 2 MB.
+    They are replaced by the WMI classes the cmdlets themselves read
+    (MSFT_PhysicalDisk, MSFT_Partition, MSFT_NetAdapter,
+    MSFT_NetAdapterStatisticsSettingData, MSFT_NetTCPConnection), which
+    answer through CIM - already loaded for every other metric - with the
+    same values. The words the cmdlets added are put back from the
+    documented Windows values (BusType 11 = SATA, MediaType 4 = SSD,
+    InterfaceOperationalStatus 1 = Up, State 5 = Established,
+    ReceiveLinkSpeed in bits per second), so the page and /api/stats show
+    exactly what they showed before; a number that is not in those tables
+    stays a number instead of being guessed into a word.
+  - The request loop released neither the kernel wait handle it creates
+    for every request nor the response object (only its output stream).
+    Both are released now: over a nine-minute run the handle count of the
+    process is steady at 664-710, against 804-960 before.
+  - The memory trim no longer compiles anything. EmptyWorkingSet lives in
+    psapi.dll and had to be declared with Add-Type, which compiles a small
+    C# assembly at runtime: measured on a real server that compilation
+    alone is about 5 MB of working set (62.2 -> 68.1 MB on an otherwise
+    empty engine). Assigning the process its own MaxWorkingSet asks
+    Windows for exactly the same trim with no compilation at all, and
+    measured it trims at least as well (7.3 MB against 13.5 MB on the same
+    deliberately fattened process). The trim is not free either way: it
+    costs 26-36 ms to run and makes the first read of the pages it sent
+    away about 23% slower (303 -> 373 ms on a deliberately touched 96 MB
+    block), which is why it stays on its own five minute schedule and off
+    the request path.
+  - What the descriptions of the executables cost was measured instead of
+    assumed, because it looked like the biggest remaining item: on the
+    test server 210 processes map to only 46 distinct executable paths, so
+    the once-per-path cache already avoids 57 of the 103 possible reads,
+    and the whole set of descriptions - strings and cache together -
+    retains 1.9 MB, 124 ms to read. It was left alone: it is not what the
+    process is holding.
+  - The dashboard could not update itself: Stop-DashboardProcess.ps1 also
+    stopped the process RUNNING the update, because its command line
+    contains ServerDashboard.ps1 with -UpdateNow. The update died between
+    "Stopping the dashboard..." and the install, so the files of the new
+    version were never copied. That process is never stopped now, neither
+    by process list nor by port.
+  - With no scheduled task installed, an update copied the new files and
+    left nothing running: the last-resort launch passed -WindowStyle
+    twice, PowerShell refused to bind that parameter, and the error was
+    swallowed by the catch. The new version is running again after an
+    update now.
+
+Changed:
+  - /api/stats no longer rebuilds its 115 KB JSON document at every
+    request. The collector serializes the snapshot once per cycle and the
+    web thread serves those exact bytes, so a page refreshing twice a
+    second no longer builds the same document twice a second. Measured on
+    the same machine, the median time to fetch and parse a full /api/stats
+    went from 10.2 ms to 4.7 ms. The fallback stays for the very first
+    requests, before the first cycle has finished.
+  - The disk list, the adapter list and the partition-to-disk map are read
+    once and reused: they do not change while the machine runs, so asking
+    CIM for them again every ten seconds bought nothing.
+  - "not available (no ACPI sensor)" became "not available (no temperature
+    source found)" in English and Italian: with six sources tried, naming
+    ACPI alone had stopped being true. The other 36 languages keep their
+    wording until a translator revisits them.
+  - The Processes table opens in name order (A to Z, on the friendly name
+    the column shows) instead of by CPU. With about two hundred rows, a
+    list that reorders itself at every refresh is hard to read, and the
+    name is what gets looked up. Every column can still be clicked and the
+    Process column still sorts on the name it shows; the choice stays in
+    the browser, per visitor.
+  - The Operating system card names the Windows release too: the OS row
+    now reads "Microsoft Windows 11 Home 25H2" (DisplayVersion, or the
+    ReleaseId on the older builds) and the version row carries the full
+    revision, "10.0.26200.9457 (build 26200)". Win32_OperatingSystem
+    reports neither of them, and its ProductName still says "Windows 10"
+    on Windows 11, so the name keeps coming from the Caption. The registry
+    keys read the same in the 32-bit and in the 64-bit engine.
+
+------------------------------------------------------------------------------
   1.16.5 - 2026-10-12
 ------------------------------------------------------------------------------
 

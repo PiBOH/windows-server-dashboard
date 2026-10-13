@@ -127,29 +127,57 @@ CPU
   maximum frequency, socket/core/thread count, processor model, temperature,
   plus a dedicated trend chart.
 
-  Temperature sources, tried in this order:
+  Temperature sources, tried in this order. None of them needs an add-on,
+  a plug-in or anything installed inside the dashboard:
     1. BIOS/ACPI sensor (MSAcpi_ThermalZoneTemperature). Many Dell, HP and
-       Lenovo servers do not expose it.
-    2. Core Temp, the plain program from alcpu.com: NO add-on, no server
-       plug-in, nothing to configure. While it runs, Core Temp always
-       publishes its readings in a shared memory block, and the dashboard
-       reads it directly - the 32-bit and the 64-bit build alike, one
-       reading per core, Fahrenheit converted to Celsius automatically.
-       Install Core Temp and let it run: that is all. Its readings are
-       visible when Core Temp and the dashboard share the same logon
-       session (dashboard started with Start-Dashboard.bat, or both
-       launched by tasks in session 0); otherwise the chain simply moves
-       on to the next source.
-    3. Core Temp with its free "Core Temp WMI provider" add-on (namespace
+       Lenovo servers do not expose it, and a machine that does may still
+       refuse it to a non-elevated process.
+    2. Core Temp, the plain program from alcpu.com: while it runs, Core
+       Temp always publishes its readings in a shared memory block and the
+       dashboard reads it directly - the 32-bit and the 64-bit build
+       alike, one reading per core, Fahrenheit converted to Celsius
+       automatically. Both the current block (CoreTempMappingObjectEx)
+       and the older name (CoreTempMappingObject) are read. Install Core
+       Temp and let it run: that is all. The plain block belongs to the
+       logon session of Core Temp, so a dashboard started with
+       Start-Dashboard.bat sees it, while the installed one (a boot task
+       running as SYSTEM in session 0) needs either "enable global shared
+       memory" in Core Temp > Options > Advanced, or one of the sources
+       below.
+    3. Core Temp's own log file: with logging enabled in Core Temp
+       (Options > Enable logging) the same readings are also written to a
+       CT-Log*.csv file in its folder, and the dashboard reads the newest
+       one - by COLUMN NAME, only the "Cur." columns, which carry the
+       current temperature of every core. This works across logon
+       sessions and again needs no add-on: it is the source to pick when
+       the dashboard runs as a service and Core Temp runs on the logged
+       on desktop. Only fresh files are used (three logging periods,
+       taken from Core Temp's own interval, never less than a minute): an
+       old log is a session that ended, not a reading from now. If the
+       log folder was moved in Core Temp's options, write the full path
+       of the file in settings.txt:
+
+           coretemp_log = C:\MyLogs\CT-Log 2026-10-13 18-42-37.csv
+
+    4. Core Temp with its free "Core Temp WMI provider" add-on (namespace
        root\CoreTemp): same readings, but through WMI, which also works
        when Core Temp runs in another logon session than the dashboard -
        the option to pick for a boot task plus an always-logged-in user.
-    4. LibreHardwareMonitor or OpenHardwareMonitor, with the WMI option
+    5. LibreHardwareMonitor or OpenHardwareMonitor, with the WMI option
        enabled (namespaces root\LibreHardwareMonitor and
        root\OpenHardwareMonitor).
-    5. HWiNFO with its shared WMI provider enabled (root\HWiNFO).
-  If none of them is available the dashboard writes "not available (no ACPI
-  sensor)" instead of a wrong number.
+    6. HWiNFO with its shared WMI provider enabled (root\HWiNFO).
+  The page prints the reading together with the name of the source it came
+  from - Core Temp, Core Temp (log file), BIOS/ACPI, LibreHardwareMonitor,
+  OpenHardwareMonitor, HWiNFO - and /api/stats carries it as
+  Cpu.TempSource. If none of them answers, the dashboard writes "not
+  available (no temperature source found)" instead of a wrong number, and
+  the log gets one line naming every source that was tried: when a
+  temperature is missing, that line is the first thing to read. The log
+  says the same thing whenever the source appears, changes or disappears.
+  MSI Afterburner is deliberately not read: without a plugin it publishes
+  no CPU temperature at all, only the graphics card, and this chain is
+  about the CPU.
 
 MEMORY
   Used, free and total in GB, percentage, page file, installed modules (slot,
@@ -194,6 +222,13 @@ OPERATING SYSTEM
   Name, version and build, architecture, computer name, domain, server
   manufacturer and model, BIOS, serial number, install date, last boot,
   uptime, user sessions.
+  The name carries the release everybody knows ("Microsoft Windows 11 Home
+  25H2", or "... Server 2022", from DisplayVersion, ReleaseId on the older
+  builds) and the version row carries the full revision, build included
+  ("10.0.26200.9457 (build 26200)"). Win32_OperatingSystem reports neither
+  of the two: its Version stops at the build number, and its ProductName
+  still says "Windows 10" on Windows 11, which is why the name comes from
+  the Caption.
 
 PROCESSES
   All running processes, in a scrollable pane with sticky headers. The
@@ -209,6 +244,9 @@ PROCESSES
   list. Hover a name to see the full path of the executable; the filter
   searches the image name, the friendly name and the path, so you can
   type "task manager", "exe" or a folder name too.
+  The list opens sorted by that shown name, A to Z; clicking any column
+  header sorts by it (and clicking the Process column sorts on the name it
+  shows, the friendly one). The choice is remembered per browser.
 
 SERVICES
   The complete service list with display name, internal name, state, startup
@@ -332,6 +370,8 @@ visible, logging on.
       refresh_seconds = 0.5      (0.5 - 3600, dot as decimal separator)
       idle_seconds    = 0        (0 = do not sample when nobody watches)
       logging         = no       (never create a log file)
+      coretemp_log    =          (full path of Core Temp's CT-Log*.csv,
+                                  empty = search its install folders)
       password_mode   = total    (with a pwd file: total = whole page,
                                   partial = server options only)
       show_cpu        = yes
@@ -401,6 +441,36 @@ NOBODY WATCHING = NOTHING RUNNING
   the memory pages it is not using (working set trim), so what Task Manager
   shows is the memory the dashboard really needs, not the pages it happened
   to touch since it started.
+
+  What the engine keeps for itself, in exchange for all of that, is measured
+  rather than assumed. Since 1.16.6 nothing here loads the Storage, NetAdapter
+  or NetTCPIP module: the disk list, the partitions, the network adapters and
+  the TCP connection count come from the same WMI classes the Get-PhysicalDisk,
+  Get-Partition, Get-NetAdapter, Get-NetAdapterStatistics and Get-NetTCPConnection
+  cmdlets read, without paying for the modules they live in - those stay in the
+  process for its whole life (33, 12 and 8 MB) and Remove-Module gives back 2 MB
+  of them. The JSON the browsers receive is built once per collector cycle and
+  not once per request, so a page refreshing twice a second no longer builds the
+  same 115 KB document twice a second. The memory trim does not compile a C#
+  assembly any more either: EmptyWorkingSet had to be declared with Add-Type,
+  and that compilation alone cost about 5 MB of working set, while assigning
+  the process its own MaxWorkingSet trims the same way with nothing to compile.
+  Measured on a Windows 11 machine with Core Temp running and a real browser
+  refreshing every 0.5 s (220 processes, 279 services), over nine minutes of
+  observation: Task Manager's Memory column 35.5-203.9 MB before, 15.2-127.1 MB
+  after; private bytes 202.7-239.7 MB before, 156.0-159.8 MB after; handle count
+  804-960 before, 664-710 after; median time to fetch and parse a full /api/stats
+  4.7 ms instead of 10.2 ms.
+
+  The trim is not free, and that was measured too: it costs 26-36 ms to run and
+  makes the first read of the pages it sent away about 23% slower (303 -> 373 ms
+  on a deliberately touched 96 MB block), which is why it stays on its own five
+  minute schedule and off the request path. The same was done for the friendly
+  names of the executables, which looked like the biggest remaining item: on the
+  test server 210 processes map to only 46 distinct paths, so the once-per-path
+  cache already avoids 57 of the 103 possible reads, and the whole set of
+  descriptions - strings and cache together - retains 1.9 MB. It was left as it
+  is, because it is not what the process is holding.
 
 
 5-bis. SELF UPDATE
@@ -624,8 +694,11 @@ back to the defaults.
 |   scripts\scripts folder       | scripts\scripts nest: update once by  |
 |   exists                        | hand with Update-Now.bat (1.16.0       |
 |                                 | removes the nest by itself)            |
-| Temperature not available       | Let Core Temp run (the plain program   |
-|                                 | is enough), or check the source list   |
+| Temperature not available       | Read the "CPU temperature" line of the |
+|                                 | log: it names every source that was    |
+|                                 | tried. Let Core Temp run (the plain    |
+|                                 | program is enough) or turn its logging |
+|                                 | on, then see the source list above.    |
 | Page does not refresh           | Check the newest logs\ServerDashboard-*.log |
 | Browser never asks the password | password_mode = partial opens |
 |                                 | the page BY DESIGN: run       |

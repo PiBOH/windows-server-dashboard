@@ -134,7 +134,13 @@ function Write-Log {
 }
 
 $verBuildTxt = if ($script:DashboardCommit) { " (commit $($script:DashboardCommit))" } else { '' }
-Write-Log "=== Starting PiBOH Windows Server Dashboard v$DashboardVersion$verBuildTxt on port $Port ==="
+# Which engine is running is worth saying out loud: the same script works on
+# 32-bit and 64-bit Windows and can be started by either Windows PowerShell.
+# The log and /api/health then carry the answer, which is what a support
+# request needs (and what the 32-bit test in CI checks from the outside).
+$script:EngineBits = if ([System.Environment]::Is64BitProcess) { '64-bit' } else { '32-bit' }
+$script:OsBits     = if ([System.Environment]::Is64BitOperatingSystem) { '64-bit' } else { '32-bit' }
+Write-Log "=== Starting PiBOH Windows Server Dashboard v$DashboardVersion$verBuildTxt on port $Port ($($script:EngineBits) engine on $($script:OsBits) Windows) ==="
 
 # ----------------------------------------------------------------------------
 # Windows Event Log: the dashboard introduces itself to whoever opens Event
@@ -191,6 +197,7 @@ function Get-DefaultSettings {
         refreshSeconds = [double]$IntervalSeconds
         idleSeconds    = [double]$IdleIntervalSeconds   # 0 = no sampling while nobody is connected
         autoUpdate     = $true                           # check GitHub for a newer release at startup and every 24 hours
+        coretempLog    = ''                              # Core Temp's own CSV log, when its log folder is not the install folder
         passwordMode   = 'total'                         # with a pwd file: total = whole page, partial = server options only
         sections       = $sec
     }
@@ -226,6 +233,13 @@ function Read-Settings {
                     }
                     '^logging$'     { }   # handled before logging starts, kept here so it is not reported as unknown
                     '^auto_update$' { $cfg.autoUpdate = ($v -match '(?i)^(yes|true|1|on|si|s)$') }
+                    '^coretemp_log$' {
+                        # Optional: the CSV log of Core Temp, when the log folder
+                        # was moved somewhere else in its own options. Empty =
+                        # the dashboard looks for CT-Log*.csv in the install
+                        # folders (see the temperature chain).
+                        $cfg.coretempLog = $v.Trim('"').Trim()
+                    }
                     '^password_mode$' {
                         # total    : the whole dashboard asks for the password
                         # partial  : the page is open, the password is asked only
@@ -314,6 +328,16 @@ function Write-Settings($cfg) {
         [void]$lines.Add('# restarts itself). yes / no.')
         [void]$lines.Add('# Manual check any time: scripts\Update-Now.bat (works even with no)')
         [void]$lines.Add("auto_update = " + $(if ($cfg.autoUpdate) { 'yes' } else { 'no' }))
+        [void]$lines.Add('')
+        [void]$lines.Add('# CPU temperature from Core Temp when its shared memory is not')
+        [void]$lines.Add('# reachable: turn its logging on (Core Temp > Options > Enable')
+        [void]$lines.Add('# logging) and the dashboard reads the newest CT-Log*.csv of')
+        [void]$lines.Add('# the Core Temp folder, reading by column name so a different')
+        [void]$lines.Add('# set of sensors keeps working. The readings are only used')
+        [void]$lines.Add('# while the file is FRESH (a few logging periods), so a log of')
+        [void]$lines.Add('# a session that is over is never shown as a current reading.')
+        [void]$lines.Add('# Empty = look in the two default install folders.')
+        [void]$lines.Add("coretemp_log = " + $cfg.coretempLog)
         [void]$lines.Add('')
         [void]$lines.Add('# Password protection, in two steps.')
         [void]$lines.Add('# 1. The password lives in .config-do-not-delete-me\pwd')
@@ -633,10 +657,14 @@ function Start-DashboardAfterUpdate {
         $null = & netsh http add urlacl ("url=http://+:{0}/" -f $Port) ("user={0}\{1}" -f $env:USERDOMAIN, $env:USERNAME) 2>$null
     } catch { }
     try {
+        # -WindowStyle only once: passing it twice made Start-Process throw,
+        # the throw was swallowed by the catch below and the direct launch
+        # never happened (so on a machine with no scheduled task the update
+        # installed the new files and left nothing running)
         Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
             '-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass',
             '-File', (Join-Path $PSScriptRoot 'ServerDashboard.ps1'), '-Port', "$Port"
-        ) -WindowStyle Hidden
+        )
     } catch { }
     foreach ($i in 1..10) {
         Start-Sleep -Seconds 1
@@ -839,7 +867,82 @@ $CollectorScript = {
         } catch { $null }
     }
 
+    # Same as Get-CimSafe, but the result is kept under a key and reused for the
+    # given number of seconds. It is for the data that does not change while the
+    # machine runs (the list of the network adapters): asking CIM for it again
+    # every cycle bought nothing and cost a query each time.
+    function Get-CimCached {
+        param([string]$Key, [scriptblock]$Fetch, [int]$Seconds)
+
+        $cache = $script:CollectorCache
+        if ($cache.ContainsKey($Key)) {
+            $c = $cache[$Key]
+            if (((Get-Date) - $c.At).TotalSeconds -lt $Seconds) { return $c.Value }
+        }
+        $v = & $Fetch
+        $cache[$Key] = @{ At = (Get-Date); Value = $v }
+        return $v
+    }
+
+    # MSFT_PhysicalDisk publishes BusType and MediaType as plain numbers: the
+    # words ("SATA", "SSD") were put there by the Storage module, so they are
+    # spelled out here from the documented Windows values. An unknown number
+    # stays a number, rather than being guessed into a word.
+    function Convert-DiskBusType($Value) {
+        $map = @{ 0='Unknown'; 1='SCSI'; 2='ATAPI'; 3='ATA'; 4='IEEE1394'; 5='SSA';
+                  6='FibreChannel'; 7='USB'; 8='RAID'; 9='iSCSI'; 10='SAS'; 11='SATA';
+                  12='SD'; 13='MMC'; 14='Virtual'; 15='FileBackedVirtual';
+                  16='StorageSpaces'; 17='NVMe'; 18='SCM'; 19='UFS' }
+        $n = 0
+        if (-not [int]::TryParse("$Value", [ref]$n)) { return "$Value" }
+        if ($map.ContainsKey($n)) { return $map[$n] }
+        return "$Value"
+    }
+    function Convert-DiskMediaType($Value) {
+        $map = @{ 0='Unspecified'; 3='HDD'; 4='SSD'; 5='SCM' }
+        $n = 0
+        if (-not [int]::TryParse("$Value", [ref]$n)) { return "$Value" }
+        if ($map.ContainsKey($n)) { return $map[$n] }
+        return "$Value"
+    }
+
+    # "08606E00E94D" -> "08-60-6E-00-E9-4D", the shape Get-NetAdapter printed
+    function Format-Mac([string]$Hex) {
+        if (-not $Hex) { return '' }
+        $h = ($Hex -replace '[^0-9A-Fa-f]', '').ToUpperInvariant()
+        if ($h.Length -lt 2) { return '' }
+        $pairs = @()
+        for ($i = 0; $i -lt $h.Length; $i += 2) {
+            $pairs += $h.Substring($i, [math]::Min(2, $h.Length - $i))
+        }
+        return ($pairs -join '-')
+    }
+
+    # 1000000000 -> "1 Gbps", 3000000 -> "3 Mbps", 0 -> "0 bps"
+    function Format-LinkSpeed($BitsPerSecond) {
+        $b = [double]$BitsPerSecond
+        if ($b -ge 1e9) { return ('{0:0.##} Gbps' -f ($b / 1e9)) }
+        if ($b -ge 1e6) { return ('{0:0.##} Mbps' -f ($b / 1e6)) }
+        if ($b -ge 1e3) { return ('{0:0.##} Kbps' -f ($b / 1e3)) }
+        return ('{0} bps' -f [int]$b)
+    }
+
     # --- static data, collected once ------------------------------------------
+    # The release name everybody uses (Windows 11 23H2/25H2, Server 2022, ...)
+    # and the revision after the build number live in the registry only:
+    # Win32_OperatingSystem reports neither, and its ProductName still says
+    # "Windows 10" on Windows 11, which is why the name below comes from the
+    # Caption. DisplayVersion is there from 20H2 on, ReleaseId on the older
+    # builds, and both readings are identical in the 32-bit and in the 64-bit
+    # engine (the key is shared, not redirected).
+    $osRelease = ''
+    $osUbr = 0
+    try {
+        $winKey = Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -ErrorAction Stop
+        if ($winKey.DisplayVersion) { $osRelease = "$($winKey.DisplayVersion)" }
+        elseif ($winKey.ReleaseId)  { $osRelease = "$($winKey.ReleaseId)" }
+        if ($winKey.UBR)            { $osUbr = [int]$winKey.UBR }
+    } catch { }
     $os   = Get-CimSafe Win32_OperatingSystem
     $cs   = Get-CimSafe Win32_ComputerSystem
     $bios = Get-CimSafe Win32_BIOS
@@ -852,8 +955,8 @@ $CollectorScript = {
         Model          = if ($cs) { $cs.Model } else { '' }
         Bios           = if ($bios) { "$($bios.Manufacturer) $($bios.SMBIOSBIOSVersion)" } else { '' }
         SerialNumber   = if ($bios) { $bios.SerialNumber } else { '' }
-        OSName         = if ($os) { $os.Caption } else { '' }
-        OSVersion      = if ($os) { $os.Version } else { '' }
+        OSName         = if ($os) { "$($os.Caption)" + $(if ($osRelease) { " $osRelease" } else { '' }) } else { '' }
+        OSVersion      = if ($os) { "$($os.Version)" + $(if ($osUbr -gt 0) { ".$osUbr" } else { '' }) } else { '' }
         OSBuild        = if ($os) { $os.BuildNumber } else { '' }
         OSArch         = if ($os) { $os.OSArchitecture } else { '' }
         OSInstall      = if ($os -and $os.InstallDate) { $os.InstallDate.ToString('dd/MM/yyyy HH:mm') } else { '' }
@@ -896,6 +999,30 @@ $CollectorScript = {
     $prevNet  = @{}
     $prevTime = $null
 
+    # --- collector cache ------------------------------------------------------
+    # Everything the collector reads that does NOT change from one cycle to the
+    # next lives here, under a key, with the moment it was read: the JSON sent
+    # to the browsers is built from this and NOT from a fresh sample, so a page
+    # refresh no longer re-queries the disk list or the network adapters.
+    # The same cache also keeps the Serialized block below.
+    $script:CollectorCache = @{}
+
+    # --- one serialization per collector cycle --------------------------------
+    # The whole snapshot is turned into JSON here, ONCE, by the thread that
+    # produced it; the web thread then serves those exact bytes. Before this,
+    # every single /api/stats request rebuilt the same 110 KB document from
+    # scratch - and a browser refreshing twice a second asked for it twice a
+    # second.
+    function Publish-Snapshot($sh, $snap) {
+        $sh.Data = $snap
+        try {
+            $hist = @($sh.History)
+            $json = @{ Current = $snap; History = $hist } | ConvertTo-Json -Depth 8 -Compress
+            $sh.Serialized = $json
+            $sh.SerializedBytes = [System.Text.Encoding]::UTF8.GetBytes($json)
+        } catch { $sh.SerializedBytes = $null }
+    }
+
     # --- Windows event log cache (refreshed at most once a minute) ------------
     $evCache = @()
     $evStamp = (Get-Date).AddYears(-1)
@@ -912,6 +1039,12 @@ $CollectorScript = {
     $prCache = $null; $prStamp = $old      # processes  : every 5 s
     $descCache = @{}                       # exe descriptions, read once per path
     $svCache = $null; $svStamp = $old      # services   : every 30 s
+    # the temperature source already reported in the log: a value no source
+    # uses, so the first reading (or the first "nobody answered") is logged too
+    $lastTempSrc = '<not read yet>'
+    # the coretemp_log path already reported as missing, so the warning is not
+    # written at every cycle
+    $lastCtLogMiss = ''
     $ipCache = $null; $ipStamp = $old      # IP config  : every 60 s
     $script:lastMapSource = 'associators'
 
@@ -965,21 +1098,24 @@ $CollectorScript = {
     # than the dashboard really needs. Every 5 minutes the engine collects
     # its garbage and asks Windows to move the pages it is NOT using out
     # of the working set: the number in Task Manager then shows what is
-    # actually in use. EmptyWorkingSet is pure bookkeeping: nothing that
-    # is still needed is freed, and a page comes back by itself if the
-    # engine touches it again.
+    # actually in use. Nothing that is still needed is freed, and a page
+    # comes back by itself if the engine touches it again.
+    #
+    # This used to call EmptyWorkingSet from psapi.dll, which has to be
+    # declared with Add-Type: that compiles a small C# assembly at runtime,
+    # and measured on a real server the compilation alone is about 5 MB of
+    # working set (62.2 -> 68.1 MB on an otherwise empty engine). Assigning
+    # the process its own MaxWorkingSet asks Windows for exactly the same
+    # trim with no compilation at all, and measured it trims at least as
+    # well (7.3 MB against 13.5 MB on the same deliberately fattened
+    # process). The trim itself is NOT free: it costs 26 to 36 ms, which is
+    # why it runs once every 5 minutes and never on the request path.
     $MemTrimOk = $false
     try {
-        if ([System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT) {
-            if (-not ('Win32.Mem' -as [type])) {
-                Add-Type -Namespace Win32 -Name Mem -MemberDefinition `
-                    '[DllImport("psapi.dll")] public static extern int EmptyWorkingSet(IntPtr hProcess);'
-            }
-            $MemTrimOk = $true
-        }
+        if ([System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT) { $MemTrimOk = $true }
     } catch { $MemTrimOk = $false }
     if ($MemTrimOk) {
-        Write-CollectorLog $Shared 'Memory trim active (working set, every 5 minutes)'
+        Write-CollectorLog $Shared 'Memory trim active (working set, every 5 minutes, without compiling anything)'
     }
     function Invoke-MemoryTrim {
         if (-not $script:MemTrimOk) { return }
@@ -987,9 +1123,110 @@ $CollectorScript = {
             [void][System.GC]::Collect()
             [void][System.GC]::WaitForPendingFinalizers()
             [void][System.GC]::Collect()
-            [void][Win32.Mem]::EmptyWorkingSet([System.Diagnostics.Process]::GetCurrentProcess().Handle)
+            $me = [System.Diagnostics.Process]::GetCurrentProcess()
+            $me.MaxWorkingSet = $me.MaxWorkingSet
         } catch { }
     }
+    # --- Core Temp's own log file (CT-Log*.csv) ------------------------------
+    # Core Temp can write the same readings it publishes in the shared memory
+    # into a CSV file of its own, chosen by its logging option: no add-on, no
+    # plugin. The file is read through the column names it writes itself (Core
+    # Temp may add or reorder sensors between versions), so nothing here
+    # depends on a fixed column position, and the readings are used only while
+    # the file is being written: an old CT-Log is a session that is over.
+    function Get-CoreTempLogTemps {
+        param([string]$ConfiguredPath)
+
+        # folders that may hold the log: the folder of the configured file
+        # first, then the two default install folders of Core Temp
+        $roots = New-Object System.Collections.ArrayList
+        if ($ConfiguredPath) { [void]$roots.Add((Split-Path -Parent $ConfiguredPath)) }
+        foreach ($pf in @("$env:ProgramFiles", "${env:ProgramFiles(x86)}")) {
+            if ($pf) { [void]$roots.Add((Join-Path $pf 'Core Temp')) }
+        }
+
+        # with the configured file the whole path is used; otherwise the
+        # newest CT-Log*.csv of the install folder is the current session
+        $file = $null
+        if ($ConfiguredPath -and (Test-Path -LiteralPath $ConfiguredPath)) {
+            $file = Get-Item -LiteralPath $ConfiguredPath -ErrorAction SilentlyContinue
+        }
+        if (-not $file) {
+            foreach ($r in $roots) {
+                if (-not (Test-Path -LiteralPath $r)) { continue }
+                $cand = Get-ChildItem -LiteralPath $r -Filter 'CT-Log*.csv' -File -ErrorAction SilentlyContinue |
+                        Sort-Object LastWriteTime -Descending | Select-Object -First 1
+                if ($cand) { $file = $cand; break }
+            }
+        }
+        if (-not $file) { return @() }
+
+        # CoreTemp.ini holds the two things needed to read its log correctly:
+        # how often it writes (LogInt, seconds) and the unit on screen (Fahr).
+        $logInt = 10
+        $fahrenheit = $false
+        foreach ($r in $roots) {
+            $ini = Join-Path $r 'CoreTemp.ini'
+            if (-not (Test-Path -LiteralPath $ini)) { continue }
+            try {
+                foreach ($l in @(Get-Content -LiteralPath $ini -Encoding UTF8 -ErrorAction SilentlyContinue)) {
+                    if ("$l" -match '^\s*LogInt\s*=\s*(\d+)') { $logInt = [int]$Matches[1] }
+                    if ("$l" -match '^\s*Fahr\s*=\s*(\d+)')   { $fahrenheit = ([int]$Matches[1] -ne 0) }
+                }
+            } catch { }
+            break
+        }
+        if ($logInt -lt 1) { $logInt = 1 }
+        # fresh = written within three logging periods (never less than a
+        # minute): with the log stopped the file ages and stops being used
+        $maxAge = [math]::Max(60, 3 * $logInt)
+        # the count goes to the caller: an empty array is no reading at all
+        if (((Get-Date) - $file.LastWriteTime).TotalSeconds -gt $maxAge) { return @() }
+
+        # header: the line that starts with "Time," lists one name per column
+        $head = @()
+        try {
+            $head = @(Get-Content -LiteralPath $file.FullName -TotalCount 20 -ErrorAction Stop |
+                      Where-Object { $_ -match '^Time,' })
+        } catch { return @() }
+        if (-not $head.Count) { return @() }
+        $names = @("$($head[0])".Split(','))
+
+        # last written row: its timestamp is checked above through the file
+        # time, so the numbers are read from the last line that has one
+        $rows = @()
+        try {
+            $rows = @(Get-Content -LiteralPath $file.FullName -Tail 2 -ErrorAction Stop |
+                      Where-Object { $_ -match '^\d{1,2}:\d{2}:\d{2}[ ,]' })
+        } catch { return @() }
+        if (-not $rows.Count) { return @() }
+        $cells = @("$($rows[-1])".Trim().Split(','))
+
+        # Only the "Cur." columns are read: Core Temp names its current
+        # temperature that way and writes Min./Max./Avg. next to it, while the
+        # columns the log also carries for package, IA cores and iGPU are NOT
+        # degrees (in the log of Core Temp 1.19+ those three are power in
+        # watts: 8765 there means 8.765 W, not 8.8 degrees). Reading them by
+        # their name and not by their position is what keeps that out.
+        $out = @()
+        for ($i = 0; $i -lt $names.Count; $i++) {
+            $n = "$($names[$i])".Trim()
+            $sensor = ''
+            if     ($n -match '^Cur\.\s*CPU #(\d+) Core #(\d+)$') { $sensor = if ($Matches[1] -eq '0') { "Core $($Matches[2])" } else { "CPU$($Matches[1]) Core$($Matches[2])" } }
+            elseif ($n -match '^Cur\.\s*CPU #(\d+) (.+)$')         { $sensor = if ($Matches[1] -eq '0') { $Matches[2] } else { "CPU$($Matches[1]) $($Matches[2])" } }
+            if (-not $sensor -or $i -ge $cells.Count) { continue }
+            $num = 0.0
+            if (-not [double]::TryParse("$($cells[$i])".Trim(), [System.Globalization.NumberStyles]::Float,
+                                        [System.Globalization.CultureInfo]::InvariantCulture, [ref]$num)) { continue }
+            $v = $num / 1000
+            if ($fahrenheit) { $v = ($v - 32) / 1.8 }
+            if ($v -gt 0 -and $v -lt 150) {
+                $out += @{ Sensor = $sensor; Celsius = [math]::Round($v, 1) }
+            }
+        }
+        return $out
+    }
+
     # first trim one minute after the start, then every 5 minutes
     $lastTrim = (Get-Date).AddSeconds(-240)
 
@@ -1033,8 +1270,14 @@ $CollectorScript = {
                 if ($lp.Count) { $curMhz = [int]$lp[0].CurrentClockSpeed }
             }
 
-            # temperature (only if the BIOS/ACPI exposes it)
+            # temperature: BIOS/ACPI first, then Core Temp, then the other
+            # programs a server may already have. $tempSrc carries the name of
+            # the source that answered up to the page and to the log, so a
+            # reading is never shown without saying where it comes from - and
+            # when nobody answers the dashboard says so instead of inventing a
+            # number.
             $temps = @()
+            $tempSrc = ''
             foreach ($tz in @(Get-CimSafe MSAcpi_ThermalZoneTemperature 'root\wmi')) {
                 if ($tz.CurrentTemperature -gt 0) {
                     $temps += @{
@@ -1043,6 +1286,7 @@ $CollectorScript = {
                     }
                 }
             }
+            if ($temps.Count) { $tempSrc = 'BIOS/ACPI' }
             # Fallback 1: Core Temp, the plain program. While it runs, Core Temp
             # ALWAYS publishes its readings in a shared memory block: no add-on,
             # no server plug-in, nothing to switch on, in the 32-bit and in the
@@ -1053,9 +1297,17 @@ $CollectorScript = {
             #   offset 1540        uiCPUCnt    (UInt32)  physical CPU packages
             #   offset 1544        fTemp[256]  (float)   one reading per core
             #   offset 2684/2784   ucFahrenheit (byte)   ANSI / Unicode block
+            # Core Temp publishes two names: the current CoreTempMappingObjectEx
+            # (same leading fields, the extra ones only at the end, so the
+            # offsets above still hold) and the legacy CoreTempMappingObject.
+            # The Global\ copies exist when "enable global shared memory" is
+            # switched on in its Advanced options, and those are the only ones a
+            # dashboard running as SYSTEM in another session can see: the plain
+            # mapping is private to the session of the logged on user.
             if (-not $temps.Count) {
-                foreach ($map in @('CoreTempMappingObjectUnicode', 'CoreTempMappingObject',
-                                   'Global\CoreTempMappingObjectUnicode', 'Global\CoreTempMappingObject')) {
+                foreach ($map in @('CoreTempMappingObjectEx', 'CoreTempMappingObject',
+                                   'Global\CoreTempMappingObjectEx', 'Global\CoreTempMappingObject',
+                                   'CoreTempMappingObjectUnicode', 'Global\CoreTempMappingObjectUnicode')) {
                     # Read access only: the block belongs to Core Temp,
                     # the dashboard just looks at it
                     try   { $ctMap = [System.IO.MemoryMappedFiles.MemoryMappedFile]::OpenExisting($map,
@@ -1067,8 +1319,9 @@ $CollectorScript = {
                             $coreCnt = $acc.ReadUInt32(1536)
                             $cpuCnt  = $acc.ReadUInt32(1540)
                             if ($coreCnt -ge 1 -and $coreCnt -le 128 -and $cpuCnt -ge 1 -and $cpuCnt -le 32) {
-                                $fahOff = 2784
-                                if ($map -notlike '*Unicode') { $fahOff = 2684 }
+                                # ucFahrenheit: 2684 in the ANSI structure, 2784
+                                # in the Unicode one (its sCPUName is 200 bytes)
+                                $fahOff = if ($map -like '*Unicode') { 2784 } else { 2684 }
                                 $isFah = ($acc.ReadByte($fahOff) -ne 0)
                                 $nTot  = [int]$coreCnt * [int]$cpuCnt
                                 if ($nTot -gt 256) { $nTot = 256 }
@@ -1083,12 +1336,37 @@ $CollectorScript = {
                                         $temps += @{ Sensor = $label; Celsius = [math]::Round($v, 1) }
                                     }
                                 }
-                                if ($temps.Count) { $Shared.TempSource = 'Core Temp' }
+                                if ($temps.Count) { $tempSrc = 'Core Temp' }
                             }
                         } finally { $acc.Dispose() }
                     } catch { }
                     $ctMap.Dispose()
                     if ($temps.Count) { break }
+                }
+            }
+
+            # Fallback 1-bis: Core Temp's own log file (CT-Log*.csv): the same
+            # readings as the shared memory, but written on disk, which also
+            # works when Core Temp runs in ANOTHER logon session than the
+            # dashboard. The installed dashboard runs as SYSTEM in session 0
+            # while the user's Core Temp runs in session 1, and the plain
+            # shared memory is private to a session: this is the source that
+            # covers that case with no add-on and no setting to change inside
+            # the dashboard, only Core Temp's own logging switch.
+            if (-not $temps.Count) {
+                $ctLog = ''
+                try { $ctLog = "$($Shared.Settings.coretempLog)" } catch { }
+                # a path in settings.txt that does not exist is a typo worth
+                # saying out loud, once, instead of leaving the reader guessing
+                # why the readings stopped
+                if ($ctLog -and $ctLog -ne $lastCtLogMiss -and -not (Test-Path -LiteralPath $ctLog)) {
+                    $lastCtLogMiss = $ctLog
+                    Write-CollectorLog $Shared ("coretemp_log = $ctLog does not exist: looking in the Core Temp folders instead")
+                }
+                $csvTemps = @(Get-CoreTempLogTemps -ConfiguredPath $ctLog)
+                if ($csvTemps.Count) {
+                    $temps   = @($csvTemps)
+                    $tempSrc = 'Core Temp (log file)'
                 }
             }
 
@@ -1114,7 +1392,7 @@ $CollectorScript = {
                             }
                             $i++
                         }
-                        if ($temps.Count) { $Shared.TempSource = 'Core Temp' }
+                        if ($temps.Count) { $tempSrc = 'Core Temp (WMI add-on)' }
                     }
                 } catch { }
             }
@@ -1127,7 +1405,10 @@ $CollectorScript = {
                             $temps += @{ Sensor = $s.Name; Celsius = [math]::Round([double]$s.Value,1) }
                         }
                     }
-                    if ($temps.Count) { break }
+                    if ($temps.Count) {
+                        $tempSrc = if ($ns -like '*Libre*') { 'LibreHardwareMonitor' } else { 'OpenHardwareMonitor' }
+                        break
+                    }
                 }
             }
 
@@ -1137,6 +1418,21 @@ $CollectorScript = {
                     if ($s.SensorType -eq 'Temperature' -and $s.SensorValue) {
                         $temps += @{ Sensor = $s.SensorName; Celsius = [math]::Round([double]$s.SensorValue,1) }
                     }
+                }
+                if ($temps.Count) { $tempSrc = 'HWiNFO' }
+            }
+
+            # A reading is never shown without its source, and a machine where
+            # nobody answers says so out loud. This line is written when the
+            # source appears, when it changes and when it disappears, which is
+            # what makes a missing temperature diagnosable from the log of a
+            # server far away.
+            if ($tempSrc -ne $lastTempSrc) {
+                $lastTempSrc = $tempSrc
+                if ($tempSrc) {
+                    Write-CollectorLog $Shared ("CPU temperature from " + $tempSrc + ": " + $temps.Count + " sensor(s)")
+                } else {
+                    Write-CollectorLog $Shared 'CPU temperature: no source answered (tried BIOS/ACPI, Core Temp shared memory, Core Temp log file, Core Temp WMI add-on, LibreHardwareMonitor/OpenHardwareMonitor, HWiNFO)'
                 }
             }
 
@@ -1148,6 +1444,7 @@ $CollectorScript = {
                 CurrentGHz  = [math]::Round($curMhz / 1000, 2)
                 MaxGHz       = [math]::Round($maxMhz / 1000, 2)
                 Temperatures = $temps
+                TempSource   = $tempSrc
                 QueueLength  = 0
             }
 
@@ -1209,13 +1506,23 @@ $CollectorScript = {
                 $volMap[$key] = $vol
             }
 
-            # Extra details (bus and media type) from the Storage module, when available
+            # Extra details (bus and media type) of every physical disk.
+            #
+            # This used to call Get-PhysicalDisk, from the Storage module. That
+            # single call loads the module and its assemblies and keeps them for
+            # the whole life of the process: measured on a real server it is
+            # about 33 MB of managed heap that cannot be given back (Remove-Module
+            # frees 2 MB of it). The class the cmdlet reads, MSFT_PhysicalDisk,
+            # answers through CIM with the same values - the enum properties come
+            # already spelled out (BusType 'SATA', MediaType 'SSD'), exactly what
+            # the module returned - and CIM is already loaded for everything else.
             $pdInfo = @{}
             try {
-                foreach ($x in @(Get-PhysicalDisk -ErrorAction Stop)) {
+                foreach ($x in @(Get-CimInstance -Namespace 'root/Microsoft/Windows/Storage' `
+                                                -ClassName MSFT_PhysicalDisk -ErrorAction Stop)) {
                     $pdInfo["$($x.DeviceId)"] = @{
-                        BusType   = "$($x.BusType)"
-                        MediaType = "$($x.MediaType)"
+                        BusType   = (Convert-DiskBusType $x.BusType)
+                        MediaType = (Convert-DiskMediaType $x.MediaType)
                     }
                 }
             } catch { }
@@ -1225,8 +1532,11 @@ $CollectorScript = {
             # on several RAID / storage drivers: when that happens every volume ends
             # up in "other volumes" and the disks look empty. The Storage module
             # (MSFT_Partition) gives the same information in a far more reliable way,
-            # so it is prepared here and used as a fallback per disk.
-            $partMap = @{}        # disk number -> @('C:','D:')
+            # so it is prepared here and used as a fallback per disk. It is asked
+            # through CIM (and not through Get-Partition, which would load the
+            # Storage module and its ~33 MB: see the note above) and only when the
+            # list of disks has changed.
+            $partMap = @{}
             try {
                 foreach ($pt in @(Get-CimInstance -Namespace 'root/Microsoft/Windows/Storage' `
                                                   -ClassName MSFT_Partition -ErrorAction Stop)) {
@@ -1237,17 +1547,6 @@ $CollectorScript = {
                     }
                 }
             } catch { }
-            if (-not $partMap.Count) {
-                try {
-                    foreach ($pt in @(Get-Partition -ErrorAction Stop)) {
-                        if ($pt.DriveLetter) {
-                            $dn = "$($pt.DiskNumber)"
-                            if (-not $partMap.ContainsKey($dn)) { $partMap[$dn] = @() }
-                            $partMap[$dn] += ("$($pt.DriveLetter)" + ':').ToUpper()
-                        }
-                    }
-                } catch { }
-            }
 
             # Physical drives, each one carrying its own partitions (and their I/O).
             # Removable, virtual and optical units are flagged so the dashboard can list
@@ -1406,14 +1705,42 @@ $CollectorScript = {
             $now = Get-Date
             $nics = @()
             $totUp = 0.0; $totDown = 0.0
-            $adapters = @()
-            try { $adapters = @(Get-NetAdapter -Physical -ErrorAction Stop | Where-Object { $_.Status -ne 'Not Present' }) } catch { }
-            if (-not $adapters.Count) { try { $adapters = @(Get-NetAdapter -ErrorAction Stop) } catch { } }
 
-            if ($adapters.Count) {
-                foreach ($a in $adapters) {
-                    $st = $null
-                    try { $st = Get-NetAdapterStatistics -Name $a.Name -ErrorAction Stop } catch { }
+            # --- the network adapters ---------------------------------------
+            # Get-NetAdapter and Get-NetAdapterStatistics come from the NetAdapter
+            # module: calling them loads the module once and keeps it for good
+            # (about 12 MB of managed heap that never goes back, measured on a
+            # real server). Both are replaced by the classes they read through
+            # CIM, with the same numbers: the module only turns the enum values
+            # into words, so that translation is done here (1 = Up, everything
+            # else = Disconnected, as Get-NetAdapter prints it) and the MAC comes
+            # out of PermanentAddress, the same address in another shape.
+            $adapters = Get-CimCached 'net_adapters' {
+                try { @(Get-CimInstance -Namespace 'root/StandardCimv2' -ClassName MSFT_NetAdapter -ErrorAction Stop) }
+                catch { @() }
+            } 300
+            # A virtual adapter (VPN, loopback, Hyper-V, VirtualBox host-only) is
+            # not a network card of the server: Get-NetAdapter -Physical left
+            # those out, so they are left out here too. Physical only when the
+            # provider actually says so: on an older Windows the property may not
+            # be there at all, and then nothing is filtered out (better a virtual
+            # adapter listed than every real one missing).
+            $phys = @($adapters | Where-Object {
+                $v = $_.PSObject.Properties['Virtual']
+                $c = $_.PSObject.Properties['ConnectorPresent']
+                (-not $v -or -not $v.Value) -and (-not $c -or $c.Value)
+            })
+
+            if ($phys.Count) {
+                $statMap = @{}
+                try {
+                    foreach ($s in @(Get-CimInstance -Namespace 'root/StandardCimv2' `
+                                                     -ClassName MSFT_NetAdapterStatisticsSettingData -ErrorAction Stop)) {
+                        $statMap["$($s.Name)"] = $s
+                    }
+                } catch { }
+                foreach ($a in $phys) {
+                    $st = if ($statMap.ContainsKey("$($a.Name)")) { $statMap["$($a.Name)"] } else { $null }
                     if (-not $st) { continue }
                     $rx = [double]$st.ReceivedBytes; $tx = [double]$st.SentBytes
                     $dn = 0.0; $up = 0.0
@@ -1429,10 +1756,12 @@ $CollectorScript = {
                     $nics += @{
                         Name        = $a.Name
                         Description = $a.InterfaceDescription
-                        Mac         = $a.MacAddress
-                        Status      = $a.Status
-                        LinkMbps    = [math]::Round([double]$a.LinkSpeed.Split(' ')[0], 0)
-                        LinkSpeed   = "$($a.LinkSpeed)"
+                        Mac         = (Format-Mac $a.PermanentAddress)
+                        Status      = $(if ([int]$a.InterfaceOperationalStatus -eq 1) { 'Up' } else { 'Disconnected' })
+                        # the number in front of the unit, exactly as before:
+                        # "1 Gbps" -> 1, "0 bps" -> 0
+                        LinkMbps    = [math]::Round([double]((Format-LinkSpeed $a.ReceiveLinkSpeed).Split(' ')[0]), 0)
+                        LinkSpeed   = (Format-LinkSpeed $a.ReceiveLinkSpeed)
                         DownKBs     = [math]::Round($dn / 1KB, 1)
                         UpKBs       = [math]::Round($up / 1KB, 1)
                         TotalRxGB   = [math]::Round($rx / 1GB, 2)
@@ -1440,7 +1769,7 @@ $CollectorScript = {
                     }
                 }
             } else {
-                # fallback for systems without the NetAdapter module
+                # fallback for systems without the NetAdapter WMI provider
                 foreach ($n in @(Get-CimSafe Win32_PerfFormattedData_Tcpip_NetworkInterface)) {
                     $nics += @{
                         Name        = $n.Name
@@ -1475,8 +1804,15 @@ $CollectorScript = {
                     DhcpServer  = $c.DHCPServer
                 }
             }
+            # Established TCP connections, without loading the NetTCPIP module
+            # (another 8 MB that never goes back). MSFT_NetTCPConnection.State is
+            # an enum: 2 = Bound, 5 = Established, 11 = Listen, 100 = TimeWait.
             $tcpConn = 0
-            try { $tcpConn = @(Get-NetTCPConnection -State Established -ErrorAction Stop).Count } catch { }
+            try {
+                $tcpConn = @(Get-CimInstance -Namespace 'root/StandardCimv2' `
+                                              -ClassName MSFT_NetTCPConnection `
+                                              -Filter 'State=5' -ErrorAction Stop).Count
+            } catch { }
 
             $snap.Network = @{
                 Adapters      = $nics
@@ -1671,7 +2007,6 @@ $CollectorScript = {
             }
 
             # ================== CHART HISTORY ===============================
-            $Shared.Data = $snap
             $point = @{
                 t    = $t0.ToString('HH:mm:ss')
                 cpu  = $cpuTotal
@@ -1681,6 +2016,11 @@ $CollectorScript = {
             }
             [void]$Shared.History.Add($point)
             while ($Shared.History.Count -gt 120) { $Shared.History.RemoveAt(0) }
+
+            # Publish the snapshot AND its JSON together: from here on every
+            # browser is served the bytes built at this moment, not a document
+            # rebuilt from scratch at every request.
+            Publish-Snapshot $Shared $snap
         }
         catch {
             # Never lose a whole cycle because of one metric: log where it broke
@@ -1694,7 +2034,7 @@ $CollectorScript = {
                     if (-not $snap.Processes)           { $snap.Processes = @($prCache) }
                     if (-not $snap.Services -and $svCache) { $snap.Services = $svCache.List }
                     if (-not $snap.Events)              { $snap.Events = $evCache }
-                    $Shared.Data = $snap
+                    Publish-Snapshot $Shared $snap
                 }
             } catch { }
         }
@@ -1835,6 +2175,7 @@ tr:hover td{background:var(--hover)}
 .num{text-align:right;font-variant-numeric:tabular-nums}
 /* second line of the process cell: the friendly name of the executable */
 .pd{display:block;font-size:11px;line-height:1.3;color:var(--muted);font-weight:400}
+.row b small{font-weight:400;color:var(--muted)}
 .cores{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:8px;margin-top:6px}
 .core{background:var(--panel2);border-radius:6px;padding:6px 8px}
 .core div:first-child{font-size:10.5px;color:var(--muted)}
@@ -2641,7 +2982,11 @@ function quickSig(a){
   return s;
 }
 var NUMKEYS = {Pid:1, CpuPct:1, RamMB:1, Threads:1, Handles:1, EventId:1, Level:1};
-var DEFSORT = { tproc: {k:'CpuPct', d:-1}, tsvc: {k:'State', d:1}, tev: {k:'Time', d:-1} };
+/* the processes open in name order (A to Z, the friendly name the column
+   shows), not by CPU: with two hundred of them a list that moves at every
+   refresh is unreadable. Every column can still be clicked, and the choice
+   is remembered per browser. */
+var DEFSORT = { tproc: {k:'Name', d:1}, tsvc: {k:'State', d:1}, tev: {k:'Time', d:-1} };
 var sortState = { tproc: null, tsvc: null, tev: null };
 
 function loadSort(id){
@@ -2881,8 +3226,10 @@ function render(d){
   document.getElementById('cpughz').textContent = fmt(c.CurrentGHz,2)+' GHz / '+T('max')+' '+fmt(c.MaxGHz,2)+' GHz';
   document.getElementById('cpucores').textContent = d.Static.CpuCores+' '+T('cores')+', '+d.Static.CpuLogical+' '+
       T('threads_w')+' ('+d.Static.CpuSockets+' '+T('sockets')+')';
-  document.getElementById('cputemp').textContent = (c.Temperatures && c.Temperatures.length)
-      ? c.Temperatures.map(function(t){return fmt(t.Celsius)+' \u00b0C';}).join(' | ') : T('temp_na');
+  document.getElementById('cputemp').innerHTML = (c.Temperatures && c.Temperatures.length)
+      ? c.Temperatures.map(function(t){return fmt(t.Celsius)+' \u00b0C';}).join(' | ') +
+        (c.TempSource ? ' <small>('+esc(c.TempSource)+')</small>' : '')
+      : T('temp_na');
   document.getElementById('cpunow').innerHTML = '<span class="'+cls(c.TotalLoad)+'">'+fmt(c.TotalLoad)+'%</span>';
   document.getElementById('corelist').innerHTML = (c.PerCore||[]).map(function(x){
      return '<div class="core"><div>'+T('core')+' '+esc(x.Core)+'</div><b class="'+cls(x.Load)+'">'+fmt(x.Load)+'%</b>'+
@@ -3295,9 +3642,18 @@ try {
         # browser is connected (this is what reloads settings.txt and the pwd
         # file without spectators, and what drives the 24 hour update check
         # on a server that stays on for weeks).
+        # The wait handle is kept in a variable and closed right after the wait:
+        # the property returns a kernel event, and asking for it once per second
+        # without releasing it leaked one handle per request (the handle count of
+        # the process only went up). Closing it does not affect the wait.
         $async = $listener.BeginGetContext($null, $null)
-        while (-not $async.AsyncWaitHandle.WaitOne(1000)) {
-            try { Invoke-Housekeeping } catch { }
+        $wait  = $async.AsyncWaitHandle
+        try {
+            while (-not $wait.WaitOne(1000)) {
+                try { Invoke-Housekeeping } catch { }
+            }
+        } finally {
+            $wait.Close()
         }
         $ctx = $listener.EndGetContext($async)
         $req = $ctx.Request
@@ -3445,12 +3801,19 @@ try {
                         }
                     }
                     '^/api/stats/?$' {
-                        $payload = @{
-                            Current = $Shared.Data
-                            History = @($Shared.History)
-                        } | ConvertTo-Json -Depth 8 -Compress
+                        # The collector already turned the snapshot into JSON (see
+                        # Publish-Snapshot): hand those exact bytes over. The
+                        # fallback only runs for the first requests of all, before
+                        # the first cycle has finished.
                         $res.ContentType = 'application/json; charset=utf-8'
-                        $bytes = [System.Text.Encoding]::UTF8.GetBytes($payload)
+                        $bytes = $Shared.SerializedBytes
+                        if (-not $bytes) {
+                            $payload = @{
+                                Current = $Shared.Data
+                                History = @($Shared.History)
+                            } | ConvertTo-Json -Depth 8 -Compress
+                            $bytes = [System.Text.Encoding]::UTF8.GetBytes($payload)
+                        }
                     }
                     '^/api/languages/?$' {
                         $res.ContentType = 'application/json; charset=utf-8'
@@ -3469,7 +3832,7 @@ try {
                     '^/api/health/?$' {
                         $res.ContentType = 'text/plain; charset=utf-8'
                         $state = if ($Shared.Paused) { 'IDLE (sampling paused, nobody watching)' } else { 'SAMPLING' }
-                        $bytes = [System.Text.Encoding]::UTF8.GetBytes("OK $($env:COMPUTERNAME) v$DashboardVersion $state $(Get-Date -Format 'HH:mm:ss')")
+                        $bytes = [System.Text.Encoding]::UTF8.GetBytes("OK $($env:COMPUTERNAME) v$DashboardVersion $state $(Get-Date -Format 'HH:mm:ss') [$($script:EngineBits) engine on $($script:OsBits) Windows]")
                     }
                     '^/favicon.ico$' {
                         $res.StatusCode = 204
@@ -3487,7 +3850,10 @@ try {
         } catch {
             Write-Log "Request error: $($_.Exception.Message)" 'WARN'
         } finally {
-            try { $res.OutputStream.Close() } catch { }
+            # Response.Close() also closes the output stream and returns the
+            # connection to http.sys; closing the stream alone left the request
+            # context alive, and the process paid for it in handles.
+            try { $res.Close() } catch { }
         }
     }
 }

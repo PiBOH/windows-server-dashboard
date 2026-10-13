@@ -15,7 +15,7 @@
   <string key="threads_w">thread</string>
   <string key="sockets">socket</string>
   <string key="temperature">Temperatura</string>
-  <string key="temp_na">non disponibile (sensore ACPI assente)</string>
+  <string key="temp_na">non disponibile (nessuna sorgente trovata)</string>
   <string key="core">Core</string>
   <string key="ram">Memoria (RAM)</string>
   <string key="ram_trend">Andamento RAM</string>
