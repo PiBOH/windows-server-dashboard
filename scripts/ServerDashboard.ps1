@@ -1073,6 +1073,9 @@ $CollectorScript = {
     # the coretemp_log path already reported as missing, so the warning is not
     # written at every cycle
     $lastCtLogMiss = ''
+    # whether Core Temp was running at the previous cycle: $null so the state
+    # is reported once at the first cycle, then only when it changes
+    $lastCoreTempRunning = $null
     $ipCache = $null; $ipStamp = $old      # IP config  : every 60 s
     $script:lastMapSource = 'associators'
 
@@ -1197,6 +1200,24 @@ $CollectorScript = {
             Invoke-MemoryTrim
         } catch { }
     }
+    # --- Core Temp: read only, and only while it is running ------------------
+    # The dashboard never starts Core Temp, never keeps it alive and never asks
+    # it to open: when Core Temp runs is Core Temp's own decision (its
+    # "start with Windows" scheduled task at logon, or the user opening it by
+    # hand). Everything below is a READ of what Core Temp publishes by itself -
+    # its shared memory, its own CSV log, its WMI add-on - and it happens only
+    # while a Core Temp process exists, so a machine where Core Temp is closed
+    # is left completely alone, log file included: a CT-Log that stopped being
+    # written is a session that ended, not a current reading.
+    function Test-CoreTempRunning {
+        try {
+            foreach ($n in @('Core Temp', 'CoreTemp')) {
+                if (@([System.Diagnostics.Process]::GetProcessesByName($n)).Count) { return $true }
+            }
+        } catch { }
+        return $false
+    }
+
     # --- Core Temp's own log file (CT-Log*.csv) ------------------------------
     # Core Temp can write the same readings it publishes in the shared memory
     # into a CSV file of its own, chosen by its logging option: no add-on, no
@@ -1355,6 +1376,21 @@ $CollectorScript = {
                 }
             }
             if ($temps.Count) { $tempSrc = 'BIOS/ACPI' }
+
+            # Core Temp is read only while it is already running (see
+            # Test-CoreTempRunning above). The state is written to the log when
+            # it changes, so "does the dashboard reopen Core Temp?" has an
+            # answer in the log of any server, instead of a promise in a manual.
+            $ctRunning = Test-CoreTempRunning
+            if ($ctRunning -ne $lastCoreTempRunning) {
+                $lastCoreTempRunning = $ctRunning
+                if ($ctRunning) {
+                    Write-CollectorLog $Shared 'Core Temp is running: reading what it publishes, and the dashboard never starts it'
+                } else {
+                    Write-CollectorLog $Shared 'Core Temp is not running: its sources are skipped and nothing is started (Core Temp opens only by its own autostart)'
+                }
+            }
+
             # Fallback 1: Core Temp, the plain program. While it runs, Core Temp
             # ALWAYS publishes its readings in a shared memory block: no add-on,
             # no server plug-in, nothing to switch on, in the 32-bit and in the
@@ -1372,7 +1408,7 @@ $CollectorScript = {
             # switched on in its Advanced options, and those are the only ones a
             # dashboard running as SYSTEM in another session can see: the plain
             # mapping is private to the session of the logged on user.
-            if (-not $temps.Count) {
+            if (-not $temps.Count -and $ctRunning) {
                 foreach ($map in @('CoreTempMappingObjectEx', 'CoreTempMappingObject',
                                    'Global\CoreTempMappingObjectEx', 'Global\CoreTempMappingObject',
                                    'CoreTempMappingObjectUnicode', 'Global\CoreTempMappingObjectUnicode')) {
@@ -1421,7 +1457,7 @@ $CollectorScript = {
             # shared memory is private to a session: this is the source that
             # covers that case with no add-on and no setting to change inside
             # the dashboard, only Core Temp's own logging switch.
-            if (-not $temps.Count) {
+            if (-not $temps.Count -and $ctRunning) {
                 $ctLog = ''
                 try { $ctLog = "$($Shared.Settings.coretempLog)" } catch { }
                 # a path in settings.txt that does not exist is a typo worth
@@ -1443,7 +1479,7 @@ $CollectorScript = {
             # enough (see Fallback 1); this one is checked too because WMI is
             # global, so it works even when Core Temp runs in another logon
             # session than the dashboard.
-            if (-not $temps.Count) {
+            if (-not $temps.Count -and $ctRunning) {
                 try {
                     $ct = Get-CimInstance -Namespace 'root\CoreTemp' -ClassName 'CoreTempInfo' -ErrorAction Stop |
                           Select-Object -First 1
@@ -1500,7 +1536,7 @@ $CollectorScript = {
                 if ($tempSrc) {
                     Write-CollectorLog $Shared ("CPU temperature from " + $tempSrc + ": " + $temps.Count + " sensor(s)")
                 } else {
-                    Write-CollectorLog $Shared 'CPU temperature: no source answered (tried BIOS/ACPI, Core Temp shared memory, Core Temp log file, Core Temp WMI add-on, LibreHardwareMonitor/OpenHardwareMonitor, HWiNFO)'
+                    Write-CollectorLog $Shared 'CPU temperature: no source answered (tried BIOS/ACPI, the three Core Temp sources - read only while Core Temp runs -, LibreHardwareMonitor/OpenHardwareMonitor, HWiNFO)'
                 }
             }
 
@@ -2336,8 +2372,21 @@ footer .fcenter b{color:var(--txt)}
 .part .pt b{font-size:15px}
 .part .io{display:flex;justify-content:space-between;gap:8px;margin-top:6px;padding-top:6px;
   border-top:1px dashed var(--border);font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
-::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar{width:12px;height:12px}
 ::-webkit-scrollbar-thumb{background:var(--scroll);border-radius:5px}
+/* The arrow buttons. As soon as ::-webkit-scrollbar is styled, Chromium stops
+   drawing them, so the bars had a thumb and nothing else and the little
+   arrows everyone expects were gone. They are drawn again here, in the
+   theme's own colours; the triangle is a neutral gray that reads on both
+   themes, because a data URI cannot use a CSS variable. */
+::-webkit-scrollbar-button:single-button{display:block;width:12px;height:12px;
+  background-color:var(--panel2);background-repeat:no-repeat;background-position:center center;
+  background-size:12px 12px}
+::-webkit-scrollbar-button:single-button:hover{background-color:var(--hover)}
+::-webkit-scrollbar-button:single-button:vertical:decrement{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Cpath d='M2.5 8L6 4l3.5 4z' fill='%238b949e'/%3E%3C/svg%3E")}
+::-webkit-scrollbar-button:single-button:vertical:increment{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Cpath d='M2.5 4L6 8l3.5-4z' fill='%238b949e'/%3E%3C/svg%3E")}
+::-webkit-scrollbar-button:single-button:horizontal:decrement{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Cpath d='M8 2.5L4 6l4 3.5z' fill='%238b949e'/%3E%3C/svg%3E")}
+::-webkit-scrollbar-button:single-button:horizontal:increment{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Cpath d='M4 2.5L8 6l-4 3.5z' fill='%238b949e'/%3E%3C/svg%3E")}
 </style>
 </head>
 <body>
@@ -2732,14 +2781,16 @@ function loadServer(){
     })
     .catch(function(){ if (!SRV.sections) SRV.sections = {}; return SRV; });
 }
-/* The server options live in settings.txt. Without a password they are read
-   only, exactly as they always were. When a password is set:
-   - total mode: the browser already authenticated with it (Basic auth), so
-     saving posts the options directly;
+/* The server options live in settings.txt, and the panel is where they are
+   written:
+   - no password: the panel is open to whoever is watching the page, so Save
+     writes settings.txt from the browser - no need to edit the file by hand;
+   - total mode: the browser already authenticated with the password (Basic
+     auth), so saving posts the options directly;
    - partial mode: the password given in the popup (see below) travels in
      the body and the server refuses the change if it is wrong. */
 function serverEditable(){
-  if (!SRV.passwordProtected) { return false; }
+  if (!SRV.passwordProtected) { return true; }
   if (SRV.passwordMode !== 'partial') { return true; }
   return (SRVPWD !== null);
 }
@@ -2918,7 +2969,7 @@ function fillSrvRate(){
     html = '<option value="'+cur+'" selected>'+rateLabel(SRV.refreshSeconds)+'</option>' + html;
   }
   var el = document.getElementById('setsrvrate');
-  if (el) { el.innerHTML = html; el.disabled = !SRV.passwordProtected; }
+  if (el) { el.innerHTML = html; el.disabled = false; }
 }
 function fillSettings(){
   document.getElementById('settheme').value = THEME;
@@ -2937,20 +2988,20 @@ function fillSettings(){
   var note = document.getElementById('srvnote');
   if (note) {
     note.className = 'srvnote';
-    if (!prot) { note.textContent = T('readonly_server'); }
+    if (!prot) { note.textContent = T('srv_unlocked'); note.className = 'srvnote ok'; }
     else if (ed) { note.textContent = T('srv_unlocked'); note.className = 'srvnote ok'; }
     else { note.textContent = T('srv_locked'); }
   }
   fillSrvRate();
   document.getElementById('setsections').innerHTML = SECTIONS.map(function(k){
     var on = !(SRV.sections && SRV.sections[k] === false);
-    return '<label class="ro"><input type="checkbox"'+(prot?'':' disabled')+
+    return '<label class="ro"><input type="checkbox"'+
            ' data-sec-key="'+k+'"'+(on?' checked':'')+'> <span>'+T(k)+'</span></label>';
   }).join('');
   var lg = document.getElementById('setlogging');
   var au = document.getElementById('setautoupd');
-  if (lg) { lg.checked = !!SRV.logging; lg.disabled = !prot; }
-  if (au) { au.checked = !!SRV.autoUpdate; au.disabled = !prot; }
+  if (lg) { lg.checked = !!SRV.logging; lg.disabled = false; }
+  if (au) { au.checked = !!SRV.autoUpdate; au.disabled = false; }
   document.getElementById('setmsg').textContent = '';
 }
 function openLang(){ buildLangGrid(); document.getElementById('langmodal').className = 'modal on'; }
@@ -2960,8 +3011,8 @@ function closeSettings(){ document.getElementById('setmodal').className = 'modal
 
 function applySettings(){
   /* Personal choices are always saved in this browser. The server options are
-     posted too, but only when they are editable (password given / total mode):
-     the server itself decides whether the change is accepted. */
+     posted too when they are editable (no password set, password given, total
+     mode): the server itself decides whether the change is accepted. */
   var th = document.getElementById('settheme').value;
   var lg = document.getElementById('setlang').value;
   var rv = document.getElementById('setrate').value;
@@ -3766,13 +3817,15 @@ try {
             if (-not $denied) {
                 switch -Regex ($path) {
                     '^/api/settings/?$' {
-                        # GET  : the server configuration, read only. The password
-                        #        itself is NEVER sent to the browsers: only the
-                        #        fact that one is set, and its mode.
-                        # POST : accepted only with the right password, written in
-                        #        the body or proved by the Basic auth header of
-                        #        total mode. With NO password set this endpoint
-                        #        stays read-only exactly as it always was.
+                        # GET  : the server configuration. The password itself is
+                        #        NEVER sent to the browsers: only the fact that
+                        #        one is set, and its mode.
+                        # POST : accepted with the right password, written in the
+                        #        body or proved by the Basic auth header of total
+                        #        mode. With NO password set there is nothing to
+                        #        prove and the options are written straight from
+                        #        the browser, so settings.txt does not have to be
+                        #        edited by hand on the machine.
                         if ($req.HttpMethod -eq 'GET') {
                             $res.ContentType = 'application/json; charset=utf-8'
                             $resp = @{}
@@ -3804,9 +3857,8 @@ try {
                                     $given = if ($sep -ge 0) { $pair.Substring($sep + 1) } else { $pair }
                                 } catch { }
                             }
-                            if (-not $Shared.Password -or $given -cne $Shared.Password) {
-                                $why = if ($Shared.Password) { 'wrong password' }
-                                       else { 'no password set, settings are read-only' }
+                            if ($Shared.Password -and $given -cne $Shared.Password) {
+                                $why = 'wrong password'
                                 Write-Log ("Refused a settings change from " +
                                            $req.RemoteEndPoint.Address + ": " + $why) 'WARN'
                                 $res.StatusCode = 403

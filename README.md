@@ -10,7 +10,7 @@ No agent, no IIS, no external module, no database: a single PowerShell script
 publishes the page, and you open it from any computer on the LAN by typing the
 IP of the server.
 
-[![Version](https://img.shields.io/badge/version-1.16.6-blue)](Changelog/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.16.7-blue)](Changelog/CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/Windows%20Server-2016%2B-0078D6?logo=windows)](#requirements)
 [![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)](#requirements)
 [![Languages](https://img.shields.io/badge/UI%20languages-38-brightgreen)](#-38-languages)
@@ -102,13 +102,14 @@ task that happened to have the same name.
 - **Light and dark theme**, dark by default, saved per browser.
 - **Works on any localized Windows** — every metric comes from CIM/WMI classes
   whose property names are always English.
-- **Read-only by design** — the page only displays: no command can be executed.
-  The server settings cannot be changed from the browser unless you set the
-  optional password (`.config-do-not-delete-me\pwd`, asked by the
-  installer): **total** closes
-  the whole page behind a login, **partial** leaves the page open and locks
-  only the server options, unlocked by a popup the moment one of them is
-  clicked.
+- **Read-only by design** — the page only displays: no command can be executed
+  on the server. The only thing a visitor can write is the dashboard's own
+  options (default interval, visible sections, logging, automatic updates),
+  from the settings panel. With no password set anyone who can see the page can
+  change them; the optional password (`.config-do-not-delete-me\pwd`, asked by
+  the installer) is what limits that: **total** closes the whole page behind a
+  login, **partial** leaves the page open and locks only the server options,
+  unlocked by a popup the moment one of them is clicked.
 
 ## 🌐 38 languages
 
@@ -229,8 +230,10 @@ reservation without reinstalling.
 ## Security note
 
 The dashboard has no authentication: anyone who can reach port 8080 sees the
-data. It is read only and no command can be run through it, but if the server is
-exposed to the Internet restrict the rule to your subnet:
+data. No command can be run through it, but the server options can be changed
+from the panel by whoever can see the page until a password is set, so if the
+server is exposed to the Internet either set one or restrict the rule to your
+subnet:
 
 ```bat
 netsh advfirewall firewall set rule ^

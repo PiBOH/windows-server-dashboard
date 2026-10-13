@@ -8,6 +8,47 @@ Versioning follows Semantic Versioning: MAJOR.MINOR.PATCH.
 - PATCH - fixes and tweaks that add no feature.
 
 ------------------------------------------------------------------------------
+  1.16.7 - 2026-10-13
+------------------------------------------------------------------------------
+
+Fixed:
+  - The scroll bars had no arrow buttons. The page styles
+    ::-webkit-scrollbar to give the bars its own colours, and Chromium stops
+    drawing the little arrow buttons as soon as that pseudo-element is
+    styled: the bars ended up with a thumb and nothing else. The four
+    buttons (up, down, left, right) are drawn again, in the theme's colours,
+    and the bars are 12 px wide instead of 9 so the arrows are clickable.
+  - A closed Core Temp is left completely alone. The temperature chain
+    reads what Core Temp publishes by itself - its shared memory, its own
+    CSV log, its WMI add-on - and it now does so only while a Core Temp
+    process is running, instead of trying and failing at every cycle. It
+    was never the dashboard that opened Core Temp (there is no code here
+    that starts it, in any version: the only process this script ever
+    starts is a new copy of itself during an update), but the log now says
+    which of the two situations it is in, once, when it changes: "Core Temp
+    is running: reading what it publishes, and the dashboard never starts
+    it", or "Core Temp is not running: its sources are skipped and nothing
+    is started (Core Temp opens only by its own autostart)". A CT-Log that
+    stopped being written is a session that ended, and it is no longer read
+    on a machine where Core Temp has been closed.
+
+Changed:
+  - The server options can be changed from the browser with no password set.
+    The settings panel used to grey them out with "read-only: set on the
+    server in settings.txt" and the API refused every write with 403; now
+    Save writes refresh interval, visible sections, logging and automatic
+    updates into settings.txt from the page, and there is no need to open
+    the file on the machine. Whoever can see the page can change them, which
+    is exactly what the optional password is for: with a password the same
+    panel asks for it instead (partial mode) or relies on the login that
+    opened the page (total mode), and every write is still logged with the
+    address of the caller. The options are the dashboard's own - no command
+    can be run through the page either way.
+  - The note in the panel says the same thing in all three cases now
+    ("Unlocked: Save writes these options to settings.txt on the server"),
+    reusing the string that was already translated in all 38 languages.
+
+------------------------------------------------------------------------------
   1.16.6 - 2026-10-13
 ------------------------------------------------------------------------------
 

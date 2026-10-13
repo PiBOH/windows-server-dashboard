@@ -127,6 +127,13 @@ CPU
   maximum frequency, socket/core/thread count, processor model, temperature,
   plus a dedicated trend chart.
 
+  The dashboard never starts Core Temp and never keeps it alive: it only reads
+  what Core Temp publishes by itself, and only while a Core Temp process is
+  running. With Core Temp closed its sources are skipped entirely - its log
+  file included, because a CT-Log that stopped being written is a session that
+  ended - and the log says so once. When Core Temp runs, what decides it is
+  Core Temp's own "start with Windows" option, never this dashboard.
+
   Temperature sources, tried in this order. None of them needs an add-on,
   a plug-in or anything installed inside the dashboard:
     1. BIOS/ACPI sensor (MSAcpi_ThermalZoneTemperature). Many Dell, HP and
@@ -346,11 +353,12 @@ visible, logging on.
   updates) belong to the server, and what the panel lets you do depends on
   the password (see section 9):
 
-      no password set    -> greyed out, with the note "read-only: set on the
-                            server in settings.txt". The API refuses every
-                            write with 403 and logs the address of the
-                            caller, so the restriction holds even against a
-                            handcrafted request, not only against the page.
+      no password set    -> editable: Save writes these options into
+                            settings.txt on the server, so nobody has to
+                            open the file on the machine. Whoever can see
+                            the page can change them, which is what the
+                            password is for; every write is logged with the
+                            address of the caller.
       password, partial  -> the options look normal: the password is asked
                             by a small popup the moment one of them is
                             clicked, never before. The server checks it
@@ -359,8 +367,9 @@ visible, logging on.
                             editable and Save writes them to settings.txt.
       password, total    -> you already typed the password to open the page,
                             so the server options are editable directly.
-- To change them, edit settings.txt on the server with Notepad. The file is
-  watched: the change is applied within ten seconds, no restart needed.
+- To change them, use the panel (see above) or edit settings.txt on the server
+  with Notepad. The file is watched: the change is applied within ten seconds,
+  no restart needed.
 - settings.txt is created automatically at the first start, already filled
   with the default values, so the settings panel works from the very first
   start. It is a plain text
@@ -382,9 +391,9 @@ visible, logging on.
 
   Unknown or misspelled keys are ignored, missing keys keep their default, and
   a deleted file is recreated with the defaults at the next start.
-- Without a password, logging = yes/no is available in settings.txt only, on
-  purpose: nobody watching the dashboard can turn the log on or off. With a
-  password set it can also be changed from the panel, by whoever knows it.
+- Logging on/off follows the same rule as the other server options: it is in
+  the panel and in settings.txt alike. With no password set, whoever can see
+  the page can change it; with a password, only whoever knows it.
   The log is rotated every day: each day has its own file
   (logs\ServerDashboard-YYYY-MM-DD.log), so no file ever grows without
   limit, and the files older than 14 days are deleted automatically. With
@@ -755,11 +764,13 @@ back to the defaults.
 9. SECURITY
 ------------------------------------------------------------------------------
 
-The dashboard is read only: anyone on the LAN who can reach port 8080 can
-see the data (system information, process, service and event lists - no
-command can be executed), and without a password nothing can be changed from
-the page. An optional password can close the whole page or just the server
-options.
+No command can be executed through the dashboard and nothing on the machine is
+changed by looking at it: it only reads. The one thing a visitor can write is
+the dashboard's own options in settings.txt (default interval, visible
+sections, logging, automatic updates), and only from the settings panel. With
+no password set, anyone on the LAN who can reach port 8080 can see the data
+and change those options; the optional password is what limits that. An
+optional password can close the whole page or just the server options.
 
 OPTIONAL PASSWORD
 
