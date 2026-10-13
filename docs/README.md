@@ -358,7 +358,8 @@ visible, logging on.
                             open the file on the machine. Whoever can see
                             the page can change them, which is what the
                             password is for; every write is logged with the
-                            address of the caller.
+                            address of the caller, and a write coming from
+                            somebody else's page is refused (see section 9).
       password, partial  -> the options look normal: the password is asked
                             by a small popup the moment one of them is
                             clicked, never before. The server checks it
@@ -564,8 +565,9 @@ NOBODY WATCHING = NOTHING RUNNING
   version, the current instance keeps serving instead of exiting.
 
   - The automatic check is switched on and off in settings.txt
-    (auto_update = yes, the default, or no). Without a password no visitor
-    can change it from the page; with a password set, whoever knows it can.
+    (auto_update = yes, the default, or no), and from the settings panel of
+    the page: with no password whoever is looking at it, with a password
+    only after typing it.
   - scripts\Update-Now.bat is the manual way: it checks GitHub and, when a
     new release exists, does the whole cycle by itself - download, stop the
     dashboard, install, start the dashboard again and wait for its answer.
@@ -707,7 +709,7 @@ Diagnose.ps1). It changes nothing and reports the task state (Run As
 | /api/stats       | full JSON, handy for Zabbix or Grafana     |
 | /api/languages   | language catalog                           |
 | /lang/<code>.xml | one dictionary                             |
-| /api/settings    | GET reads; POST writes only with password  |
+| /api/settings    | GET reads; POST writes, see the note below |
 | /api/health      | state and version (never password asked)   |
 
 
@@ -769,8 +771,13 @@ changed by looking at it: it only reads. The one thing a visitor can write is
 the dashboard's own options in settings.txt (default interval, visible
 sections, logging, automatic updates), and only from the settings panel. With
 no password set, anyone on the LAN who can reach port 8080 can see the data
-and change those options; the optional password is what limits that. An
-optional password can close the whole page or just the server options.
+and change those options; the optional password is what limits that. A page of
+another site is not enough: a write whose Origin is not the dashboard itself is
+refused and logged, so a browser tab left open somewhere cannot reconfigure the
+server. The check is on the browser, not on the wire: a script or another
+program on the LAN that posts to /api/settings by itself is still accepted
+while no password is set.
+An optional password can close the whole page or just the server options.
 
 OPTIONAL PASSWORD
 

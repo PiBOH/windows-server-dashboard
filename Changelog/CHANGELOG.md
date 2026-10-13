@@ -8,6 +8,36 @@ Versioning follows Semantic Versioning: MAJOR.MINOR.PATCH.
 - PATCH - fixes and tweaks that add no feature.
 
 ------------------------------------------------------------------------------
+  1.16.8 - 2026-10-13
+------------------------------------------------------------------------------
+
+Fixed:
+  - A settings change coming from another site's page is refused. Since 1.16.7
+    the settings panel writes the server options straight from the browser
+    when no password is set, and the API accepted such a write from whoever
+    asked: a page of another site, left open in a browser that can reach the
+    dashboard, could switch automatic updates on and have the server fetch
+    and install a release (the zip is used as it comes, without a checksum).
+    The write is now accepted only when the request shows it comes from the
+    dashboard itself - the Origin header browsers send, and Sec-Fetch-Site
+    when they know it - and anything else is answered 403 and written to the
+    log with the address and the origin it came from. A request with no
+    Origin at all (a script, curl, a monitoring probe) still works, and with
+    a password set nothing changes: those rules are the same as before, and a
+    foreign page has nothing to prove anyway.
+  - The refusal line in the log names the origin, not only the address, so
+    the log says which page tried it.
+
+Changed:
+  - The documentation now describes what the dashboard does. README.md still
+    said the server options were "only on the server" and that the settings
+    API "answers 403 to any write attempt", which stopped being true in
+    1.16.7; the API table of the manual repeated it. The comment blocks in
+    the script that described the logging switch and the settings file were
+    stale as well - including the one the dashboard writes into the user's
+    settings.txt at every save.
+
+------------------------------------------------------------------------------
   1.16.7 - 2026-10-13
 ------------------------------------------------------------------------------
 

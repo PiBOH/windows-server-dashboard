@@ -106,11 +106,11 @@ $ErrorActionPreference = 'Continue'
 [System.Threading.Thread]::CurrentThread.CurrentCulture = [System.Globalization.CultureInfo]::InvariantCulture
 
 # ----------------------------------------------------------------------------
-# Logging switch.
-# It lives ONLY in settings.txt (line "logging = yes|no") and is deliberately
-# NOT exposed through the web interface: whoever watches the dashboard cannot
-# turn the log on or off. It is read here, before anything is written, so that
-# with logging = no the file is never created at all.
+# Logging switch, line "logging = yes|no" of settings.txt. It is read here,
+# before anything is written, so with logging = no the file is never created at
+# all. It is also one of the server options: with no password whoever is looking
+# at the page can change it, with a password only after typing it. A page from
+# another site can never change it (see the Origin check on /api/settings).
 # ----------------------------------------------------------------------------
 $script:LogEnabled = $true
 if (Test-Path $SettingsFile) {
@@ -277,8 +277,8 @@ function Read-Settings {
     return $cfg
 }
 
-# Used only to create the file the first time: the dashboard never rewrites it,
-# because the settings it contains cannot be changed from the web interface.
+# The password can change while the dashboard runs: the file is read again on
+# every request, so a new one works within seconds, with no restart.
 function Read-FilePassword {
     # The optional password lives in a plain text file called "pwd" (no
     # file extension) in the .config-do-not-delete-me folder: set it during
@@ -344,8 +344,8 @@ function Write-Settings($cfg) {
         [void]$lines.Add('')
         [void]$lines.Add('# Write the log files in logs\: yes / no. One file per day')
         [void]$lines.Add('# (ServerDashboard-YYYY-MM-DD.log), kept for 14 days.')
-        [void]$lines.Add('# Without a password this can only be changed HERE; with a')
-        [void]$lines.Add('# password set it can also be changed from the dashboard.')
+        [void]$lines.Add('# With no password, whoever looks at the dashboard can change it')
+        [void]$lines.Add('# from the settings panel; with a password, after typing it.')
         [void]$lines.Add('# With no, the log file is never created.')
         [void]$lines.Add("logging = " + $(if ($script:LogEnabled) { 'yes' } else { 'no' }))
         [void]$lines.Add('')
@@ -3838,6 +3838,25 @@ try {
                         } elseif ($req.HttpMethod -eq 'POST') {
                             $given = $null
                             $json  = $null
+                            # A page that is not this dashboard must not be able to
+                            # reconfigure it. Browsers send Origin on POSTs - our own
+                            # page included - and Sec-Fetch-Site when they know it, so a
+                            # write coming from somebody else's page, or from "null" (a
+                            # local file, a sandboxed frame), is refused right here.
+                            # The check runs only while there is NO password: with a
+                            # password the rules stay exactly what they have always been,
+                            # and a foreign page has nothing to prove anyway.
+                            $foreign = $false
+                            if (-not $Shared.Password) {
+                                $site   = "$($req.Headers['Sec-Fetch-Site'])"
+                                $origin = "$($req.Headers['Origin'])"
+                                $self   = $req.Url.Scheme + '://' + $req.Url.Authority
+                                if ($site -eq 'cross-site') { $foreign = $true }
+                                if ($origin -and ($origin -eq 'null' -or
+                                                  $origin.TrimEnd('/') -ne $self.TrimEnd('/'))) {
+                                    $foreign = $true
+                                }
+                            }
                             try {
                                 $body = New-Object System.IO.StreamReader(
                                     $req.InputStream, [System.Text.Encoding]::UTF8)
@@ -3857,8 +3876,11 @@ try {
                                     $given = if ($sep -ge 0) { $pair.Substring($sep + 1) } else { $pair }
                                 } catch { }
                             }
-                            if ($Shared.Password -and $given -cne $Shared.Password) {
-                                $why = 'wrong password'
+                            if (($Shared.Password -and $given -cne $Shared.Password) -or $foreign) {
+                                $why = if ($foreign) {
+                                    'the request comes from another page (Origin: ' +
+                                    "$origin, Sec-Fetch-Site: $site)"
+                                } else { 'wrong password' }
                                 Write-Log ("Refused a settings change from " +
                                            $req.RemoteEndPoint.Address + ": " + $why) 'WARN'
                                 $res.StatusCode = 403

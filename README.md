@@ -10,7 +10,7 @@ No agent, no IIS, no external module, no database: a single PowerShell script
 publishes the page, and you open it from any computer on the LAN by typing the
 IP of the server.
 
-[![Version](https://img.shields.io/badge/version-1.16.7-blue)](Changelog/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.16.8-blue)](Changelog/CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/Windows%20Server-2016%2B-0078D6?logo=windows)](#requirements)
 [![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)](#requirements)
 [![Languages](https://img.shields.io/badge/UI%20languages-38-brightgreen)](#-38-languages)
@@ -139,14 +139,18 @@ picker by itself.
 | Theme | browser cache | every visitor |
 | Language | browser cache | every visitor |
 | Refresh interval | browser cache | every visitor |
-| Default interval (0.5 s) | `settings.txt` | only on the server |
-| Visible sections | `settings.txt` | only on the server |
-| Logging on/off | `settings.txt` | only on the server |
+| Default interval | `settings.txt` | the settings panel: everyone, unless a password is set |
+| Visible sections | `settings.txt` | the settings panel: everyone, unless a password is set |
+| Logging on/off | `settings.txt` | the settings panel: everyone, unless a password is set |
+| Automatic updates | `settings.txt` | the settings panel: everyone, unless a password is set |
 
-`settings.txt` is a plain text file you edit with Notepad; changes are picked up
-within ten seconds, no restart needed. The API that serves it accepts `GET` only
-and answers `403` to any write attempt, so a visitor can never reconfigure the
-server.
+`settings.txt` is a plain text file you edit with Notepad, and the same options
+are in the settings panel of the page: with no password set, whoever is looking
+at the dashboard can change them and Save writes them back into this file. With
+a password set, a visitor has to type it first. Changes are picked up within ten
+seconds, no restart needed, and every write is logged with the address it came
+from. A request coming from another site's page is refused, so a page you happen
+to have open cannot reconfigure the server behind your back.
 
 ## Layout
 
@@ -233,7 +237,9 @@ The dashboard has no authentication: anyone who can reach port 8080 sees the
 data. No command can be run through it, but the server options can be changed
 from the panel by whoever can see the page until a password is set, so if the
 server is exposed to the Internet either set one or restrict the rule to your
-subnet:
+subnet. A write coming from another site's page is refused and logged, so an
+open browser tab cannot change the options; a program that speaks HTTP by
+itself still can, and that is what the password is for:
 
 ```bat
 netsh advfirewall firewall set rule ^
