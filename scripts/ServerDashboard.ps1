@@ -658,6 +658,21 @@ function Stop-DashboardForUpdate {
     Start-Sleep -Seconds 1
 }
 
+function Start-DashboardInstance {
+    # One owner for "launch another copy of this program, detached and hidden":
+    # the hand over after an update and the periodic 24 h check both come
+    # through here, so the switches this program is started with are written
+    # once. -WindowStyle goes to the cmdlet ONCE: naming it twice is a
+    # parameter binding error, Start-Process threw every time and the catch at
+    # the call site swallowed it, so nothing was ever launched. The copy inside
+    # -ArgumentList is the child's own switch and stays.
+    param([string[]]$ExtraArguments = @())
+    Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList (@(
+        '-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass',
+        '-File', $PSCommandPath
+    ) + $ExtraArguments)
+}
+
 function Start-DashboardAfterUpdate {
     # The old instance may need a moment to disappear, and a task whose
     # previous instance is still "Running" silently refuses to start a new
@@ -710,16 +725,7 @@ function Start-DashboardAfterUpdate {
         # reservation Start-Dashboard.bat adds, then launch.
         $null = & netsh http add urlacl ("url=http://+:{0}/" -f $Port) ("user={0}\{1}" -f $env:USERDOMAIN, $env:USERNAME) 2>$null
     } catch { }
-    try {
-        # -WindowStyle only once: passing it twice made Start-Process throw,
-        # the throw was swallowed by the catch below and the direct launch
-        # never happened (so on a machine with no scheduled task the update
-        # installed the new files and left nothing running)
-        Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
-            '-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass',
-            '-File', (Join-Path $PSScriptRoot 'ServerDashboard.ps1'), '-Port', "$Port"
-        )
-    } catch { }
+    try { Start-DashboardInstance -ExtraArguments @('-Port', "$Port") } catch { }
     foreach ($i in 1..10) {
         Start-Sleep -Seconds 1
         try {
@@ -3214,8 +3220,8 @@ function closeSettings(){ document.getElementById('setmodal').className = 'modal
 /* ===================== About =====================
    The changelog is not shipped in the package and not stored anywhere: it is
    read from GitHub every time this panel opens, with a cache key that is never
-   the same twice, so neither the browser nor a cache in between can answer
-   with something older. The answer is escaped before it reaches the page. */
+   the same twice, so the browser never answers from its own cache. The answer
+   is escaped before it reaches the page. */
 var CHANGELOG_URL = 'https://raw.githubusercontent.com/PiBOH/windows-server-dashboard/main/Changelog/CHANGELOG.md';
 
 function renderChangelog(md){
@@ -3241,7 +3247,7 @@ function renderChangelog(md){
 
 var CHANGELOG_REQ = 0;
 
-function loadChangelog(){
+function loadAboutChangelog(){
   var box = document.getElementById('aboutcl');
   var src = document.getElementById('aboutsrc');
   /* reopening the panel or pressing Reload starts a new request: an answer
@@ -3267,10 +3273,13 @@ function loadChangelog(){
     });
 }
 
+/* the one way in: the footer line, and the Reload button inside the panel,
+   both come through here, so opening the panel and reading the changelog can
+   never drift apart */
 function openAbout(){
   document.getElementById('aboutver').textContent = VERSION;
   document.getElementById('aboutmodal').className = 'modal on';
-  loadChangelog();
+  loadAboutChangelog();
 }
 function closeAbout(){ document.getElementById('aboutmodal').className = 'modal'; }
 
@@ -3754,7 +3763,7 @@ document.getElementById('langmodal').onclick = function(e){ if (e.target === thi
 document.getElementById('aboutbtn').onclick = openAbout;
 document.getElementById('aboutclose').onclick = closeAbout;
 document.getElementById('aboutok').onclick = closeAbout;
-document.getElementById('aboutreload').onclick = function(){ loadChangelog(); };
+document.getElementById('aboutreload').onclick = openAbout;
 document.getElementById('aboutmodal').onclick = function(e){ if (e.target === this) closeAbout(); };
 document.addEventListener('keydown', function(e){
   if (e.key === 'Escape' && document.getElementById('aboutmodal').className === 'modal on'){
@@ -3975,13 +3984,7 @@ function Invoke-Housekeeping {
         if ($Shared.Settings.autoUpdate -and -not (Test-Path $script:UpdateMarker)) {
             try {
                 Write-Log 'Periodic update check (every 24 h, auto_update = yes).'
-                # -WindowStyle once, for the same reason as the hand over
-                # below: naming it twice makes Start-Process throw, and the
-                # periodic check never ran at all.
-                Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
-                    '-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass',
-                    '-File', $PSCommandPath, '-UpdateNow', '-ScheduledUpdate'
-                )
+                Start-DashboardInstance -ExtraArguments @('-UpdateNow', '-ScheduledUpdate')
             } catch {
                 Write-Log ("Could not launch the periodic update check: " +
                            $_.Exception.Message) 'WARN'
@@ -4032,15 +4035,7 @@ if ($script:Updated) {
         # so the next boot runs them, and nobody is left without the page.
         $handed = $false
         try {
-            # -WindowStyle goes to the cmdlet ONCE: naming it twice is a
-            # parameter binding error, Start-Process threw every time and the
-            # catch below swallowed it, so the new version was never launched
-            # and the old one kept serving. The copy inside -ArgumentList is
-            # the child's own switch and stays.
-            Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
-                '-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass',
-                '-File', $PSCommandPath, '-Port', "$Port"
-            )
+            Start-DashboardInstance -ExtraArguments @('-Port', "$Port")
             $handed = $true
         } catch {
             Write-Log ("Could not launch the new version: staying up on the current one. " +

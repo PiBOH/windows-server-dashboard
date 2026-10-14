@@ -895,8 +895,8 @@ function closeSettings(){ document.getElementById('setmodal').className = 'modal
 /* ===================== About =====================
    The changelog is not shipped in the package and not stored anywhere: it is
    read from GitHub every time this panel opens, with a cache key that is never
-   the same twice, so neither the browser nor a cache in between can answer
-   with something older. The answer is escaped before it reaches the page. */
+   the same twice, so the browser never answers from its own cache. The answer
+   is escaped before it reaches the page. */
 var CHANGELOG_URL = 'https://raw.githubusercontent.com/PiBOH/windows-server-dashboard/main/Changelog/CHANGELOG.md';
 
 function renderChangelog(md){
@@ -922,7 +922,7 @@ function renderChangelog(md){
 
 var CHANGELOG_REQ = 0;
 
-function loadChangelog(){
+function loadAboutChangelog(){
   var box = document.getElementById('aboutcl');
   var src = document.getElementById('aboutsrc');
   /* reopening the panel or pressing Reload starts a new request: an answer
@@ -948,10 +948,13 @@ function loadChangelog(){
     });
 }
 
+/* the one way in: the footer line, and the Reload button inside the panel,
+   both come through here, so opening the panel and reading the changelog can
+   never drift apart */
 function openAbout(){
   document.getElementById('aboutver').textContent = VERSION;
   document.getElementById('aboutmodal').className = 'modal on';
-  loadChangelog();
+  loadAboutChangelog();
 }
 function closeAbout(){ document.getElementById('aboutmodal').className = 'modal'; }
 
@@ -1435,7 +1438,7 @@ document.getElementById('langmodal').onclick = function(e){ if (e.target === thi
 document.getElementById('aboutbtn').onclick = openAbout;
 document.getElementById('aboutclose').onclick = closeAbout;
 document.getElementById('aboutok').onclick = closeAbout;
-document.getElementById('aboutreload').onclick = function(){ loadChangelog(); };
+document.getElementById('aboutreload').onclick = openAbout;
 document.getElementById('aboutmodal').onclick = function(e){ if (e.target === this) closeAbout(); };
 document.addEventListener('keydown', function(e){
   if (e.key === 'Escape' && document.getElementById('aboutmodal').className === 'modal on'){
