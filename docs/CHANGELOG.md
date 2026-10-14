@@ -8,6 +8,27 @@ Versioning follows Semantic Versioning: MAJOR.MINOR.PATCH.
 - PATCH - fixes and tweaks that add no feature.
 
 ------------------------------------------------------------------------------
+  1.16.11 - 2026-10-14
+------------------------------------------------------------------------------
+
+Changed:
+  - The dashboard page is edited as three real files instead of being written
+    inside the engine. The markup, the stylesheet and the script now live in
+    _build\web\ (page.html, page.css, page.js): page.html carries the two
+    marker lines that say where the other two go, and _build\Embed-Page.ps1
+    splices them into the single here-string that ServerDashboard.ps1 ships and
+    serves from memory. Nothing changes at runtime, and the page the server
+    answers with is byte for byte the one it answered with before: the engine
+    keeps the page inside itself, so an installation is still one script and
+    nothing new is read from disk.
+  - _build\ is a development folder, like the other folders the release
+    workflow leaves out: it is not part of the release archive and the updater
+    never copies it onto a server. The syntax workflow now parses the build
+    script and runs it with -Check on every push, so the embedded copy and the
+    sources can no longer drift apart: changing one without the other fails
+    the build.
+
+------------------------------------------------------------------------------
   1.16.10 - 2026-10-14
 ------------------------------------------------------------------------------
 

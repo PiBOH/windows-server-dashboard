@@ -697,7 +697,10 @@ Diagnose.ps1). It changes nothing and reports the task state (Run As
   is not installed and port 80 is left alone.
 - The HTML page is embedded in ServerDashboard.ps1 (the $Html block) and
   served from memory; the language XML files and settings.txt are the only
-  files read from disk at runtime.
+  files read from disk at runtime. In the repository the page is edited as
+  three files under _build\web\ (page.html, page.css, page.js) and
+  spliced into that block by _build\Embed-Page.ps1, which the syntax
+  check runs with -Check on every push; _build\ is not part of the package.
 - All metrics use CIM/WMI classes whose property names are always English, so
   the script works on any localized Windows.
 

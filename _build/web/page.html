@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__HOST__ - Dashboard</title>
+<style>
+/*@CSS@*/
+</style>
+</head>
+<body>
+<header>
+  <h1>&#128421; <span data-i18n="app_title">Dashboard</span> <span id="host">__HOST__</span></h1>
+  <div class="badge"><span class="dot"></span><span id="conn">-</span></div>
+  <div class="badge"><span data-i18n="uptime">Uptime</span> <b id="uptime">-</b></div>
+  <div class="badge"><span data-i18n="last_update">Last update</span> <b id="ts">-</b></div>
+  <div class="badge" style="margin-left:auto"><span data-i18n="refresh_every">Refresh every</span>
+    <select id="rate"></select>
+  </div>
+</header>
+
+<div class="grid">
+  <div data-sec="cpu" class="card">
+    <h2><span data-i18n="cpu">CPU</span> <span id="cpuname" style="text-transform:none;letter-spacing:0"></span></h2>
+    <div class="big"><span id="cpupct">-</span><small>%</small></div>
+    <div class="bar"><i id="cpubar" style="width:0%"></i></div>
+    <div class="row"><span data-i18n="frequency">Frequency</span><b id="cpughz">-</b></div>
+    <div class="row"><span data-i18n="cores">cores</span><b id="cpucores">-</b></div>
+    <div class="row"><span data-i18n="temperature">Temperature</span><b id="cputemp">-</b></div>
+    <div class="cores" id="corelist"></div>
+  </div>
+
+  <div data-sec="ram" class="card">
+    <h2 data-i18n="ram">Memory (RAM)</h2>
+    <div class="big"><span id="rampct">-</span><small>%</small></div>
+    <div class="bar"><i id="rambar" style="width:0%"></i></div>
+    <div class="row"><span data-i18n="used">Used</span><b id="ramused">-</b></div>
+    <div class="row"><span data-i18n="free">Free</span><b id="ramfree">-</b></div>
+    <div class="row"><span data-i18n="total">Total</span><b id="ramtot">-</b></div>
+    <div class="row"><span data-i18n="pagefile">Page file</span><b id="ramswap">-</b></div>
+    <div class="sub" id="rammod"></div>
+  </div>
+
+  <div data-sec="network" class="card">
+    <h2 data-i18n="network">Network</h2>
+    <div style="display:flex;gap:24px">
+      <div><div class="sub" style="color:#3fb950;font-weight:700">&#11015; <span data-i18n="download">Download</span></div>
+        <div class="big" style="font-size:26px;color:#3fb950"><span id="netdn">-</span></div></div>
+      <div><div class="sub" style="color:#f0883e;font-weight:700">&#11014; <span data-i18n="upload">Upload</span></div>
+        <div class="big" style="font-size:26px;color:#f0883e"><span id="netup">-</span></div></div>
+    </div>
+    <canvas id="netchart"></canvas>
+    <div class="sub"><span style="color:#3fb950">&#9632;</span> <span data-i18n="download">Download</span>
+      &nbsp;&nbsp;<span style="color:#f0883e">&#9632;</span> <span data-i18n="upload">Upload</span></div>
+    <div class="row"><span data-i18n="tcp_conn">Active TCP connections</span><b id="tcp">-</b></div>
+  </div>
+
+  <div data-sec="cpu_trend" class="card">
+    <h2><span data-i18n="cpu_trend">CPU trend</span> <span id="cpunow" style="text-transform:none;letter-spacing:0"></span></h2>
+    <canvas id="cpuchart" style="height:150px"></canvas>
+    <div class="sub"><span style="color:#58a6ff">&#9632;</span> <span data-i18n="usage_cpu_legend"></span></div>
+  </div>
+
+  <div data-sec="ram_trend" class="card">
+    <h2><span data-i18n="ram_trend">RAM trend</span> <span id="ramnow" style="text-transform:none;letter-spacing:0"></span></h2>
+    <canvas id="ramchart" style="height:150px"></canvas>
+    <div class="sub"><span style="color:#bc8cff">&#9632;</span> <span data-i18n="usage_ram_legend"></span></div>
+  </div>
+
+  <div data-sec="disks" class="card wide">
+    <h2 data-i18n="disks">Disks and partitions</h2>
+    <div id="disks"></div>
+  </div>
+
+  <div data-sec="os" class="card">
+    <h2 data-i18n="os">Operating system</h2>
+    <div class="kv" id="osinfo"></div>
+  </div>
+
+  <div data-sec="ip_config" class="card">
+    <h2 data-i18n="ip_config">IP configuration</h2>
+    <div class="scroll" id="ipinfo"></div>
+  </div>
+
+  <div data-sec="net_adapters" class="card">
+    <h2 data-i18n="net_adapters">Network adapters</h2>
+    <div class="scroll">
+      <table><thead><tr>
+        <th data-i18n="adapter_c">Adapter</th><th data-i18n="status">Status</th>
+        <th class="num">&#11015; <span data-i18n="download">Download</span> KB/s</th>
+        <th class="num">&#11014; <span data-i18n="upload">Upload</span> KB/s</th>
+        <th class="num" data-i18n="total_rx">Total RX</th><th class="num" data-i18n="total_tx">Total TX</th>
+      </tr></thead><tbody id="nics"></tbody></table>
+    </div>
+  </div>
+
+  <div data-sec="processes" class="card wide">
+    <h2><span data-i18n="processes">Active processes</span>
+      <span id="procount" style="text-transform:none;letter-spacing:0;flex:1"></span>
+      <input id="pfilter" type="text" data-i18n-ph="filter_ph" autocomplete="off" style="width:180px">
+    </h2>
+    <div class="scroll-proc">
+      <table id="tproc"><thead><tr>
+        <th class="sortable" data-k="Name"><span data-i18n="process">Process</span><span class="arr"></span></th>
+        <th class="sortable num" data-k="Pid"><span data-i18n="pid">PID</span><span class="arr"></span></th>
+        <th class="sortable num" data-k="CpuPct"><span data-i18n="cpu_pct">CPU %</span><span class="arr"></span></th>
+        <th class="sortable num" data-k="RamMB"><span data-i18n="ram_mb">RAM (MB)</span><span class="arr"></span></th>
+        <th class="sortable num" data-k="Threads"><span data-i18n="threads_c">Threads</span><span class="arr"></span></th>
+        <th class="sortable num" data-k="Handles"><span data-i18n="handles">Handles</span><span class="arr"></span></th>
+      </tr></thead><tbody id="procs"></tbody></table>
+    </div>
+  </div>
+
+  <div data-sec="services" class="card wide">
+    <h2><span data-i18n="services">Services</span>
+      <span id="svccount" style="text-transform:none;letter-spacing:0;flex:1"></span>
+      <span style="display:flex;gap:6px;align-items:center">
+        <select id="sstate">
+          <option value="" data-i18n="all_states">All states</option>
+          <option value="run" data-i18n="only_running">Running only</option>
+          <option value="stop" data-i18n="only_stopped">Stopped only</option>
+          <option value="prob" data-i18n="auto_not_started">Automatic not started</option>
+        </select>
+        <input id="sfilter" type="text" data-i18n-ph="filter_ph" autocomplete="off" style="width:180px">
+      </span>
+    </h2>
+    <div class="scroll-proc">
+      <table id="tsvc"><thead><tr>
+        <th class="sortable" data-k="Display"><span data-i18n="display_name">Display name</span><span class="arr"></span></th>
+        <th class="sortable" data-k="Name"><span data-i18n="service_name">Service name</span><span class="arr"></span></th>
+        <th class="sortable" data-k="State"><span data-i18n="status">Status</span><span class="arr"></span></th>
+        <th class="sortable" data-k="StartMode"><span data-i18n="startup">Startup</span><span class="arr"></span></th>
+        <th class="sortable num" data-k="Pid"><span data-i18n="pid">PID</span><span class="arr"></span></th>
+        <th class="sortable" data-k="Account"><span data-i18n="account">Account</span><span class="arr"></span></th>
+      </tr></thead><tbody id="svclist"></tbody></table>
+    </div>
+    <div class="sub" style="margin-top:8px" id="svcsummary"></div>
+  </div>
+
+  <div data-sec="events" class="card wide">
+    <h2><span data-i18n="events">Events</span>
+      <span id="evcount" style="text-transform:none;letter-spacing:0;flex:1"></span>
+      <span style="display:flex;gap:6px;align-items:center">
+        <select id="evlevel">
+          <option value="" data-i18n="all_levels">All levels</option>
+          <option value="1" data-i18n="lvl_critical">Critical</option>
+          <option value="2" data-i18n="lvl_error">Error</option>
+          <option value="3" data-i18n="lvl_warning">Warning</option>
+        </select>
+        <input id="evfilter" type="text" data-i18n-ph="filter_ph" autocomplete="off" style="width:180px">
+      </span>
+    </h2>
+    <div class="scroll-proc">
+      <table id="tev"><thead><tr>
+        <th class="sortable" data-k="Time"><span data-i18n="ev_time">Time</span><span class="arr"></span></th>
+        <th class="sortable" data-k="Level"><span data-i18n="ev_level">Level</span><span class="arr"></span></th>
+        <th class="sortable" data-k="Log"><span data-i18n="ev_log">Log</span><span class="arr"></span></th>
+        <th class="sortable" data-k="Source"><span data-i18n="ev_source">Source</span><span class="arr"></span></th>
+        <th class="sortable num" data-k="EventId"><span data-i18n="ev_id">Event ID</span><span class="arr"></span></th>
+        <th class="sortable" data-k="Message"><span data-i18n="ev_message">Message</span><span class="arr"></span></th>
+      </tr></thead><tbody id="evlist"></tbody></table>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="fside left">
+    <button id="setbtn" title="Dashboard settings">&#9881; <span id="setlabel">Settings</span></button>
+    <button id="langbtn" title="Choose the dashboard language">&#127760; Language: <b id="curlang">English</b></button>
+  </div>
+  <div class="fcenter">PiBOH Windows Server Dashboard <b id="ver">__VERSION__</b></div>
+  <div class="fside right">
+    <span id="err" class="crit"></span>
+    <button id="themebtn" title="Switch light / dark theme"><span id="themeicon">&#9788;</span> <span id="themelabel">Light theme</span></button>
+  </div>
+</footer>
+
+<div id="setmodal" class="modal">
+  <div class="modal-box">
+    <h3>&#9881; <span data-i18n="settings">Settings</span> <span class="close" id="setclose">&times;</span></h3>
+    <div class="setbody">
+      <div class="setrow">
+        <label><span data-i18n="theme">Theme</span>
+          <span class="hint" data-i18n="stored_browser"></span></label>
+        <select id="settheme">
+          <option value="dark" data-i18n="theme_dark">Dark theme</option>
+          <option value="light" data-i18n="theme_light">Light theme</option>
+        </select>
+      </div>
+      <div class="setrow">
+        <label><span data-i18n="language">Language</span>
+          <span class="hint" data-i18n="stored_browser"></span></label>
+        <select id="setlang"></select>
+      </div>
+      <div class="setrow">
+        <label><span data-i18n="refresh_interval">Refresh interval</span>
+          <span class="hint" data-i18n="stored_browser"></span></label>
+        <select id="setrate"></select>
+        <div id="storwarn" class="hint" style="color:var(--warn);display:none;flex-basis:100%;margin-top:6px" data-i18n="storwarn">This browser cannot store preferences here: the choice is lost when the page is reopened.</div>
+      </div>
+      <div class="setrow col" id="srvrow">
+        <label><span data-i18n="srv_options">Server options</span>
+          <span class="hint" data-i18n="stored_server"></span></label>
+        <div id="srvnote" class="srvnote"></div>
+        <div class="setrow" style="margin-top:10px">
+          <label><span data-i18n="srv_refresh">Default refresh</span>
+            <span class="hint" data-i18n="stored_server"></span></label>
+          <select id="setsrvrate"></select>
+        </div>
+        <div class="setrow" style="margin-top:10px">
+          <label><span data-i18n="sections">Visible sections</span></label>
+        </div>
+        <div id="setsections" class="seclist"></div>
+        <div class="seclist" style="margin-top:8px">
+          <label class="ro"><input type="checkbox" id="setlogging">
+            <span data-i18n="logging_opt">Log files on the server</span></label>
+          <label class="ro"><input type="checkbox" id="setautoupd">
+            <span data-i18n="auto_update_opt">Automatic updates</span></label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button id="setreset" class="btn" data-i18n="restore_defaults">Restore defaults</button>
+      <span id="setmsg" class="ok"></span>
+      <button id="setcancel" class="btn" data-i18n="cancel">Cancel</button>
+      <button id="setsave" class="btn primary" data-i18n="save">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="langmodal" class="modal">
+  <div class="modal-box">
+    <h3>&#127760; Select language <span class="close" id="langclose">&times;</span></h3>
+    <div class="langgrid" id="langgrid"></div>
+    <div class="modal-note">The language is detected automatically from the Windows display language
+      (<b id="syslang">-</b>). Your choice is saved in this browser.</div>
+  </div>
+</div>
+
+<div id="pwmodal" class="modal">
+  <div class="modal-box pwbox">
+    <h3>&#128274; <span data-i18n="pwd_title">Server password</span>
+      <span class="close" id="pwclose">&times;</span></h3>
+    <div class="setbody">
+      <div class="hint" data-i18n="pwd_explain">Type the password to change the
+        server options.</div>
+      <input type="password" id="pwinput" class="pwinput" autocomplete="new-password"
+        autocapitalize="off" autocorrect="off" spellcheck="false"
+        placeholder="" data-i18n-ph="pwd_ph">
+      <div id="pwmsg" class="srvnote crit"></div>
+    </div>
+    <div class="modal-foot">
+      <button id="pwcancel" class="btn" data-i18n="cancel">Cancel</button>
+      <button id="pwok" class="btn primary" data-i18n="unlock">Unlock</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/*@JS@*/
+</script>
+</body>
+</html>
