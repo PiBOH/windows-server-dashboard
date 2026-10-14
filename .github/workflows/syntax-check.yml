@@ -43,13 +43,16 @@ jobs:
           }
           if ($bad) { exit 1 }
 
-      - name: The embedded page matches _build\web (Windows PowerShell 5.1)
+      # Both copies of the page are checked here: the one inside the engine and
+      # the offline preview in docs\. Either of them being stale fails the build,
+      # so neither can be committed without regenerating the other.
+      - name: The generated copies match _build (Windows PowerShell 5.1)
         shell: powershell
         run: |
           & powershell -NoProfile -ExecutionPolicy Bypass -File _build\Embed-Page.ps1 -Check
           if ($LASTEXITCODE -ne 0) {
-            Write-Host '::error ::the page inside ServerDashboard.ps1 is not what _build\web produces'
-            Write-Host '          run _build\Embed-Page.ps1 and commit the result'
+            Write-Host '::error ::a generated copy of the page is not what _build produces (see the line above)'
+            Write-Host '          run _build\Embed-Page.ps1 and commit both results'
             exit 1
           }
 
