@@ -361,8 +361,19 @@ the catalog is read from the folder.
 ------------------------------------------------------------------------------
 
 The footer has three areas: settings and language buttons on the left,
-"ServerDashboard <version>" in the centre, the light/dark theme switch on the
-right. Dark is the default.
+"PiBOH Windows Server Dashboard <version>" in the centre, the light/dark theme
+switch on the right. Dark is the default.
+
+Clicking that centre line, the version, opens the **About** panel: who wrote
+the dashboard, a link to the portfolio, the e-mail address, the repository and
+the release list, and the changelog. The changelog is **not** shipped with the
+package and not stored anywhere: it is read from
+`raw.githubusercontent.com/PiBOH/windows-server-dashboard` every time the panel
+opens, with a key that is never the same twice, so no browser cache and no
+cache in between can answer with an older history. The panel therefore needs
+internet access from the browser; when GitHub cannot be reached it says so and
+shows nothing stale. What it reads is escaped before it is shown, so a change
+on the remote file cannot inject markup into the page.
 
 The gear button opens the settings panel:
 
@@ -893,4 +904,4 @@ The current version is shown in the centre of the footer and returned by
 /api/health. Changes follow Semantic Versioning (MAJOR.MINOR.PATCH); see
 Changelog\CHANGELOG.md.
 
-Current version: 1.16.0
+Current version: 1.16.17

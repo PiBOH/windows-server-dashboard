@@ -10,7 +10,7 @@ No agent, no IIS, no external module, no database: a single PowerShell script
 publishes the page, and you open it from any computer on the LAN by typing the
 IP of the server.
 
-[![Version](https://img.shields.io/badge/version-1.16.16-blue)](Changelog/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.16.17-blue)](Changelog/CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/Windows%20Server-2016%2B-0078D6?logo=windows)](#requirements)
 [![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)](#requirements)
 [![Languages](https://img.shields.io/badge/UI%20languages-38-brightgreen)](#-38-languages)
@@ -100,6 +100,9 @@ task that happened to have the same name.
 - **Live by default**: the refresh interval is **0.5 s** out of the box and can
   be set per browser from 0.5 s to 5 min; the server only sets the default.
 - **Light and dark theme**, dark by default, saved per browser.
+- **About panel** — click the version in the footer: who wrote it, the
+  portfolio, the e-mail, and the changelog read from GitHub every time the
+  panel opens, never cached, so it always shows the published history.
 - **Works on any localized Windows** — every metric comes from CIM/WMI classes
   whose property names are always English.
 - **Read-only by design** — the page only displays: no command can be executed

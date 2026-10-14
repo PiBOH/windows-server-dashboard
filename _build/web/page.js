@@ -6,7 +6,29 @@ var LANGS = [];          /* [{code,native,english,dir}] */
 var STR = {};            /* dizionario corrente */
 var CURLANG = "en-US";
 
-function T(k){ return (STR[k] !== undefined && STR[k] !== "") ? STR[k] : k; }
+/* English text for the strings the language files do not carry (yet): T()
+   answers with this instead of the bare key name, so a language installed
+   later never shows an identifier to the user. A translation always wins. */
+var EN = {
+  about_open:      'About this dashboard',
+  about_title:     'About',
+  about_role:      'Developer of this dashboard',
+  about_portfolio: 'Portfolio',
+  about_releases:  'Releases',
+  about_changelog: 'Changelog',
+  about_live:      'read from GitHub every time this panel opens, never cached',
+  about_reload:    'Reload',
+  about_close:     'Close',
+  about_loading:   'Reading the changelog from GitHub...',
+  about_offline:   'The changelog could not be read from GitHub: this panel needs internet access from this browser.',
+  about_empty:     'The changelog is empty.',
+  about_src:       'read live from github.com/PiBOH/windows-server-dashboard'
+};
+
+function T(k){
+  if (STR[k] !== undefined && STR[k] !== "") return STR[k];
+  return (EN[k] !== undefined) ? EN[k] : k;
+}
 
 function pickLang(){
   var saved = LOCAL.lang;
@@ -26,6 +48,8 @@ function applyStatic(){
   for (var i = 0; i < els.length; i++){ els[i].textContent = T(els[i].getAttribute('data-i18n')); }
   var ph = document.querySelectorAll('[data-i18n-ph]');
   for (var j = 0; j < ph.length; j++){ ph[j].placeholder = T(ph[j].getAttribute('data-i18n-ph')); }
+  var ti = document.querySelectorAll('[data-i18n-title]');
+  for (var m = 0; m < ti.length; m++){ ti[m].title = T(ti[m].getAttribute('data-i18n-title')); }
   document.title = (document.getElementById('host').textContent || '') + ' - ' + T('app_title');
   var cur = null;
   for (var k = 0; k < LANGS.length; k++){ if (LANGS[k].code === CURLANG) cur = LANGS[k]; }
@@ -373,6 +397,69 @@ function openLang(){ buildLangGrid(); document.getElementById('langmodal').class
 function closeLang(){ document.getElementById('langmodal').className = 'modal'; }
 function openSettings(){ fillSettings(); document.getElementById('setmodal').className = 'modal on'; }
 function closeSettings(){ document.getElementById('setmodal').className = 'modal'; }
+
+/* ===================== About =====================
+   The changelog is not shipped in the package and not stored anywhere: it is
+   read from GitHub every time this panel opens, with a cache key that is never
+   the same twice, so neither the browser nor a cache in between can answer
+   with something older. The answer is escaped before it reaches the page. */
+var CHANGELOG_URL = 'https://raw.githubusercontent.com/PiBOH/windows-server-dashboard/main/Changelog/CHANGELOG.md';
+
+function renderChangelog(md){
+  var lines = String(md).split(/\r?\n/), out = [], seen = false;
+  var verRe = /^\s*(\d+\.\d+\.\d+)\s*[-\u2013]\s*(\d{4}-\d{2}-\d{2})/;
+  var catRe = /^\s*(Added|Fixed|Changed|Removed|Deprecated|Security)\s*:/;
+  for (var i = 0; i < lines.length; i++){
+    var L = lines[i];
+    var v = L.match(verRe);
+    if (v){
+      seen = true;
+      out.push('<div class="ver">v' + esc(v[1]) + ' <span class="d">' + esc(v[2]) + '</span></div>');
+      continue;
+    }
+    if (!seen) continue;                       /* the preamble is not the log */
+    if (!L.trim() || /^\s*={5,}\s*$/.test(L)) continue;
+    var c = L.match(catRe);
+    if (c){ out.push('<div class="cl"><span class="cat">' + esc(c[1]) + '</span>' + esc(L.slice(c[0].length)) + '</div>'); }
+    else  { out.push('<div class="cl plain">' + esc(L.replace(/^\s+/, '')) + '</div>'); }
+  }
+  return out.join('');
+}
+
+var CHANGELOG_REQ = 0;
+
+function loadChangelog(){
+  var box = document.getElementById('aboutcl');
+  var src = document.getElementById('aboutsrc');
+  /* reopening the panel or pressing Reload starts a new request: an answer
+     that arrives late must not overwrite a newer one */
+  var req = ++CHANGELOG_REQ;
+  box.innerHTML = '<div class="cl plain">' + esc(T('about_loading')) + '</div>';
+  src.textContent = '';
+  /* cache: 'no-store' and a key that never repeats: the answer must come from
+     GitHub, not from a copy some layer kept */
+  var url = CHANGELOG_URL + '?sb=' + Date.now() + '-' + Math.random().toString(36).slice(2);
+  return fetch(url, { cache: 'no-store', credentials: 'omit', redirect: 'follow' })
+    .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+    .then(function(txt){
+      if (req !== CHANGELOG_REQ) return;
+      box.innerHTML = renderChangelog(txt) || '<div class="cl plain">' + esc(T('about_empty')) + '</div>';
+      box.scrollTop = 0;
+      src.textContent = T('about_src') + ' \u00b7 ' + new Date().toLocaleTimeString();
+    })
+    .catch(function(e){
+      if (req !== CHANGELOG_REQ) return;
+      box.innerHTML = '<div class="cl crit">' + esc(T('about_offline')) + '</div>';
+      src.textContent = (e && e.message) ? e.message : 'network';
+    });
+}
+
+function openAbout(){
+  document.getElementById('aboutver').textContent = VERSION;
+  document.getElementById('aboutmodal').className = 'modal on';
+  loadChangelog();
+}
+function closeAbout(){ document.getElementById('aboutmodal').className = 'modal'; }
 
 function applySettings(){
   /* Personal choices are always saved in this browser. The server options are
@@ -851,6 +938,16 @@ document.getElementById('themebtn').onclick = function(){ applyTheme(THEME === '
 document.getElementById('langbtn').onclick = function(){ document.getElementById('langmodal').className = 'modal on'; };
 document.getElementById('langclose').onclick = function(){ document.getElementById('langmodal').className = 'modal'; };
 document.getElementById('langmodal').onclick = function(e){ if (e.target === this) closeLang(); };
+document.getElementById('aboutbtn').onclick = openAbout;
+document.getElementById('aboutclose').onclick = closeAbout;
+document.getElementById('aboutok').onclick = closeAbout;
+document.getElementById('aboutreload').onclick = function(){ loadChangelog(); };
+document.getElementById('aboutmodal').onclick = function(e){ if (e.target === this) closeAbout(); };
+document.addEventListener('keydown', function(e){
+  if (e.key === 'Escape' && document.getElementById('aboutmodal').className === 'modal on'){
+    e.preventDefault(); closeAbout();
+  }
+});
 window.addEventListener('resize', draw);
 initSort('tproc', drawProcs);
 initSort('tsvc', drawSvcs);

@@ -14,7 +14,7 @@
      /favicon.ico with it and the offline preview points at logo.png next to
      it. logo.png is filled in by whoever serves the page. -->
 <link rel="icon" type="image/png" href="logo.png">
-<title>PiBOH Windows Server Dashboard 1.16.16 - preview</title>
+<title>PiBOH Windows Server Dashboard 1.16.17 - preview</title>
 <style>
 :root, html[data-theme="dark"]{
   --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --border:#283040;
@@ -97,6 +97,7 @@ footer .fside{display:flex;align-items:center;gap:10px}
 footer .fside.right{justify-content:flex-end}
 footer .fcenter{text-align:center;white-space:nowrap}
 footer .fcenter b{color:var(--txt)}
+footer .fcenter #aboutbtn{color:var(--muted)}
 @media(max-width:700px){footer{grid-template-columns:1fr;justify-items:center}footer .fside.right{justify-content:center}}
 #langbtn,#themebtn,#setbtn{cursor:pointer;background:var(--input);border:1px solid var(--border);color:var(--txt);border-radius:6px;
   padding:5px 12px;font-size:12px;display:inline-flex;align-items:center;gap:6px;direction:ltr}
@@ -144,6 +145,27 @@ footer .fcenter b{color:var(--txt)}
 .langitem.cur{border-color:var(--accent);background:var(--sortbg)}
 .langitem .en{color:var(--muted);font-size:11.5px}
 .modal-note{padding:10px 18px;border-top:1px solid var(--border);color:var(--muted);font-size:11.5px}
+/* --- About: the footer version is the door into it --- */
+#aboutbtn{cursor:pointer;background:none;border:0;color:inherit;font:inherit;padding:2px 8px;border-radius:6px}
+#aboutbtn:hover{background:var(--hover);color:var(--txt)}
+#aboutbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.aboutbox{width:min(680px,100%)}
+.abouthead{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.aboutname{font-size:18px;font-weight:700;color:var(--txt);letter-spacing:.6px}
+.aboutlinks{display:flex;flex-wrap:wrap;gap:8px}
+.aboutlinks a{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--border);
+  border-radius:7px;padding:6px 11px;font-size:12.5px;color:var(--txt);text-decoration:none}
+.aboutlinks a:hover{border-color:var(--accent);background:var(--hover)}
+.aboutcap{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.aboutcl{overflow:auto;max-height:36vh;background:var(--panel2);border:1px solid var(--border);border-radius:8px;
+  padding:10px 12px;font-size:12px;line-height:1.5}
+.aboutcl .cl{white-space:pre-wrap;overflow-wrap:anywhere}
+.aboutcl .ver{display:flex;align-items:baseline;gap:8px;margin:14px 0 6px;font-size:13px;font-weight:600;color:var(--txt)}
+.aboutcl .ver:first-child{margin-top:0}
+.aboutcl .ver .d{color:var(--muted);font-size:11.5px;font-weight:400}
+.aboutcl .cat{display:inline-block;min-width:62px;color:var(--accent);font-weight:600}
+.aboutcl .plain{padding-left:62px;color:var(--muted)}
+@media(max-width:700px){.aboutcl .plain{padding-left:0}}
 /* --- physical disk boxes containing their partitions --- */
 .dgroup{margin:16px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);border-top:1px solid var(--border);padding-top:10px}
 .dbox.secondary{opacity:.85}
@@ -338,7 +360,11 @@ footer .fcenter b{color:var(--txt)}
     <button id="setbtn" title="Dashboard settings">&#9881; <span id="setlabel">Settings</span></button>
     <button id="langbtn" title="Choose the dashboard language">&#127760; Language: <b id="curlang">English</b></button>
   </div>
-  <div class="fcenter">PiBOH Windows Server Dashboard <b id="ver">1.16.16</b></div>
+  <!-- the version is the way into the About panel: the whole line is the
+       button, so the target is big enough on a touch screen too -->
+  <div class="fcenter"><button id="aboutbtn" data-i18n-title="about_open"
+    title="About this dashboard">PiBOH Windows Server Dashboard
+    <b id="ver">1.16.17</b></button></div>
   <div class="fside right">
     <span id="err" class="crit"></span>
     <button id="themebtn" title="Switch light / dark theme"><span id="themeicon">&#9788;</span> <span id="themelabel">Light theme</span></button>
@@ -407,6 +433,45 @@ footer .fcenter b{color:var(--txt)}
   </div>
 </div>
 
+<div id="aboutmodal" class="modal">
+  <div class="modal-box aboutbox">
+    <h3>&#8505; <span data-i18n="about_title">About</span>
+      <span class="close" id="aboutclose">&times;</span></h3>
+    <div class="setbody">
+      <div class="abouthead">
+        <div>
+          <div class="aboutname">PiBOH</div>
+          <div class="hint" data-i18n="about_role">Developer of this dashboard</div>
+        </div>
+        <span class="tag" id="abouttag">v<span id="aboutver">1.16.17</span></span>
+      </div>
+      <div class="aboutlinks">
+        <a href="https://piboh.github.io/" target="_blank" rel="noopener noreferrer">
+          &#127760; <span data-i18n="about_portfolio">Portfolio</span></a>
+        <a href="mailto:piboh.github@gmail.com">
+          &#9993; piboh.github@gmail.com</a>
+        <a href="https://github.com/PiBOH/windows-server-dashboard" target="_blank" rel="noopener noreferrer">
+          &#128025; GitHub</a>
+        <a href="https://github.com/PiBOH/windows-server-dashboard/releases" target="_blank" rel="noopener noreferrer">
+          &#127991; <span data-i18n="about_releases">Releases</span></a>
+      </div>
+      <div>
+        <div class="aboutcap">
+          <span data-i18n="about_changelog">Changelog</span>
+          <span class="hint" data-i18n="about_live">read from GitHub every time this panel opens, never cached</span>
+        </div>
+        <div id="aboutcl" class="aboutcl"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <span class="hint" id="aboutsrc"></span>
+      <span style="flex:1"></span>
+      <button class="btn" id="aboutreload" data-i18n="about_reload">Reload</button>
+      <button class="btn primary" id="aboutok" data-i18n="about_close">Close</button>
+    </div>
+  </div>
+</div>
+
 <div id="pwmodal" class="modal">
   <div class="modal-box pwbox">
     <h3>&#128274; <span data-i18n="pwd_title">Server password</span>
@@ -429,13 +494,35 @@ footer .fcenter b{color:var(--txt)}
 <script>
 /* ===================== i18n ===================== */
 var SYSLANG = "en-US";
-var VERSION = "1.16.16";
+var VERSION = "1.16.17";
 var INTERVAL = "0.5";
 var LANGS = [];          /* [{code,native,english,dir}] */
 var STR = {};            /* dizionario corrente */
 var CURLANG = "en-US";
 
-function T(k){ return (STR[k] !== undefined && STR[k] !== "") ? STR[k] : k; }
+/* English text for the strings the language files do not carry (yet): T()
+   answers with this instead of the bare key name, so a language installed
+   later never shows an identifier to the user. A translation always wins. */
+var EN = {
+  about_open:      'About this dashboard',
+  about_title:     'About',
+  about_role:      'Developer of this dashboard',
+  about_portfolio: 'Portfolio',
+  about_releases:  'Releases',
+  about_changelog: 'Changelog',
+  about_live:      'read from GitHub every time this panel opens, never cached',
+  about_reload:    'Reload',
+  about_close:     'Close',
+  about_loading:   'Reading the changelog from GitHub...',
+  about_offline:   'The changelog could not be read from GitHub: this panel needs internet access from this browser.',
+  about_empty:     'The changelog is empty.',
+  about_src:       'read live from github.com/PiBOH/windows-server-dashboard'
+};
+
+function T(k){
+  if (STR[k] !== undefined && STR[k] !== "") return STR[k];
+  return (EN[k] !== undefined) ? EN[k] : k;
+}
 
 function pickLang(){
   var saved = LOCAL.lang;
@@ -455,6 +542,8 @@ function applyStatic(){
   for (var i = 0; i < els.length; i++){ els[i].textContent = T(els[i].getAttribute('data-i18n')); }
   var ph = document.querySelectorAll('[data-i18n-ph]');
   for (var j = 0; j < ph.length; j++){ ph[j].placeholder = T(ph[j].getAttribute('data-i18n-ph')); }
+  var ti = document.querySelectorAll('[data-i18n-title]');
+  for (var m = 0; m < ti.length; m++){ ti[m].title = T(ti[m].getAttribute('data-i18n-title')); }
   document.title = (document.getElementById('host').textContent || '') + ' - ' + T('app_title');
   var cur = null;
   for (var k = 0; k < LANGS.length; k++){ if (LANGS[k].code === CURLANG) cur = LANGS[k]; }
@@ -802,6 +891,69 @@ function openLang(){ buildLangGrid(); document.getElementById('langmodal').class
 function closeLang(){ document.getElementById('langmodal').className = 'modal'; }
 function openSettings(){ fillSettings(); document.getElementById('setmodal').className = 'modal on'; }
 function closeSettings(){ document.getElementById('setmodal').className = 'modal'; }
+
+/* ===================== About =====================
+   The changelog is not shipped in the package and not stored anywhere: it is
+   read from GitHub every time this panel opens, with a cache key that is never
+   the same twice, so neither the browser nor a cache in between can answer
+   with something older. The answer is escaped before it reaches the page. */
+var CHANGELOG_URL = 'https://raw.githubusercontent.com/PiBOH/windows-server-dashboard/main/Changelog/CHANGELOG.md';
+
+function renderChangelog(md){
+  var lines = String(md).split(/\r?\n/), out = [], seen = false;
+  var verRe = /^\s*(\d+\.\d+\.\d+)\s*[-\u2013]\s*(\d{4}-\d{2}-\d{2})/;
+  var catRe = /^\s*(Added|Fixed|Changed|Removed|Deprecated|Security)\s*:/;
+  for (var i = 0; i < lines.length; i++){
+    var L = lines[i];
+    var v = L.match(verRe);
+    if (v){
+      seen = true;
+      out.push('<div class="ver">v' + esc(v[1]) + ' <span class="d">' + esc(v[2]) + '</span></div>');
+      continue;
+    }
+    if (!seen) continue;                       /* the preamble is not the log */
+    if (!L.trim() || /^\s*={5,}\s*$/.test(L)) continue;
+    var c = L.match(catRe);
+    if (c){ out.push('<div class="cl"><span class="cat">' + esc(c[1]) + '</span>' + esc(L.slice(c[0].length)) + '</div>'); }
+    else  { out.push('<div class="cl plain">' + esc(L.replace(/^\s+/, '')) + '</div>'); }
+  }
+  return out.join('');
+}
+
+var CHANGELOG_REQ = 0;
+
+function loadChangelog(){
+  var box = document.getElementById('aboutcl');
+  var src = document.getElementById('aboutsrc');
+  /* reopening the panel or pressing Reload starts a new request: an answer
+     that arrives late must not overwrite a newer one */
+  var req = ++CHANGELOG_REQ;
+  box.innerHTML = '<div class="cl plain">' + esc(T('about_loading')) + '</div>';
+  src.textContent = '';
+  /* cache: 'no-store' and a key that never repeats: the answer must come from
+     GitHub, not from a copy some layer kept */
+  var url = CHANGELOG_URL + '?sb=' + Date.now() + '-' + Math.random().toString(36).slice(2);
+  return fetch(url, { cache: 'no-store', credentials: 'omit', redirect: 'follow' })
+    .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+    .then(function(txt){
+      if (req !== CHANGELOG_REQ) return;
+      box.innerHTML = renderChangelog(txt) || '<div class="cl plain">' + esc(T('about_empty')) + '</div>';
+      box.scrollTop = 0;
+      src.textContent = T('about_src') + ' \u00b7 ' + new Date().toLocaleTimeString();
+    })
+    .catch(function(e){
+      if (req !== CHANGELOG_REQ) return;
+      box.innerHTML = '<div class="cl crit">' + esc(T('about_offline')) + '</div>';
+      src.textContent = (e && e.message) ? e.message : 'network';
+    });
+}
+
+function openAbout(){
+  document.getElementById('aboutver').textContent = VERSION;
+  document.getElementById('aboutmodal').className = 'modal on';
+  loadChangelog();
+}
+function closeAbout(){ document.getElementById('aboutmodal').className = 'modal'; }
 
 function applySettings(){
   /* Personal choices are always saved in this browser. The server options are
@@ -1280,6 +1432,16 @@ document.getElementById('themebtn').onclick = function(){ applyTheme(THEME === '
 document.getElementById('langbtn').onclick = function(){ document.getElementById('langmodal').className = 'modal on'; };
 document.getElementById('langclose').onclick = function(){ document.getElementById('langmodal').className = 'modal'; };
 document.getElementById('langmodal').onclick = function(e){ if (e.target === this) closeLang(); };
+document.getElementById('aboutbtn').onclick = openAbout;
+document.getElementById('aboutclose').onclick = closeAbout;
+document.getElementById('aboutok').onclick = closeAbout;
+document.getElementById('aboutreload').onclick = function(){ loadChangelog(); };
+document.getElementById('aboutmodal').onclick = function(e){ if (e.target === this) closeAbout(); };
+document.addEventListener('keydown', function(e){
+  if (e.key === 'Escape' && document.getElementById('aboutmodal').className === 'modal on'){
+    e.preventDefault(); closeAbout();
+  }
+});
 window.addEventListener('resize', draw);
 initSort('tproc', drawProcs);
 initSort('tsvc', drawSvcs);

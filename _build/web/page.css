@@ -79,6 +79,7 @@ footer .fside{display:flex;align-items:center;gap:10px}
 footer .fside.right{justify-content:flex-end}
 footer .fcenter{text-align:center;white-space:nowrap}
 footer .fcenter b{color:var(--txt)}
+footer .fcenter #aboutbtn{color:var(--muted)}
 @media(max-width:700px){footer{grid-template-columns:1fr;justify-items:center}footer .fside.right{justify-content:center}}
 #langbtn,#themebtn,#setbtn{cursor:pointer;background:var(--input);border:1px solid var(--border);color:var(--txt);border-radius:6px;
   padding:5px 12px;font-size:12px;display:inline-flex;align-items:center;gap:6px;direction:ltr}
@@ -126,6 +127,27 @@ footer .fcenter b{color:var(--txt)}
 .langitem.cur{border-color:var(--accent);background:var(--sortbg)}
 .langitem .en{color:var(--muted);font-size:11.5px}
 .modal-note{padding:10px 18px;border-top:1px solid var(--border);color:var(--muted);font-size:11.5px}
+/* --- About: the footer version is the door into it --- */
+#aboutbtn{cursor:pointer;background:none;border:0;color:inherit;font:inherit;padding:2px 8px;border-radius:6px}
+#aboutbtn:hover{background:var(--hover);color:var(--txt)}
+#aboutbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.aboutbox{width:min(680px,100%)}
+.abouthead{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.aboutname{font-size:18px;font-weight:700;color:var(--txt);letter-spacing:.6px}
+.aboutlinks{display:flex;flex-wrap:wrap;gap:8px}
+.aboutlinks a{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--border);
+  border-radius:7px;padding:6px 11px;font-size:12.5px;color:var(--txt);text-decoration:none}
+.aboutlinks a:hover{border-color:var(--accent);background:var(--hover)}
+.aboutcap{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.aboutcl{overflow:auto;max-height:36vh;background:var(--panel2);border:1px solid var(--border);border-radius:8px;
+  padding:10px 12px;font-size:12px;line-height:1.5}
+.aboutcl .cl{white-space:pre-wrap;overflow-wrap:anywhere}
+.aboutcl .ver{display:flex;align-items:baseline;gap:8px;margin:14px 0 6px;font-size:13px;font-weight:600;color:var(--txt)}
+.aboutcl .ver:first-child{margin-top:0}
+.aboutcl .ver .d{color:var(--muted);font-size:11.5px;font-weight:400}
+.aboutcl .cat{display:inline-block;min-width:62px;color:var(--accent);font-weight:600}
+.aboutcl .plain{padding-left:62px;color:var(--muted)}
+@media(max-width:700px){.aboutcl .plain{padding-left:0}}
 /* --- physical disk boxes containing their partitions --- */
 .dgroup{margin:16px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);border-top:1px solid var(--border);padding-top:10px}
 .dbox.secondary{opacity:.85}

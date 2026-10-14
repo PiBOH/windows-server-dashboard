@@ -173,7 +173,11 @@
     <button id="setbtn" title="Dashboard settings">&#9881; <span id="setlabel">Settings</span></button>
     <button id="langbtn" title="Choose the dashboard language">&#127760; Language: <b id="curlang">English</b></button>
   </div>
-  <div class="fcenter">PiBOH Windows Server Dashboard <b id="ver">__VERSION__</b></div>
+  <!-- the version is the way into the About panel: the whole line is the
+       button, so the target is big enough on a touch screen too -->
+  <div class="fcenter"><button id="aboutbtn" data-i18n-title="about_open"
+    title="About this dashboard">PiBOH Windows Server Dashboard
+    <b id="ver">__VERSION__</b></button></div>
   <div class="fside right">
     <span id="err" class="crit"></span>
     <button id="themebtn" title="Switch light / dark theme"><span id="themeicon">&#9788;</span> <span id="themelabel">Light theme</span></button>
@@ -239,6 +243,45 @@
     <div class="langgrid" id="langgrid"></div>
     <div class="modal-note">The language is detected automatically from the Windows display language
       (<b id="syslang">-</b>). Your choice is saved in this browser.</div>
+  </div>
+</div>
+
+<div id="aboutmodal" class="modal">
+  <div class="modal-box aboutbox">
+    <h3>&#8505; <span data-i18n="about_title">About</span>
+      <span class="close" id="aboutclose">&times;</span></h3>
+    <div class="setbody">
+      <div class="abouthead">
+        <div>
+          <div class="aboutname">PiBOH</div>
+          <div class="hint" data-i18n="about_role">Developer of this dashboard</div>
+        </div>
+        <span class="tag" id="abouttag">v<span id="aboutver">__VERSION__</span></span>
+      </div>
+      <div class="aboutlinks">
+        <a href="https://piboh.github.io/" target="_blank" rel="noopener noreferrer">
+          &#127760; <span data-i18n="about_portfolio">Portfolio</span></a>
+        <a href="mailto:piboh.github@gmail.com">
+          &#9993; piboh.github@gmail.com</a>
+        <a href="https://github.com/PiBOH/windows-server-dashboard" target="_blank" rel="noopener noreferrer">
+          &#128025; GitHub</a>
+        <a href="https://github.com/PiBOH/windows-server-dashboard/releases" target="_blank" rel="noopener noreferrer">
+          &#127991; <span data-i18n="about_releases">Releases</span></a>
+      </div>
+      <div>
+        <div class="aboutcap">
+          <span data-i18n="about_changelog">Changelog</span>
+          <span class="hint" data-i18n="about_live">read from GitHub every time this panel opens, never cached</span>
+        </div>
+        <div id="aboutcl" class="aboutcl"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <span class="hint" id="aboutsrc"></span>
+      <span style="flex:1"></span>
+      <button class="btn" id="aboutreload" data-i18n="about_reload">Reload</button>
+      <button class="btn primary" id="aboutok" data-i18n="about_close">Close</button>
+    </div>
   </div>
 </div>
 
