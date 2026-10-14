@@ -136,7 +136,6 @@
   <string key="second">секунда</string>
   <string key="minute">хвилина</string>
   <string key="paused">Призупинено - вкладка у фоні</string>
-  <string key="readonly_server">лише для читання: задається на сервері у settings.txt</string>
   <string key="srv_options">Параметри сервера</string>
   <string key="srv_refresh">Оновлення за замовчуванням</string>
   <string key="unlock">Розблокувати</string>

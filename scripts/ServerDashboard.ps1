@@ -185,8 +185,12 @@ $Shared = [hashtable]::Synchronized(@{
 $Shared.LogEnabled = $script:LogEnabled
 
 # ----------------------------------------------------------------------------
-# Server side settings (settings.json): refresh interval + visible sections.
-# Browser side settings (theme, language) live in the visitor's localStorage.
+# Server side settings (settings.txt): refresh interval, idle sampling, visible
+# sections, logging and automatic updates. They are read here and written back by
+# the settings panel of the page itself (see the /api/settings route): with no
+# password set whoever is looking at the dashboard saves them from the browser,
+# with a password only after typing it. Browser side settings (theme, language,
+# personal refresh) live in the visitor's localStorage.
 # ----------------------------------------------------------------------------
 $SectionKeys = @('cpu','cpu_trend','ram','ram_trend','network','net_adapters','ip_config',
                  'disks','os','processes','services','events')
@@ -2721,11 +2725,14 @@ function buildLangGrid(){
 }
 
 /* ===================== settings =====================
-   Browser side  (localStorage key "dashsettings"): theme + language.
-   Server side   (settings.json next to the script): refresh interval + visible sections.
+   Browser side  (localStorage key "dashsettings"): theme, language and the visitor's
+   own refresh interval. Those are personal and never leave the browser.
+   Server side   (settings.txt next to the script): default refresh interval, idle
+   sampling, visible sections, logging, automatic updates. The panel writes them back
+   into settings.txt: with no password set whoever is looking at the page can save
+   them, with a password only after typing it (partial) or logging in (total).
    When no settings are found the defaults apply: dark theme, Windows display language,
-   5 second refresh (the collector slows down to 15 minutes when nobody is connected),
-   every section visible.                                                              */
+   0.5 second refresh, no sampling while nobody is connected, every section visible.  */
 var SECTIONS = ['cpu','cpu_trend','ram','ram_trend','network','net_adapters','ip_config',
                 'disks','os','processes','services','events'];
 var RATES = [0.5,1,2,5,10,15,30,60,300];
@@ -2981,10 +2988,13 @@ function fillSettings(){
   if (sw) { sw.style.display = storageOK() ? 'none' : 'block'; }
   var ed = serverEditable();
   var prot = !!SRV.passwordProtected;
-  /* status note only: read-only / password needed / unlocked. In partial
-     mode the options look NORMAL - the password popup appears only when
-     one of them is clicked, never before - so the controls stay enabled
-     and the first click is intercepted until the password is given. */
+  /* status note only: unlocked / password needed. With no password there is
+     nothing to unlock: the options are editable and Save writes settings.txt
+     from the page. In partial mode the options look NORMAL - the password
+     popup appears only when one of them is clicked, never before - so the
+     controls stay enabled and the first click is intercepted until the
+     password is given; total mode is already unlocked by the login that
+     opened the page. */
   var note = document.getElementById('srvnote');
   if (note) {
     note.className = 'srvnote';

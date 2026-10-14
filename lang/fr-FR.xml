@@ -136,7 +136,6 @@
   <string key="second">seconde</string>
   <string key="minute">minute</string>
   <string key="paused">En pause - onglet en arrière-plan</string>
-  <string key="readonly_server">lecture seule : se règle sur le serveur dans settings.txt</string>
   <string key="srv_options">Options du serveur</string>
   <string key="srv_refresh">Actualisation par défaut</string>
   <string key="unlock">Déverrouiller</string>

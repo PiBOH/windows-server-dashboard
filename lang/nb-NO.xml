@@ -136,7 +136,6 @@
   <string key="second">sekund</string>
   <string key="minute">minutt</string>
   <string key="paused">Satt på pause - fane i bakgrunnen</string>
-  <string key="readonly_server">skrivebeskyttet: angis på serveren i settings.txt</string>
   <string key="srv_options">Serveralternativer</string>
   <string key="srv_refresh">Standardoppdatering</string>
   <string key="unlock">Lås opp</string>

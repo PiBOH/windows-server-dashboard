@@ -709,7 +709,7 @@ Diagnose.ps1). It changes nothing and reports the task state (Run As
 | /api/stats       | full JSON, handy for Zabbix or Grafana     |
 | /api/languages   | language catalog                           |
 | /lang/<code>.xml | one dictionary                             |
-| /api/settings    | GET reads; POST writes, see the note below |
+| /api/settings    | GET reads; POST writes, see section 9      |
 | /api/health      | state and version (never password asked)   |
 
 

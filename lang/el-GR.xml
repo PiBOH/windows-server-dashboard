@@ -136,7 +136,6 @@
   <string key="second">δευτερόλεπτο</string>
   <string key="minute">λεπτό</string>
   <string key="paused">Σε παύση - καρτέλα στο παρασκήνιο</string>
-  <string key="readonly_server">μόνο για ανάγνωση: ορίζεται στον διακομιστή στο settings.txt</string>
   <string key="srv_options">Ρυθμίσεις διακομιστή</string>
   <string key="srv_refresh">Προεπιλεγμένη ανανέωση</string>
   <string key="unlock">Ξεκλείδωμα</string>

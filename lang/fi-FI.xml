@@ -136,7 +136,6 @@
   <string key="second">sekunti</string>
   <string key="minute">minuutti</string>
   <string key="paused">Keskeytetty - välilehti taustalla</string>
-  <string key="readonly_server">vain luku: asetetaan palvelimella tiedostossa settings.txt</string>
   <string key="srv_options">Palvelimen asetukset</string>
   <string key="srv_refresh">Oletuspäivitys</string>
   <string key="unlock">Avaa lukitus</string>

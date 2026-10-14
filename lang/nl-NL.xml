@@ -136,7 +136,6 @@
   <string key="second">seconde</string>
   <string key="minute">minuut</string>
   <string key="paused">Gepauzeerd - tabblad op achtergrond</string>
-  <string key="readonly_server">alleen-lezen: in te stellen op de server in settings.txt</string>
   <string key="srv_options">Serveropties</string>
   <string key="srv_refresh">Standaardverversing</string>
   <string key="unlock">Ontgrendelen</string>

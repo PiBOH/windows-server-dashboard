@@ -136,7 +136,6 @@
   <string key="second">sekund</string>
   <string key="minute">minut</string>
   <string key="paused">Pausad - fliken i bakgrunden</string>
-  <string key="readonly_server">skrivskyddad: ställs in på servern i settings.txt</string>
   <string key="srv_options">Serveralternativ</string>
   <string key="srv_refresh">Standarduppdatering</string>
   <string key="unlock">Lås upp</string>

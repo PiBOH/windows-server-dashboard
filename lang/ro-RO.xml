@@ -136,7 +136,6 @@
   <string key="second">secundă</string>
   <string key="minute">minut</string>
   <string key="paused">Întrerupt - filă în fundal</string>
-  <string key="readonly_server">doar citire: se configurează pe server în settings.txt</string>
   <string key="srv_options">Opțiunile serverului</string>
   <string key="srv_refresh">Reîmprospătare implicită</string>
   <string key="unlock">Deblochează</string>

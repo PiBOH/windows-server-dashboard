@@ -136,7 +136,6 @@
   <string key="second">วินาที</string>
   <string key="minute">นาที</string>
   <string key="paused">หยุดชั่วคราว - แท็บอยู่เบื้องหลัง</string>
-  <string key="readonly_server">อ่านอย่างเดียว: ตั้งค่าบนเซิร์ฟเวอร์ในไฟล์ settings.txt</string>
   <string key="srv_options">ตัวเลือกเซิร์ฟเวอร์</string>
   <string key="srv_refresh">รีเฟรชเริ่มต้น</string>
   <string key="unlock">ปลดล็อก</string>

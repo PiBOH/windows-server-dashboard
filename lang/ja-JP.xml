@@ -136,7 +136,6 @@
   <string key="second">秒</string>
   <string key="minute">分</string>
   <string key="paused">一時停止中 - タブがバックグラウンド</string>
-  <string key="readonly_server">読み取り専用: サーバーの settings.txt で設定します</string>
   <string key="srv_options">サーバーオプション</string>
   <string key="srv_refresh">既定の更新</string>
   <string key="unlock">ロック解除</string>

@@ -136,7 +136,6 @@
   <string key="second">sekunda</string>
   <string key="minute">minuta</string>
   <string key="paused">Zaustavljeno - zavihek v ozadju</string>
-  <string key="readonly_server">samo za branje: nastavi se v strežniku v settings.txt</string>
   <string key="srv_options">Možnosti strežnika</string>
   <string key="srv_refresh">Privzeto osveževanje</string>
   <string key="unlock">Odkleni</string>

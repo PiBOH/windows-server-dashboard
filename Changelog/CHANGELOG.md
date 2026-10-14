@@ -8,6 +8,31 @@ Versioning follows Semantic Versioning: MAJOR.MINOR.PATCH.
 - PATCH - fixes and tweaks that add no feature.
 
 ------------------------------------------------------------------------------
+  1.16.10 - 2026-10-14
+------------------------------------------------------------------------------
+
+Fixed:
+  - The documentation and the comments tell the truth about the server options
+    again. Since 1.16.7 the settings panel writes them to settings.txt from the
+    page when no password is set, but four places still described the old,
+    read-only panel: the offline preview in docs\ (its panel showed "read-only:
+    set on the server in settings.txt" and greyed the controls out), the string
+    behind that note in all 38 language files, and two comments inside the
+    script that placed the settings in a settings.json with a 5 second refresh.
+  - docs\Dashboard-Preview.html is now the page the script serves, with the
+    sample data and the dictionaries embedded: the same markup, the same CSS
+    (including the scroll bar arrows of 1.16.7) and the same code, so its panel
+    shows "Unlocked: Save writes these options to settings.txt on the server"
+    with the controls live, exactly like a fresh install.
+  - The unused readonly_server string is gone from all 38 language files, and
+    the comments left in ServerDashboard.ps1 about where the settings live and
+    what the defaults are have been corrected.
+
+Changed:
+  - Nothing else changes: the dashboard writes the same settings.txt, answers
+    the same requests and draws the same page as 1.16.9.
+
+------------------------------------------------------------------------------
   1.16.9 - 2026-10-13
 ------------------------------------------------------------------------------
 

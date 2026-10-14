@@ -136,7 +136,6 @@
   <string key="second">sekunda</string>
   <string key="minute">minuta</string>
   <string key="paused">Wstrzymano - karta w tle</string>
-  <string key="readonly_server">tylko do odczytu: ustawiane na serwerze w settings.txt</string>
   <string key="srv_options">Opcje serwera</string>
   <string key="srv_refresh">Domyślne odświeżanie</string>
   <string key="unlock">Odblokuj</string>

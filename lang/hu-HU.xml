@@ -136,7 +136,6 @@
   <string key="second">másodperc</string>
   <string key="minute">perc</string>
   <string key="paused">Szüneteltetve - lap a háttérben</string>
-  <string key="readonly_server">csak olvasható: a kiszolgálón, a settings.txt fájlban állítható</string>
   <string key="srv_options">Kiszolgáló beállításai</string>
   <string key="srv_refresh">Alapértelmezett frissítés</string>
   <string key="unlock">Feloldás</string>

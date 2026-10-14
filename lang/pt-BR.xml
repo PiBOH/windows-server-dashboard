@@ -136,7 +136,6 @@
   <string key="second">segundo</string>
   <string key="minute">minuto</string>
   <string key="paused">Pausado - guia em segundo plano</string>
-  <string key="readonly_server">somente leitura: definido no servidor em settings.txt</string>
   <string key="srv_options">Opções do servidor</string>
   <string key="srv_refresh">Atualização predefinida</string>
   <string key="unlock">Desbloquear</string>

@@ -136,7 +136,6 @@
   <string key="second">秒</string>
   <string key="minute">分鐘</string>
   <string key="paused">已暫停 - 索引標籤在背景</string>
-  <string key="readonly_server">唯讀：在伺服器的 settings.txt 中設定</string>
   <string key="srv_options">伺服器選項</string>
   <string key="srv_refresh">預設重新整理</string>
   <string key="unlock">解鎖</string>

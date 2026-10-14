@@ -136,7 +136,6 @@
   <string key="second">초</string>
   <string key="minute">분</string>
   <string key="paused">일시 중지됨 - 탭이 백그라운드</string>
-  <string key="readonly_server">읽기 전용: 서버의 settings.txt에서 설정</string>
   <string key="srv_options">서버 옵션</string>
   <string key="srv_refresh">기본 새로 고침</string>
   <string key="unlock">잠금 해제</string>

@@ -136,7 +136,6 @@
   <string key="second">sekunda</string>
   <string key="minute">minúta</string>
   <string key="paused">Pozastavené - karta na pozadí</string>
-  <string key="readonly_server">iba na čítanie: nastavuje sa na serveri v settings.txt</string>
   <string key="srv_options">Možnosti servera</string>
   <string key="srv_refresh">Predvolené obnovenie</string>
   <string key="unlock">Odomknúť</string>

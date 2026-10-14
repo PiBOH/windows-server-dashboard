@@ -136,7 +136,6 @@
   <string key="second">sekunda</string>
   <string key="minute">minut</string>
   <string key="paused">Pauzirano - kartica u pozadini</string>
-  <string key="readonly_server">samo za čitanje: podešava se na serveru u settings.txt</string>
   <string key="srv_options">Opcije servera</string>
   <string key="srv_refresh">Podrazumevano osvežavanje</string>
   <string key="unlock">Otključaj</string>

@@ -10,7 +10,7 @@ No agent, no IIS, no external module, no database: a single PowerShell script
 publishes the page, and you open it from any computer on the LAN by typing the
 IP of the server.
 
-[![Version](https://img.shields.io/badge/version-1.16.9-blue)](Changelog/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.16.10-blue)](Changelog/CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/Windows%20Server-2016%2B-0078D6?logo=windows)](#requirements)
 [![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)](#requirements)
 [![Languages](https://img.shields.io/badge/UI%20languages-38-brightgreen)](#-38-languages)
@@ -198,7 +198,9 @@ Because of this mechanism, releases must always be tagged `v<version>`
 
 Open **[`docs/Dashboard-Preview.html`](docs/Dashboard-Preview.html)** in any
 browser: it is the real interface filled with sample data, all 38 languages and
-both themes included. Nothing is installed and no network is used.
+both themes included. Nothing is installed and no network is used: the settings
+panel behaves as it does on a server with no password, so Save changes the page
+itself and writes nothing anywhere.
 
 ## Requirements
 

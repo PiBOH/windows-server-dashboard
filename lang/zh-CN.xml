@@ -136,7 +136,6 @@
   <string key="second">秒</string>
   <string key="minute">分钟</string>
   <string key="paused">已暂停 - 标签页在后台</string>
-  <string key="readonly_server">只读：在服务器的 settings.txt 中设置</string>
   <string key="srv_options">服务器选项</string>
   <string key="srv_refresh">默认刷新</string>
   <string key="unlock">解锁</string>
