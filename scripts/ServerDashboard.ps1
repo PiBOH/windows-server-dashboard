@@ -203,6 +203,7 @@ function Get-DefaultSettings {
         idleSeconds    = [double]$IdleIntervalSeconds   # 0 = no sampling while nobody is connected
         autoUpdate     = $true                           # check GitHub for a newer release at startup and every 24 hours
         coretempLog    = ''                              # Core Temp's own CSV log, when its log folder is not the install folder
+        coretempWmi    = $false                          # ask Core Temp's WMI add-on too: off, it is the only thing that touches Core Temp's own machinery
         memBudgetMB    = 20                              # working set budget in MB: what Task Manager shows, 0 = no budget
         passwordMode   = 'total'                         # with a pwd file: total = whole page, partial = server options only
         sections       = $sec
@@ -254,6 +255,17 @@ function Read-Settings {
                         # the dashboard looks for CT-Log*.csv in the install
                         # folders (see the temperature chain).
                         $cfg.coretempLog = $v.Trim('"').Trim()
+                    }
+                    '^coretemp_wmi$' {
+                        # Optional and OFF by default: also ask Core Temp's free
+                        # "Core Temp WMI provider" add-on (namespace
+                        # root\CoreTemp). A query to that namespace is the only
+                        # thing this script does that goes through Core Temp's
+                        # own registration instead of reading a file or a block
+                        # of shared memory Core Temp publishes by itself, so it
+                        # is left alone unless the machine asks for it - see the
+                        # temperature chain.
+                        $cfg.coretempWmi = ($v -match '(?i)^(yes|true|1|on|si|s)$')
                     }
                     '^password_mode$' {
                         # total    : the whole dashboard asks for the password
@@ -368,6 +380,17 @@ function Write-Settings($cfg) {
         [void]$lines.Add('# a session that is over is never shown as a current reading.')
         [void]$lines.Add('# Empty = look in the two default install folders.')
         [void]$lines.Add("coretemp_log = " + $cfg.coretempLog)
+        [void]$lines.Add('')
+        [void]$lines.Add('# Ask Core Temp''s WMI add-on too: yes / no. Off by default.')
+        [void]$lines.Add('# With the free "Core Temp WMI provider" add-on installed, the')
+        [void]$lines.Add('# dashboard can read the same temperatures through WMI, which')
+        [void]$lines.Add('# also works when Core Temp runs in another logon session. It')
+        [void]$lines.Add('# is off because that query is the only thing here that goes')
+        [void]$lines.Add('# through Core Temp''s own registration: the shared memory and')
+        [void]$lines.Add('# the CSV log above are used without asking Core Temp anything,')
+        [void]$lines.Add('# and they already cover a dashboard running as a boot task')
+        [void]$lines.Add('# (see the manual). Turn this on only if you need that source.')
+        [void]$lines.Add("coretemp_wmi = " + $(if ($cfg.coretempWmi) { 'yes' } else { 'no' }))
         [void]$lines.Add('')
         [void]$lines.Add('# Password protection, in two steps.')
         [void]$lines.Add('# 1. The password lives in .config-do-not-delete-me\pwd')
@@ -1389,7 +1412,29 @@ $CollectorScript = {
             if ($ctRunning -ne $lastCoreTempRunning) {
                 $lastCoreTempRunning = $ctRunning
                 if ($ctRunning) {
-                    Write-CollectorLog $Shared 'Core Temp is running: reading what it publishes, and the dashboard never starts it'
+                    # ...and it names the process that started it: nothing here
+                    # launches anything but powershell.exe, so when Core Temp's
+                    # window comes back, the parent named in this line is who
+                    # did it - no need to guess.
+                    $ctWho = ''
+                    try {
+                        $ct = @([System.Diagnostics.Process]::GetProcessesByName('Core Temp')) +
+                              @([System.Diagnostics.Process]::GetProcessesByName('CoreTemp')) |
+                              Select-Object -First 1
+                        if ($ct) {
+                            $ctWho = " (pid $($ct.Id)"
+                            try {
+                                $me = Get-CimInstance Win32_Process -Filter "ProcessId=$($ct.Id)" -ErrorAction Stop
+                                $pp = if ($me -and $me.ParentProcessId) {
+                                    Get-CimInstance Win32_Process -Filter "ProcessId=$($me.ParentProcessId)" -ErrorAction SilentlyContinue
+                                }
+                                if ($pp) { $ctWho += ", started by $($pp.Name) pid $($pp.ProcessId)" }
+                                elseif ($me -and $me.ParentProcessId) { $ctWho += ", started by pid $($me.ParentProcessId), already gone" }
+                            } catch { }
+                            $ctWho += ')'
+                        }
+                    } catch { }
+                    Write-CollectorLog $Shared ('Core Temp is running: reading what it publishes, and the dashboard never starts it' + $ctWho)
                 } else {
                     Write-CollectorLog $Shared 'Core Temp is not running: its sources are skipped and nothing is started (Core Temp opens only by its own autostart)'
                 }
@@ -1479,11 +1524,16 @@ $CollectorScript = {
             }
 
             # Fallback 2: Core Temp with its free "Core Temp WMI provider" add-on
-            # (namespace root\CoreTemp -> CoreTempInfo). A plain Core Temp is
-            # enough (see Fallback 1); this one is checked too because WMI is
-            # global, so it works even when Core Temp runs in another logon
-            # session than the dashboard.
-            if (-not $temps.Count -and $ctRunning) {
+            # (namespace root\CoreTemp -> CoreTempInfo). OFF unless settings.txt
+            # says coretemp_wmi = yes: a query to that namespace is the only
+            # thing here that goes through Core Temp's own registration (the
+            # provider the add-on installed) instead of reading a block of
+            # shared memory or a CSV file Core Temp publishes by itself. The two
+            # sources above need nothing from Core Temp, and the shared memory
+            # is also looked for under the Global\ names, which is what a boot
+            # task running as SYSTEM needs; this one is for the machine where
+            # neither answers and only WMI does.
+            if (-not $temps.Count -and $ctRunning -and $Shared.Settings.coretempWmi) {
                 try {
                     $ct = Get-CimInstance -Namespace 'root\CoreTemp' -ClassName 'CoreTempInfo' -ErrorAction Stop |
                           Select-Object -First 1
@@ -1540,7 +1590,7 @@ $CollectorScript = {
                 if ($tempSrc) {
                     Write-CollectorLog $Shared ("CPU temperature from " + $tempSrc + ": " + $temps.Count + " sensor(s)")
                 } else {
-                    Write-CollectorLog $Shared 'CPU temperature: no source answered (tried BIOS/ACPI, the three Core Temp sources - read only while Core Temp runs -, LibreHardwareMonitor/OpenHardwareMonitor, HWiNFO)'
+                    Write-CollectorLog $Shared 'CPU temperature: no source answered (tried BIOS/ACPI, Core Temp''s shared memory and its own CSV log - both read only while Core Temp runs -, LibreHardwareMonitor/OpenHardwareMonitor, HWiNFO, and Core Temp''s WMI add-on when coretemp_wmi = yes)'
                 }
             }
 

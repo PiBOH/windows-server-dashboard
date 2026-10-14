@@ -134,8 +134,18 @@ CPU
   ended - and the log says so once. When Core Temp runs, what decides it is
   Core Temp's own "start with Windows" option, never this dashboard.
 
-  Temperature sources, tried in this order. None of them needs an add-on,
-  a plug-in or anything installed inside the dashboard:
+  When Core Temp appears or disappears, the log says so and also names the
+  process that started it:
+
+      Core Temp is running: ... (pid 15904, started by explorer.exe pid 9620)
+
+  That line is the answer to "why does Core Temp keep coming back?": nothing
+  in the dashboard launches anything but powershell.exe, so the parent named
+  there is who started it.
+
+  Temperature sources, tried in this order. Except the last one, which is off
+  unless you ask for it, none of them needs an add-on, a plug-in or anything
+  installed inside the dashboard:
     1. BIOS/ACPI sensor (MSAcpi_ThermalZoneTemperature). Many Dell, HP and
        Lenovo servers do not expose it, and a machine that does may still
        refuse it to a non-elevated process.
@@ -168,8 +178,20 @@ CPU
 
     4. Core Temp with its free "Core Temp WMI provider" add-on (namespace
        root\CoreTemp): same readings, but through WMI, which also works
-       when Core Temp runs in another logon session than the dashboard -
-       the option to pick for a boot task plus an always-logged-in user.
+       when Core Temp runs in another logon session than the dashboard.
+       This one is OFF and stays off unless settings.txt says
+       coretemp_wmi = yes. Why: a query to that namespace is the only
+       thing the dashboard does that goes through Core Temp's own
+       registration - the provider the add-on installed - instead of
+       reading a block of shared memory or a CSV file that Core Temp
+       publishes by itself, so it is the only Core Temp related thing
+       worth being suspicious of on a machine where Core Temp's window
+       keeps coming back. The two sources above cover the same ground
+       without it: "enable global shared memory" in Core Temp > Options
+       > Advanced makes the block readable from session 0 as well, and
+       Core Temp's own logging works across sessions by design. If you
+       had temperatures from this source and they are gone after updating,
+       either turn it back on here or switch one of those two on.
     5. LibreHardwareMonitor or OpenHardwareMonitor, with the WMI option
        enabled (namespaces root\LibreHardwareMonitor and
        root\OpenHardwareMonitor).
@@ -385,6 +407,9 @@ visible, logging on.
       logging         = no       (never create a log file)
       coretemp_log    =          (full path of Core Temp's CT-Log*.csv,
                                   empty = search its install folders)
+      coretemp_wmi    = no       (yes = also ask Core Temp's WMI add-on,
+                                  see section on the temperature sources:
+                                  off by default)
       password_mode   = total    (with a pwd file: total = whole page,
                                   partial = server options only)
       show_cpu        = yes

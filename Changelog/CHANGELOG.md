@@ -8,6 +8,42 @@ Versioning follows Semantic Versioning: MAJOR.MINOR.PATCH.
 - PATCH - fixes and tweaks that add no feature.
 
 ------------------------------------------------------------------------------
+  1.16.13 - 2026-10-14
+------------------------------------------------------------------------------
+
+Changed:
+  - The dashboard no longer asks Core Temp's WMI add-on anything unless
+    settings.txt asks for it. The temperature chain ended with a query to the
+    namespace root\CoreTemp, the one Core Temp's free "Core Temp WMI provider"
+    add-on registers - and that query is the only thing in the whole script
+    that goes through Core Temp's own registration instead of reading
+    something Core Temp publishes by itself (a block of shared memory, its own
+    CSV log, its ini file, its process). On a machine where Core Temp's window
+    kept coming back, it is also the only Core Temp related action worth ruling
+    out, so it is off by default: the new key coretemp_wmi = yes turns it back
+    on, for the machine where neither the shared memory nor the log answers
+    and only WMI does. Nothing else about the chain changed: the shared memory
+    is still looked for under the Global\ names as well - which is what a
+    dashboard running as a boot task needs - and Core Temp's CSV log is still
+    read across sessions. An installation that gets its temperature from that
+    WMI source and nothing else shows an empty temperature row after updating
+    until coretemp_wmi = yes is written in settings.txt, or "enable global
+    shared memory" is switched on in Core Temp > Options > Advanced, or Core
+    Temp's own logging is enabled (see the manual).
+  - The log now names the process that started Core Temp. The line written
+    when Core Temp appears already said that the dashboard never starts it;
+    it now carries the process id of Core Temp, the id of its parent and the
+    parent's name when it still exists:
+
+        Core Temp is running: ... (pid 15904, started by explorer.exe pid 9620)
+
+    Nothing in the script launches anything but powershell.exe, so that parent
+    is the answer to "why does Core Temp keep coming back?" on a machine where
+    it does - asked from the log of the machine itself, instead of from a
+    guess. The line written when no source answers now lists what was really
+    tried, the WMI add-on included and only when coretemp_wmi allows it.
+
+------------------------------------------------------------------------------
   1.16.12 - 2026-10-14
 ------------------------------------------------------------------------------
 
