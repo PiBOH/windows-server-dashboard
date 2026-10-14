@@ -10,7 +10,7 @@ No agent, no IIS, no external module, no database: a single PowerShell script
 publishes the page, and you open it from any computer on the LAN by typing the
 IP of the server.
 
-[![Version](https://img.shields.io/badge/version-1.16.13-blue)](Changelog/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.16.14-blue)](Changelog/CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/Windows%20Server-2016%2B-0078D6?logo=windows)](#requirements)
 [![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)](#requirements)
 [![Languages](https://img.shields.io/badge/UI%20languages-38-brightgreen)](#-38-languages)
@@ -172,9 +172,14 @@ windows-server-dashboard\
 
 The repository also carries `_build\`: the dashboard page is edited there
 as three files (`web\page.html`, `web\page.css`, `web\page.js`) and
-`Embed-Page.ps1` splices them into the engine, which is what ships. That folder
-is not part of the package: the release archive leaves it out and the updater
-never copies it onto a server.
+`Embed-Page.ps1` writes the two copies there are out of them - the page
+spliced into the engine, which is what ships, and the offline preview in
+`docs\`, adding the preview block (`preview\preview.js`: sample data, the 38
+dictionaries, the answers that stand in for the server) and the version from
+`scripts\version.txt`. `Embed-Page.ps1 -Check` fails when either copy is not
+what the sources produce, and the syntax check runs it on every push. That
+folder is not part of the package: the release archive leaves it out and the
+updater never copies it onto a server.
 
 ## Self update
 
@@ -206,7 +211,8 @@ Open **[`docs/Dashboard-Preview.html`](docs/Dashboard-Preview.html)** in any
 browser: it is the real interface filled with sample data, all 38 languages and
 both themes included. Nothing is installed and no network is used: the settings
 panel behaves as it does on a server with no password, so Save changes the page
-itself and writes nothing anywhere.
+itself and writes nothing anywhere. It is generated from the same sources as
+the served page (`_build\Embed-Page.ps1`), so it cannot lag behind it.
 
 ## Requirements
 

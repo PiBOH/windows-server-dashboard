@@ -8,6 +8,29 @@ Versioning follows Semantic Versioning: MAJOR.MINOR.PATCH.
 - PATCH - fixes and tweaks that add no feature.
 
 ------------------------------------------------------------------------------
+  1.16.14 - 2026-10-14
+------------------------------------------------------------------------------
+
+Changed:
+  - docs\Dashboard-Preview.html is generated, not a second copy to look after.
+    The offline page used to be maintained by hand: its interface had to be
+    re-copied from the page the script serves at every change of that page, and
+    it had drifted - 1.16.10 had to bring its settings panel back to the 1.16.7
+    behaviour, and its title and footer still announced 1.16.10 while the
+    dashboard was at 1.16.12. There is now one copy of the interface, the three
+    sources in _build\web\, and the preview is built from them plus the preview
+    block, which moved into _build\preview\preview.js: the sample data, the 38
+    dictionaries and the six functions that answer without a server.
+  - _build\Embed-Page.ps1 writes both copies and -Check fails when either of
+    them is not what the sources produce, so the syntax workflow now refuses a
+    preview that was not regenerated. The preview also takes its version from
+    scripts\version.txt - title, footer and the VERSION the code uses - so it
+    cannot announce a release it does not belong to. The file carries a
+    generated-file banner at the top saying which sources to edit instead.
+    Nothing about the dashboard changes: the same page is served from the same
+    here-string, and _build\ is still left out of the release archive.
+
+------------------------------------------------------------------------------
   1.16.13 - 2026-10-14
 ------------------------------------------------------------------------------
 

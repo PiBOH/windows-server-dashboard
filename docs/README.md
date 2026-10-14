@@ -56,7 +56,8 @@ Everything you normally need is in the root folder; the rest is tidied away.
     |   +-- release-notes\       RELEASE-NOTES-vX.Y.Z.md, one per release
     |
     +-- docs\                    README.md (this manual), logo.png,
-    |                            Dashboard-Preview.html (offline preview)
+    |                            Dashboard-Preview.html (offline preview,
+    |                            generated - do not edit it here)
     |
     +-- logs\                    one file per day, kept 14 days:
                                  ServerDashboard-YYYY-MM-DD.log
@@ -726,6 +727,10 @@ Diagnose.ps1). It changes nothing and reports the task state (Run As
   three files under _build\web\ (page.html, page.css, page.js) and
   spliced into that block by _build\Embed-Page.ps1, which the syntax
   check runs with -Check on every push; _build\ is not part of the package.
+  The same build writes the offline preview in docs\ from those three files
+  plus _build\preview\preview.js (the sample data, the 38 dictionaries and
+  the answers that stand in for the server), so the preview and the served
+  page are one page: there is no copy of the interface to keep in step.
 - All metrics use CIM/WMI classes whose property names are always English, so
   the script works on any localized Windows.
 
