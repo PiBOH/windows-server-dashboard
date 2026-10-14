@@ -5,9 +5,20 @@
 Versioning follows Semantic Versioning: MAJOR.MINOR.PATCH.
 - MAJOR - breaking changes, for instance a new language-file format.
 - MINOR - new backward compatible features.
-- PATCH - fixes and tweaks that add no feature.
+- PATCH - fixes and tweaks that add no feature.  1.16.16 - 2026-10-14
+  Fixed: after an update the dashboard comes back on its own. Two faults kept
+    it on the old build: the hand over launched the new version with
+    -WindowStyle written twice, which PowerShell refuses, and the net against
+    the update loop compared the version NUMBER only, so a release published
+    again under the same version was taken for an update that never landed.
+    Both are corrected, and the same duplicate is gone from the periodic 24 h
+    check, which never ran at all.
+  Changed: the log names who started Core Temp, instead of printing a pid that
+    answers nothing: the parent when it still exists, and the scheduled task
+    that starts the same program.
 
-  1.16.15 - 2026-10-14 Added: the browser tab shows the logo of the package -
+  1.16.15 - 2026-10-14
+ Added: the browser tab shows the logo of the package -
     /favicon.ico serves docs\logo.png (the empty 204 comes back when the file
     is missing). Changed: the README screenshots were taken again, in English.
 

@@ -1245,6 +1245,69 @@ $CollectorScript = {
         return $false
     }
 
+    function Get-CoreTempStarter {
+        # WHO started Core Temp, by name. A bare pid answers nothing, and the
+        # launcher of Core Temp is usually gone by the time the dashboard looks:
+        # it is an installer, or a launcher that exits immediately. So two things
+        # are named here, both read only - nothing is started, nothing is written,
+        # and it happens once per change of state, never once per cycle:
+        #   - the parent of the process, when it still exists;
+        #   - the scheduled task that starts the same executable: Core Temp's own
+        #     "start with Windows" option registers one ("Core Temp Autostart ..."),
+        #     and on a machine where its window keeps coming back that task is
+        #     the answer, not a guess.
+        $out = ''
+        $names = @()
+        try {
+            $ct = @([System.Diagnostics.Process]::GetProcessesByName('Core Temp')) +
+                  @([System.Diagnostics.Process]::GetProcessesByName('CoreTemp')) |
+                  Select-Object -First 1
+            if (-not $ct) { return '' }
+            # The name of the executable is enough to find the task, and it is
+            # the only thing always available: the path of a process started by
+            # an elevated installer is not readable from a process that is not
+            # elevated itself (measured on Core Temp 1.19 started by its own
+            # setup: Win32_Process gives the pid and the parent, no path).
+            $names += ("$($ct.ProcessName).exe")
+            $out = " (pid $($ct.Id)"
+            try {
+                $me = Get-CimInstance Win32_Process -Filter "ProcessId=$($ct.Id)" -ErrorAction Stop
+                if ($me) {
+                    if ($me.ExecutablePath) {
+                        $names += [System.IO.Path]::GetFileName("$($me.ExecutablePath)")
+                    }
+                    if ($me.ParentProcessId) {
+                        $pp = Get-CimInstance Win32_Process -Filter "ProcessId=$($me.ParentProcessId)" -ErrorAction SilentlyContinue
+                        if ($pp) { $out += ", started by $($pp.Name) pid $($pp.ProcessId)" }
+                        else     { $out += ", started by pid $($me.ParentProcessId), which had already exited" }
+                    }
+                }
+            } catch { }
+            $out += ')'
+        } catch { return $out }
+
+        if ($names.Count) {
+            # CIM and not Get-ScheduledTask: the same machinery already loaded for
+            # every other metric, so no module is pulled in and kept for the rest
+            # of the life of the process (the lesson of 1.16.6).
+            try {
+                $tasks = @(Get-CimInstance -Namespace 'root/Microsoft/Windows/TaskScheduler' `
+                                           -ClassName MSFT_ScheduledTask -ErrorAction Stop |
+                           Where-Object {
+                               @($_.Actions | Where-Object {
+                                   $_.Execute -and
+                                   ($names -contains [System.IO.Path]::GetFileName("$($_.Execute)".Trim('"')))
+                               }).Count
+                           } | Select-Object -First 3)
+                if ($tasks.Count) {
+                    $who = @($tasks | ForEach-Object { '"' + ($_.TaskPath + $_.TaskName) + '"' })
+                    $out += '; a scheduled task starts the same program: ' + ($who -join ', ')
+                }
+            } catch { }
+        }
+        return $out
+    }
+
     # --- Core Temp's own log file (CT-Log*.csv) ------------------------------
     # Core Temp can write the same readings it publishes in the shared memory
     # into a CSV file of its own, chosen by its logging option: no add-on, no
@@ -1412,29 +1475,11 @@ $CollectorScript = {
             if ($ctRunning -ne $lastCoreTempRunning) {
                 $lastCoreTempRunning = $ctRunning
                 if ($ctRunning) {
-                    # ...and it names the process that started it: nothing here
-                    # launches anything but powershell.exe, so when Core Temp's
-                    # window comes back, the parent named in this line is who
-                    # did it - no need to guess.
-                    $ctWho = ''
-                    try {
-                        $ct = @([System.Diagnostics.Process]::GetProcessesByName('Core Temp')) +
-                              @([System.Diagnostics.Process]::GetProcessesByName('CoreTemp')) |
-                              Select-Object -First 1
-                        if ($ct) {
-                            $ctWho = " (pid $($ct.Id)"
-                            try {
-                                $me = Get-CimInstance Win32_Process -Filter "ProcessId=$($ct.Id)" -ErrorAction Stop
-                                $pp = if ($me -and $me.ParentProcessId) {
-                                    Get-CimInstance Win32_Process -Filter "ProcessId=$($me.ParentProcessId)" -ErrorAction SilentlyContinue
-                                }
-                                if ($pp) { $ctWho += ", started by $($pp.Name) pid $($pp.ProcessId)" }
-                                elseif ($me -and $me.ParentProcessId) { $ctWho += ", started by pid $($me.ParentProcessId), already gone" }
-                            } catch { }
-                            $ctWho += ')'
-                        }
-                    } catch { }
-                    Write-CollectorLog $Shared ('Core Temp is running: reading what it publishes, and the dashboard never starts it' + $ctWho)
+                    # ...and it names who started it: nothing here launches
+                    # anything but powershell.exe, so the line this writes is the
+                    # answer to "why does Core Temp keep coming back?", taken from
+                    # the machine itself instead of from a guess.
+                    Write-CollectorLog $Shared ('Core Temp is running: reading what it publishes, and the dashboard never starts it' + (Get-CoreTempStarter))
                 } else {
                     Write-CollectorLog $Shared 'Core Temp is not running: its sources are skipped and nothing is started (Core Temp opens only by its own autostart)'
                 }
@@ -3768,10 +3813,13 @@ function Invoke-Housekeeping {
         if ($Shared.Settings.autoUpdate -and -not (Test-Path $script:UpdateMarker)) {
             try {
                 Write-Log 'Periodic update check (every 24 h, auto_update = yes).'
+                # -WindowStyle once, for the same reason as the hand over
+                # below: naming it twice makes Start-Process throw, and the
+                # periodic check never ran at all.
                 Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
                     '-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass',
                     '-File', $PSCommandPath, '-UpdateNow', '-ScheduledUpdate'
-                ) -WindowStyle Hidden
+                )
             } catch {
                 Write-Log ("Could not launch the periodic update check: " +
                            $_.Exception.Message) 'WARN'
@@ -3795,11 +3843,23 @@ if ($script:Updated) {
     # in an endless loop in which the port never opened: the dashboard
     # looked like "it does not start by itself" and no update ever landed.
     $diskVersion = ''
+    $diskCommit  = ''
     try {
-        $diskVersion = "$(Get-Content -Path (Join-Path $PSScriptRoot 'version.txt') -TotalCount 1 -ErrorAction Stop)".Trim()
+        $vlines = @(Get-Content -Path (Join-Path $PSScriptRoot 'version.txt') -ErrorAction Stop)
+        if ($vlines.Count -gt 0) { $diskVersion = "$($vlines[0])".Trim() }
+        if ($vlines.Count -gt 1) { $diskCommit  = "$($vlines[1])".Trim() }
     } catch { }
-    if ($diskVersion -eq $DashboardVersion) {
-        Write-Log "Self update did not land (version.txt still $DashboardVersion): staying up on the current version." 'ERROR'
+    # "it landed" is not only a new NUMBER. Since 1.16.4 a release can be
+    # published again under the same version with a different build commit,
+    # and the updater fetches it on purpose (Test-UpdateReason 'commit'):
+    # looking at the number alone made that update look like an update that
+    # never landed, and the dashboard stayed on the old build for good.
+    $landed = ($diskVersion -ne $DashboardVersion) -or
+              ($diskCommit -and $diskCommit -ne $script:DashboardCommit)
+    if (-not $landed) {
+        Write-Log ("Self update did not land (version.txt still says $DashboardVersion" +
+                   $(if ($script:DashboardCommit) { " build $($script:DashboardCommit)" } else { '' }) +
+                   "): staying up on the current version.") 'ERROR'
         Write-DashEvent 3 'Error' ("$BrandName v${DashboardVersion}: the automatic update did not replace the " +
             "local files (version.txt still says $DashboardVersion), so the dashboard stays up on the current " +
             "version instead of restarting in a loop. Run scripts\Update-Now.bat by hand and, if it happens " +
@@ -3810,13 +3870,19 @@ if ($script:Updated) {
         # so the next boot runs them, and nobody is left without the page.
         $handed = $false
         try {
+            # -WindowStyle goes to the cmdlet ONCE: naming it twice is a
+            # parameter binding error, Start-Process threw every time and the
+            # catch below swallowed it, so the new version was never launched
+            # and the old one kept serving. The copy inside -ArgumentList is
+            # the child's own switch and stays.
             Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
                 '-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass',
                 '-File', $PSCommandPath, '-Port', "$Port"
-            ) -WindowStyle Hidden
+            )
             $handed = $true
         } catch {
-            Write-Log 'Could not launch the new version: staying up on the current one.' 'ERROR'
+            Write-Log ("Could not launch the new version: staying up on the current one. " +
+                       $_.Exception.Message) 'ERROR'
         }
         if ($handed) { exit 0 }
     }

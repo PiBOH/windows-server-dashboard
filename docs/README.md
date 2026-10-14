@@ -1,6 +1,6 @@
 ==============================================================================
   SERVER DASHBOARD - web monitoring for Windows Server 2016
-  Version 1.16.15
+  Version 1.16.16
 ==============================================================================
 
 A monitoring dashboard you can open from any computer on the local network by
@@ -135,14 +135,21 @@ CPU
   ended - and the log says so once. When Core Temp runs, what decides it is
   Core Temp's own "start with Windows" option, never this dashboard.
 
-  When Core Temp appears or disappears, the log says so and also names the
-  process that started it:
+  When Core Temp appears or disappears, the log says so and also names who
+  started it: the parent process when it still exists, and the scheduled task
+  that starts the same program, because the launcher of Core Temp is often
+  already gone by the time the dashboard looks at it:
 
       Core Temp is running: ... (pid 15904, started by explorer.exe pid 9620)
+      Core Temp is running: ... (pid 15904, started by pid 16212, which had
+      already exited); a scheduled task starts the same program: "\Core Temp
+      Autostart Utente"
 
   That line is the answer to "why does Core Temp keep coming back?": nothing
-  in the dashboard launches anything but powershell.exe, so the parent named
-  there is who started it.
+  in the dashboard launches anything but powershell.exe. What does, in almost
+  every case, is Core Temp's own "start with Windows" option, which registers
+  a task named like the one above: switch it off in Core Temp > Options, or
+  delete that task.
 
   Temperature sources, tried in this order. Except the last one, which is off
   unless you ask for it, none of them needs an add-on, a plug-in or anything
