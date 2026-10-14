@@ -102,7 +102,8 @@ task that happened to have the same name.
 - **Light and dark theme**, dark by default, saved per browser.
 - **About panel** — click the version in the footer: who wrote it, the
   portfolio, the e-mail, and the changelog read from GitHub every time the
-  panel opens, never cached, so it always shows the published history.
+  panel opens. Nothing is stored or shipped with the package, so what you read
+  is the published history.
 - **Works on any localized Windows** — every metric comes from CIM/WMI classes
   whose property names are always English.
 - **Read-only by design** — the page only displays: no command can be executed

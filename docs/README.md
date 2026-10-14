@@ -369,10 +369,12 @@ the dashboard, a link to the portfolio, the e-mail address, the repository and
 the release list, and the changelog. The changelog is **not** shipped with the
 package and not stored anywhere: it is read from
 `raw.githubusercontent.com/PiBOH/windows-server-dashboard` every time the panel
-opens, with a key that is never the same twice, so no browser cache and no
-cache in between can answer with an older history. The panel therefore needs
-internet access from the browser; when GitHub cannot be reached it says so and
-shows nothing stale. What it reads is escaped before it is shown, so a change
+opens, with a key that is never the same twice, so the browser never answers
+from its own cache. The one cache that cannot be switched off is GitHub's own
+CDN, which serves a file for up to five minutes before it re-reads the
+repository: a change pushed a minute ago can therefore show up a few minutes
+later. The panel needs internet access from the browser; when GitHub cannot be
+reached it says so and shows nothing stale. What it reads is escaped before it is shown, so a change
 on the remote file cannot inject markup into the page.
 
 The gear button opens the settings panel:
