@@ -2777,7 +2777,7 @@ footer .fcenter #aboutbtn{color:var(--muted)}
       <div>
         <div class="aboutcap">
           <span data-i18n="about_changelog">Changelog</span>
-          <span class="hint" data-i18n="about_live">read from GitHub every time this panel opens, never cached</span>
+          <span class="hint" data-i18n="about_live">read live from GitHub every time this panel opens</span>
         </div>
         <div id="aboutcl" class="aboutcl"></div>
       </div>
@@ -2829,7 +2829,7 @@ var EN = {
   about_portfolio: 'Portfolio',
   about_releases:  'Releases',
   about_changelog: 'Changelog',
-  about_live:      'read from GitHub every time this panel opens, never cached',
+  about_live:      'read live from GitHub every time this panel opens',
   about_reload:    'Reload',
   about_close:     'Close',
   about_loading:   'Reading the changelog from GitHub...',
