@@ -1,6 +1,6 @@
 ==============================================================================
   SERVER DASHBOARD - web monitoring for Windows Server 2016
-  Version 1.16.0
+  Version 1.16.15
 ==============================================================================
 
 A monitoring dashboard you can open from any computer on the local network by
@@ -298,6 +298,15 @@ TABLE SORTING
   File Explorer: click to sort, click again to reverse; a triangle marks the
   active column. The choice is stored in the browser. Numeric columns sort by
   value, text columns alphabetically.
+
+BROWSER TAB
+  The tab shows the logo of the package (docs\logo.png): the dashboard answers
+  /favicon.ico with that file, read once and then served from memory like the
+  page itself. Nothing is started and nothing is written to serve an icon, and
+  the offline preview uses the same logo, so the tab looks the same on the
+  server and in docs\Dashboard-Preview.html. If the file is missing the request
+  is answered with the empty 204 the route gave before, and the tab falls back
+  to the generic icon.
 
 
 ------------------------------------------------------------------------------

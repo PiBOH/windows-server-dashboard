@@ -10,7 +10,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PiBOH Windows Server Dashboard 1.16.14 - preview</title>
+<!-- The tab icon is the logo that ships with the package: the engine answers
+     /favicon.ico with it and the offline preview points at logo.png next to
+     it. logo.png is filled in by whoever serves the page. -->
+<link rel="icon" type="image/png" href="logo.png">
+<title>PiBOH Windows Server Dashboard 1.16.15 - preview</title>
 <style>
 :root, html[data-theme="dark"]{
   --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --border:#283040;
@@ -334,7 +338,7 @@ footer .fcenter b{color:var(--txt)}
     <button id="setbtn" title="Dashboard settings">&#9881; <span id="setlabel">Settings</span></button>
     <button id="langbtn" title="Choose the dashboard language">&#127760; Language: <b id="curlang">English</b></button>
   </div>
-  <div class="fcenter">PiBOH Windows Server Dashboard <b id="ver">1.16.14</b></div>
+  <div class="fcenter">PiBOH Windows Server Dashboard <b id="ver">1.16.15</b></div>
   <div class="fside right">
     <span id="err" class="crit"></span>
     <button id="themebtn" title="Switch light / dark theme"><span id="themeicon">&#9788;</span> <span id="themelabel">Light theme</span></button>
@@ -425,7 +429,7 @@ footer .fcenter b{color:var(--txt)}
 <script>
 /* ===================== i18n ===================== */
 var SYSLANG = "en-US";
-var VERSION = "1.16.14";
+var VERSION = "1.16.15";
 var INTERVAL = "0.5";
 var LANGS = [];          /* [{code,native,english,dir}] */
 var STR = {};            /* dizionario corrente */

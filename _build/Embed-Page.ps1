@@ -61,7 +61,10 @@ $previewSubs = @(
     @{ Token = '__HOST__';     Value = 'SRV-FILE01' },
     @{ Token = '__SYSLANG__';  Value = 'en-US' },
     @{ Token = '__VERSION__';  Value = '<version>' },
-    @{ Token = '__INTERVAL__'; Value = '0.5' }
+    @{ Token = '__INTERVAL__'; Value = '0.5' },
+    # the tab icon: the engine serves it at /favicon.ico, the preview file sits
+    # next to the logo and points at it directly
+    @{ Token = '__ICON__';     Value = 'logo.png' }
 )
 
 function Read-Source([string]$Path) {

@@ -8,6 +8,36 @@ Versioning follows Semantic Versioning: MAJOR.MINOR.PATCH.
 - PATCH - fixes and tweaks that add no feature.
 
 ------------------------------------------------------------------------------
+  1.16.15 - 2026-10-14
+------------------------------------------------------------------------------
+
+Added:
+  - The browser tab of the dashboard shows the logo of the package. Opening
+    the page now loads an icon next to the title, and that icon is
+    docs\logo.png - the file the README and the manual already show. The engine
+    answers /favicon.ico with it: read once, kept in memory and served like the
+    page itself, with a one day cache so the browser does not ask again at
+    every refresh. Nothing is started and nothing is written to serve it. Up to
+    now that route answered an empty 204 on purpose, which left every tab with
+    the browser's generic icon. If the file is not there the answer is the same
+    empty 204 as before, so a package without docs\logo.png loses the icon and
+    nothing else. The offline preview points at logo.png next to it, so
+    docs\Dashboard-Preview.html shows the same icon as the server does.
+
+Changed:
+  - The screenshots of the README were taken again, in English, from
+    docs\Dashboard-Preview.html. The five images still in the repository were
+    taken at 1.15.2 and no longer showed the page as it is now; the tab icon is
+    only the visible part of that drift. All five are captured at a 1600x900
+    window, the whole page for the dark one, and every one of them starts from
+    the top of the page - a shot taken after a panel was closed can be scrolled,
+    and a scrolled shot is a different picture. screenshots\README.txt now says
+    the sizes the files really have (it claimed 1600x1100) and how to take them
+    again without ending up with another language. Nothing travels with the
+    release archive: screenshots\ is left out of the zip as before, and the
+    manual's stale version line, still at 1.16.0, was corrected.
+
+------------------------------------------------------------------------------
   1.16.14 - 2026-10-14
 ------------------------------------------------------------------------------
 

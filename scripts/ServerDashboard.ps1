@@ -2284,6 +2284,10 @@ $Html = @'
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- The tab icon is the logo that ships with the package: the engine answers
+     /favicon.ico with it and the offline preview points at logo.png next to
+     it. __ICON__ is filled in by whoever serves the page. -->
+<link rel="icon" type="image/png" href="__ICON__">
 <title>__HOST__ - Dashboard</title>
 <style>
 :root, html[data-theme="dark"]{
@@ -3580,10 +3584,12 @@ try { $SysLang = (Get-UICulture).Name } catch { }
 if (-not $SysLang) { try { $SysLang = (Get-Culture).Name } catch { } }
 Write-Log "Windows display language detected: $SysLang"
 
+# __ICON__ is the tab icon: the logo of the package, served by /favicon.ico
 $Html = $Html.Replace('__HOST__', $env:COMPUTERNAME).
               Replace('__INTERVAL__', "$IntervalSeconds").
               Replace('__SYSLANG__', $SysLang).
-              Replace('__VERSION__', $DashboardVersion)
+              Replace('__VERSION__', $DashboardVersion).
+              Replace('__ICON__', '/favicon.ico')
 
 # ---------------------------------------------------------------------------
 # Catalog of the available languages (the \lang folder of the package)
@@ -4045,8 +4051,26 @@ try {
                         $bytes = [System.Text.Encoding]::UTF8.GetBytes("OK $($env:COMPUTERNAME) v$DashboardVersion $state $(Get-Date -Format 'HH:mm:ss') [$($script:EngineBits) engine on $($script:OsBits) Windows]")
                     }
                     '^/favicon.ico$' {
-                        $res.StatusCode = 204
-                        $bytes = [byte[]]@()
+                        # The tab icon is the logo that ships in docs\logo.png:
+                        # read once, then served from memory like everything
+                        # else. Nothing is started and nothing is written. If
+                        # the file is not there the answer is the empty 204
+                        # this route used to give, so a missing logo costs the
+                        # icon and nothing else.
+                        if ($null -eq $script:IconBytes) {
+                            $iconFile = Join-Path $Root 'docs\logo.png'
+                            $script:IconBytes = if (Test-Path -LiteralPath $iconFile) {
+                                [System.IO.File]::ReadAllBytes($iconFile)
+                            } else { [byte[]]@() }
+                        }
+                        if ($script:IconBytes.Length) {
+                            $res.ContentType = 'image/png'
+                            $res.AddHeader('Cache-Control', 'public, max-age=86400')
+                            $bytes = $script:IconBytes
+                        } else {
+                            $res.StatusCode = 204
+                            $bytes = [byte[]]@()
+                        }
                     }
                     default {
                         $res.ContentType = 'text/html; charset=utf-8'
