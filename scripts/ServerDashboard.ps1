@@ -1855,8 +1855,12 @@ $CollectorScript = {
                     if ($prevNet.ContainsKey($a.Name) -and $prevTime) {
                         $dt = ($now - $prevTime).TotalSeconds
                         if ($dt -gt 0) {
-                            $dn = [math]::Max(0, ($rx - $prevNet[$a.Name].Rx) / $dt)
-                            $up = [math]::Max(0, ($tx - $prevNet[$a.Name].Tx) / $dt)
+                            # the zero is written as a double on purpose, like the
+                            # interval bounds: an integer literal makes PowerShell
+                            # choose Max(Int32, Int32), which rounds the rate and
+                            # throws outright above 2 GB/s per sample
+                            $dn = [math]::Max(0.0, ($rx - $prevNet[$a.Name].Rx) / $dt)
+                            $up = [math]::Max(0.0, ($tx - $prevNet[$a.Name].Tx) / $dt)
                         }
                     }
                     $prevNet[$a.Name] = @{ Rx = $rx; Tx = $tx }
@@ -3903,14 +3907,19 @@ try {
                                 $cfg = Read-Settings
                                 $s = $json.settings
                                 if ($s) {
+                                    # The bounds are written as doubles on purpose:
+                                    # with an integer literal PowerShell picks the
+                                    # Int32 overload of Min/Max and truncates the
+                                    # value, so 0.5 s was written to settings.txt
+                                    # as 0 and 2.5 s as 2.
                                     $rv = Convert-ToDoubleSafe "$($s.refresh_seconds)"
                                     if ($rv -ge 0) {
-                                        $cfg.refreshSeconds = [math]::Min(3600, [math]::Max(0.5, $rv))
+                                        $cfg.refreshSeconds = [math]::Min(3600.0, [math]::Max(0.5, $rv))
                                         $applied += 'refresh_seconds'
                                     }
                                     $iv = Convert-ToDoubleSafe "$($s.idle_seconds)"
                                     if ($iv -ge 0) {
-                                        $cfg.idleSeconds = [math]::Min(3600, [math]::Max(0, $iv))
+                                        $cfg.idleSeconds = [math]::Min(3600.0, [math]::Max(0.0, $iv))
                                         $applied += 'idle_seconds'
                                     }
                                     if ($null -ne $s.auto_update) {

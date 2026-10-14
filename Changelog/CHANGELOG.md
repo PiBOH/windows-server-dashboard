@@ -8,6 +8,35 @@ Versioning follows Semantic Versioning: MAJOR.MINOR.PATCH.
 - PATCH - fixes and tweaks that add no feature.
 
 ------------------------------------------------------------------------------
+  1.16.12 - 2026-10-14
+------------------------------------------------------------------------------
+
+Fixed:
+  - The interval saved from the settings panel is the interval that was asked
+    for. The bounds of the accepted values were written with integer literals -
+    3600 for the refresh interval, 0 and 3600 for the idle one - and PowerShell
+    then resolves Min/Max to the Int32 overload, which throws the fraction
+    away: 2.5 seconds was written and used as 2, 1.25 as 1, and 0.5 as 0.
+    That last one did not show: 0 is below the lower bound of
+    refresh_seconds, so it was read back as 0.5 and the panel looked right
+    while settings.txt held a value that does not exist. For idle_seconds the
+    same rounding was worse, because there 0 is a meaning of its own - "do not
+    sample at all while nobody is watching" - so choosing half a second
+    switched idle sampling off. The bounds are doubles now (3600.0, 0.0).
+    Nothing else moved: a value under the lower bound is still lifted to it, a
+    value over an hour is still cut to 3600, the range of accepted values is
+    exactly what it was, and the other settings are untouched.
+  - The same shape was found and fixed in the per-adapter network rates. The
+    down and up rate of every network card was clamped with
+    [math]::Max(0, $rate), and that integer zero made PowerShell choose
+    Max(Int32, Int32) again: the rate was rounded to the nearest byte per
+    second (invisible on the page, which shows tenths of a kilobyte) and,
+    above 2 GB/s inside one cycle - a 25 GbE card, or a counter that jumps -
+    the call threw instead of returning, so that cycle was published without
+    its network section and a collector line said why. The bound is a double
+    here too; the values are the same, and there is nothing left to round.
+
+------------------------------------------------------------------------------
   1.16.11 - 2026-10-14
 ------------------------------------------------------------------------------
 
