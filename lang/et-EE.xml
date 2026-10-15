@@ -15,7 +15,7 @@
   <string key="threads_w">lõime</string>
   <string key="sockets">pesa</string>
   <string key="temperature">Temperatuur</string>
-  <string key="temp_na">pole saadaval (ACPI andur puudub)</string>
+  <string key="temp_na">not available (no temperature source found)</string>
   <string key="core">Tuum</string>
   <string key="ram">Mälu (RAM)</string>
   <string key="ram_trend">Mälu kulg</string>
@@ -181,5 +181,4 @@
   <string key="about_loading">Muudatuste logi lugemine GitHubist...</string>
   <string key="about_offline">Muudatuste logi ei õnnestunud GitHubist lugeda: see paneel vajab sellest brauserist internetiühendust.</string>
   <string key="about_empty">Muudatuste logi on tühi.</string>
-  <string key="about_src">loetud otse saidilt github.com/PiBOH/windows-server-dashboard</string>
 </language>

@@ -181,5 +181,4 @@
   <string key="about_loading">Reading the changelog from GitHub...</string>
   <string key="about_offline">The changelog could not be read from GitHub: this panel needs internet access from this browser.</string>
   <string key="about_empty">The changelog is empty.</string>
-  <string key="about_src">read live from github.com/PiBOH/windows-server-dashboard</string>
 </language>

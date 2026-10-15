@@ -181,5 +181,4 @@
   <string key="about_loading">正在从 GitHub 读取更新日志...</string>
   <string key="about_offline">无法从 GitHub 读取更新日志：此面板需要从此浏览器访问互联网。</string>
   <string key="about_empty">更新日志为空。</string>
-  <string key="about_src">从 github.com/PiBOH/windows-server-dashboard 实时读取</string>
 </language>

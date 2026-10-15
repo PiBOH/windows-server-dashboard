@@ -181,5 +181,4 @@
   <string key="about_loading">קורא את יומן השינויים מ-GitHub...</string>
   <string key="about_offline">לא ניתן היה לקרוא את יומן השינויים מ-GitHub: חלון זה זקוק לגישה לאינטרנט מהדפדפן הזה.</string>
   <string key="about_empty">יומן השינויים ריק.</string>
-  <string key="about_src">נקרא ישירות מ-github.com/PiBOH/windows-server-dashboard</string>
 </language>

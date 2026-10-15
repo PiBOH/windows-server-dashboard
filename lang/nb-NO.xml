@@ -15,7 +15,7 @@
   <string key="threads_w">tråder</string>
   <string key="sockets">sokler</string>
   <string key="temperature">Temperatur</string>
-  <string key="temp_na">ikke tilgjengelig (ingen ACPI-sensor)</string>
+  <string key="temp_na">not available (no temperature source found)</string>
   <string key="core">Kjerne</string>
   <string key="ram">Minne (RAM)</string>
   <string key="ram_trend">RAM-utvikling</string>
@@ -181,5 +181,4 @@
   <string key="about_loading">Endringsloggen leses fra GitHub...</string>
   <string key="about_offline">Endringsloggen kunne ikke leses fra GitHub: dette panelet trenger internettilgang fra denne nettleseren.</string>
   <string key="about_empty">Endringsloggen er tom.</string>
-  <string key="about_src">lest direkte fra github.com/PiBOH/windows-server-dashboard</string>
 </language>

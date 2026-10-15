@@ -181,5 +181,4 @@
   <string key="about_loading">جارٍ قراءة سجل التغييرات من GitHub...</string>
   <string key="about_offline">تعذّرت قراءة سجل التغييرات من GitHub: تحتاج هذه اللوحة إلى اتصال بالإنترنت من هذا المستعرض.</string>
   <string key="about_empty">سجل التغييرات فارغ.</string>
-  <string key="about_src">قُرئ مباشرة من github.com/PiBOH/windows-server-dashboard</string>
 </language>

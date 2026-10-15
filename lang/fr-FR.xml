@@ -15,7 +15,7 @@
   <string key="threads_w">threads</string>
   <string key="sockets">sockets</string>
   <string key="temperature">Température</string>
-  <string key="temp_na">non disponible (capteur ACPI absent)</string>
+  <string key="temp_na">not available (no temperature source found)</string>
   <string key="core">Cœur</string>
   <string key="ram">Mémoire (RAM)</string>
   <string key="ram_trend">Évolution de la mémoire</string>
@@ -181,5 +181,4 @@
   <string key="about_loading">Lecture du journal des modifications depuis GitHub...</string>
   <string key="about_offline">Le journal des modifications n'a pas pu être lu depuis GitHub : ce panneau a besoin d'un accès internet depuis ce navigateur.</string>
   <string key="about_empty">Le journal des modifications est vide.</string>
-  <string key="about_src">lu en direct depuis github.com/PiBOH/windows-server-dashboard</string>
 </language>

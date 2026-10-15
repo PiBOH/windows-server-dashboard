@@ -15,7 +15,7 @@
   <string key="threads_w">niti</string>
   <string key="sockets">podnožja</string>
   <string key="temperature">Temperatura</string>
-  <string key="temp_na">nije dostupna (nema ACPI senzora)</string>
+  <string key="temp_na">not available (no temperature source found)</string>
   <string key="core">Jezgro</string>
   <string key="ram">Memorija (RAM)</string>
   <string key="ram_trend">Kretanje memorije</string>
@@ -181,5 +181,4 @@
   <string key="about_loading">Dnevnik izmena se čita sa GitHuba...</string>
   <string key="about_offline">Dnevnik izmena nije bilo moguće pročitati sa GitHuba: ovom oknu treba pristup internetu iz ovog pregledača.</string>
   <string key="about_empty">Dnevnik izmena je prazan.</string>
-  <string key="about_src">pročitano uživo sa github.com/PiBOH/windows-server-dashboard</string>
 </language>

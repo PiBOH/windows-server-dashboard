@@ -181,5 +181,4 @@
   <string key="about_loading">正在從 GitHub 讀取變更記錄...</string>
   <string key="about_offline">無法從 GitHub 讀取變更記錄：此面板需要從此瀏覽器存取網際網路。</string>
   <string key="about_empty">變更記錄是空的。</string>
-  <string key="about_src">從 github.com/PiBOH/windows-server-dashboard 即時讀取</string>
 </language>

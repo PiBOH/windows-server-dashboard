@@ -181,5 +181,4 @@
   <string key="about_loading">Журнал змін читається з GitHub...</string>
   <string key="about_offline">Не вдалося прочитати журнал змін із GitHub: цьому вікну потрібен доступ до інтернету з цього браузера.</string>
   <string key="about_empty">Журнал змін порожній.</string>
-  <string key="about_src">читається наживо з github.com/PiBOH/windows-server-dashboard</string>
 </language>

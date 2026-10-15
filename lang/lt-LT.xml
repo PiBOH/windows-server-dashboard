@@ -15,7 +15,7 @@
   <string key="threads_w">gijos</string>
   <string key="sockets">lizdai</string>
   <string key="temperature">Temperatūra</string>
-  <string key="temp_na">nepasiekiama (nėra ACPI jutiklio)</string>
+  <string key="temp_na">not available (no temperature source found)</string>
   <string key="core">Branduolys</string>
   <string key="ram">Atmintis (RAM)</string>
   <string key="ram_trend">Atminties kitimas</string>
@@ -181,5 +181,4 @@
   <string key="about_loading">Pakeitimų žurnalas skaitomas iš GitHub...</string>
   <string key="about_offline">Pakeitimų žurnalo iš GitHub nuskaityti nepavyko: šiam langui reikia interneto prieigos iš šios naršyklės.</string>
   <string key="about_empty">Pakeitimų žurnalas tuščias.</string>
-  <string key="about_src">skaitoma tiesiogiai iš github.com/PiBOH/windows-server-dashboard</string>
 </language>

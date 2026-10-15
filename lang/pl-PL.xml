@@ -15,7 +15,7 @@
   <string key="threads_w">wątki</string>
   <string key="sockets">gniazda</string>
   <string key="temperature">Temperatura</string>
-  <string key="temp_na">niedostępna (brak czujnika ACPI)</string>
+  <string key="temp_na">not available (no temperature source found)</string>
   <string key="core">Rdzeń</string>
   <string key="ram">Pamięć (RAM)</string>
   <string key="ram_trend">Przebieg pamięci</string>
@@ -181,5 +181,4 @@
   <string key="about_loading">Wczytywanie dziennika zmian z GitHuba...</string>
   <string key="about_offline">Nie udało się odczytać dziennika zmian z GitHuba: to okno potrzebuje dostępu do internetu z tej przeglądarki.</string>
   <string key="about_empty">Dziennik zmian jest pusty.</string>
-  <string key="about_src">czytany na żywo z github.com/PiBOH/windows-server-dashboard</string>
 </language>

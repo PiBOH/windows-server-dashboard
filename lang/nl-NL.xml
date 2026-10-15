@@ -15,7 +15,7 @@
   <string key="threads_w">threads</string>
   <string key="sockets">sockets</string>
   <string key="temperature">Temperatuur</string>
-  <string key="temp_na">niet beschikbaar (geen ACPI-sensor)</string>
+  <string key="temp_na">not available (no temperature source found)</string>
   <string key="core">Core</string>
   <string key="ram">Geheugen (RAM)</string>
   <string key="ram_trend">RAM-verloop</string>
@@ -181,5 +181,4 @@
   <string key="about_loading">Het wijzigingslog wordt van GitHub gelezen...</string>
   <string key="about_offline">Het wijzigingslog kon niet van GitHub worden gelezen: dit venster heeft internettoegang vanuit deze browser nodig.</string>
   <string key="about_empty">Het wijzigingslog is leeg.</string>
-  <string key="about_src">live gelezen van github.com/PiBOH/windows-server-dashboard</string>
 </language>

@@ -15,7 +15,7 @@
   <string key="threads_w">vlákna</string>
   <string key="sockets">patice</string>
   <string key="temperature">Teplota</string>
-  <string key="temp_na">není k dispozici (chybí čidlo ACPI)</string>
+  <string key="temp_na">not available (no temperature source found)</string>
   <string key="core">Jádro</string>
   <string key="ram">Paměť (RAM)</string>
   <string key="ram_trend">Průběh paměti</string>
@@ -181,5 +181,4 @@
   <string key="about_loading">Načítá se protokol změn z GitHubu...</string>
   <string key="about_offline">Protokol změn se z GitHubu nepodařilo načíst: tento panel potřebuje přístup k internetu z tohoto prohlížeče.</string>
   <string key="about_empty">Protokol změn je prázdný.</string>
-  <string key="about_src">čteno živě z github.com/PiBOH/windows-server-dashboard</string>
 </language>

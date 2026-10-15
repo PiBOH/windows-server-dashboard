@@ -181,5 +181,4 @@
   <string key="about_loading">Дневникът на промените се чете от GitHub...</string>
   <string key="about_offline">Дневникът на промените не можа да се прочете от GitHub: този панел се нуждае от достъп до интернет от този браузър.</string>
   <string key="about_empty">Дневникът на промените е празен.</string>
-  <string key="about_src">прочетено на живо от github.com/PiBOH/windows-server-dashboard</string>
 </language>

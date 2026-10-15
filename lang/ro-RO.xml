@@ -15,7 +15,7 @@
   <string key="threads_w">fire</string>
   <string key="sockets">socluri</string>
   <string key="temperature">Temperatură</string>
-  <string key="temp_na">indisponibilă (fără senzor ACPI)</string>
+  <string key="temp_na">not available (no temperature source found)</string>
   <string key="core">Nucleu</string>
   <string key="ram">Memorie (RAM)</string>
   <string key="ram_trend">Evoluție memorie</string>
@@ -181,5 +181,4 @@
   <string key="about_loading">Se citește jurnalul de modificări de pe GitHub...</string>
   <string key="about_offline">Jurnalul de modificări nu a putut fi citit de pe GitHub: acest panou are nevoie de acces la internet din acest browser.</string>
   <string key="about_empty">Jurnalul de modificări este gol.</string>
-  <string key="about_src">citit live de pe github.com/PiBOH/windows-server-dashboard</string>
 </language>

@@ -15,7 +15,7 @@
   <string key="threads_w">Threads</string>
   <string key="sockets">Sockel</string>
   <string key="temperature">Temperatur</string>
-  <string key="temp_na">nicht verfügbar (kein ACPI-Sensor)</string>
+  <string key="temp_na">not available (no temperature source found)</string>
   <string key="core">Kern</string>
   <string key="ram">Arbeitsspeicher (RAM)</string>
   <string key="ram_trend">RAM-Verlauf</string>
@@ -181,5 +181,4 @@
   <string key="about_loading">Das Änderungsprotokoll wird von GitHub gelesen...</string>
   <string key="about_offline">Das Änderungsprotokoll konnte nicht von GitHub gelesen werden: Dieses Fenster braucht Internetzugang von diesem Browser.</string>
   <string key="about_empty">Das Änderungsprotokoll ist leer.</string>
-  <string key="about_src">live gelesen von github.com/PiBOH/windows-server-dashboard</string>
 </language>

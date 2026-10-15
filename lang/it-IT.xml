@@ -15,7 +15,7 @@
   <string key="threads_w">thread</string>
   <string key="sockets">socket</string>
   <string key="temperature">Temperatura</string>
-  <string key="temp_na">non disponibile (nessuna sorgente trovata)</string>
+  <string key="temp_na">not available (no temperature source found)</string>
   <string key="temp_help_open">Perché manca la temperatura della CPU?</string>
   <string key="temp_help_title">Perché manca la temperatura della CPU</string>
   <string key="temp_help_why">Nessuna sorgente ha risposto, quindi la dashboard non ha un numero da mostrare. Non misura la temperatura da sola e non avvia nulla: legge quello che pubblica un programma che la misura. Installane uno e lascialo in esecuzione - nessun add-on, nessun plug-in, niente da installare dentro la dashboard:</string>
@@ -181,5 +181,4 @@
   <string key="about_loading">Lettura del registro delle modifiche da GitHub...</string>
   <string key="about_offline">Non è stato possibile leggere il registro delle modifiche da GitHub: questo pannello richiede l'accesso a internet da questo browser.</string>
   <string key="about_empty">Il registro delle modifiche è vuoto.</string>
-  <string key="about_src">letto in diretta da github.com/PiBOH/windows-server-dashboard</string>
 </language>

@@ -15,7 +15,7 @@
   <string key="threads_w">iş parçacığı</string>
   <string key="sockets">yuva</string>
   <string key="temperature">Sıcaklık</string>
-  <string key="temp_na">kullanılamıyor (ACPI algılayıcısı yok)</string>
+  <string key="temp_na">not available (no temperature source found)</string>
   <string key="core">Çekirdek</string>
   <string key="ram">Bellek (RAM)</string>
   <string key="ram_trend">Bellek eğilimi</string>
@@ -181,5 +181,4 @@
   <string key="about_loading">Değişiklik günlüğü GitHub'dan okunuyor...</string>
   <string key="about_offline">Değişiklik günlüğü GitHub'dan okunamadı: bu panelin bu tarayıcıdan internet erişimine ihtiyacı var.</string>
   <string key="about_empty">Değişiklik günlüğü boş.</string>
-  <string key="about_src">github.com/PiBOH/windows-server-dashboard adresinden canlı okundu</string>
 </language>

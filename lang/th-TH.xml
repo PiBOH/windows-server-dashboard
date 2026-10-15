@@ -181,5 +181,4 @@
   <string key="about_loading">กำลังอ่านบันทึกการเปลี่ยนแปลงจาก GitHub...</string>
   <string key="about_offline">ไม่สามารถอ่านบันทึกการเปลี่ยนแปลงจาก GitHub ได้: แผงนี้ต้องเข้าถึงอินเทอร์เน็ตจากเบราว์เซอร์นี้</string>
   <string key="about_empty">บันทึกการเปลี่ยนแปลงว่างเปล่า</string>
-  <string key="about_src">อ่านสดจาก github.com/PiBOH/windows-server-dashboard</string>
 </language>

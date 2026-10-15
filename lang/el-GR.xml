@@ -181,5 +181,4 @@
   <string key="about_loading">Ανάγνωση του ημερολογίου αλλαγών από το GitHub...</string>
   <string key="about_offline">Το ημερολόγιο αλλαγών δεν μπόρεσε να διαβαστεί από το GitHub: αυτό το παράθυρο χρειάζεται πρόσβαση στο internet από αυτό το πρόγραμμα περιήγησης.</string>
   <string key="about_empty">Το ημερολόγιο αλλαγών είναι κενό.</string>
-  <string key="about_src">διαβάστηκε ζωντανά από github.com/PiBOH/windows-server-dashboard</string>
 </language>

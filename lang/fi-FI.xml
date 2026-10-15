@@ -15,7 +15,7 @@
   <string key="threads_w">säiettä</string>
   <string key="sockets">kantaa</string>
   <string key="temperature">Lämpötila</string>
-  <string key="temp_na">ei saatavilla (ei ACPI-anturia)</string>
+  <string key="temp_na">not available (no temperature source found)</string>
   <string key="core">Ydin</string>
   <string key="ram">Muisti (RAM)</string>
   <string key="ram_trend">Muistin kehitys</string>
@@ -181,5 +181,4 @@
   <string key="about_loading">Muutoslokia luetaan GitHubista...</string>
   <string key="about_offline">Muutoslokia ei voitu lukea GitHubista: tämä paneeli tarvitsee internetyhteyden tästä selaimesta.</string>
   <string key="about_empty">Muutosloki on tyhjä.</string>
-  <string key="about_src">luettu suoraan osoitteesta github.com/PiBOH/windows-server-dashboard</string>
 </language>

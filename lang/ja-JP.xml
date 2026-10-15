@@ -181,5 +181,4 @@
   <string key="about_loading">GitHub から変更履歴を読み込んでいます...</string>
   <string key="about_offline">GitHub から変更履歴を読み込めませんでした: このパネルにはこのブラウザーからのインターネット接続が必要です。</string>
   <string key="about_empty">変更履歴は空です。</string>
-  <string key="about_src">github.com/PiBOH/windows-server-dashboard から直接読み込み</string>
 </language>

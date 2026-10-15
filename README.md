@@ -10,7 +10,7 @@ No agent, no IIS, no external module, no database: a single PowerShell script
 publishes the page, and you open it from any computer on the LAN by typing the
 IP of the server.
 
-[![Version](https://img.shields.io/badge/version-1.16.19-blue)](Changelog/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.16.20-blue)](Changelog/CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/Windows%20Server-2016%2B-0078D6?logo=windows)](#requirements)
 [![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)](#requirements)
 [![Languages](https://img.shields.io/badge/UI%20languages-38-brightgreen)](#-38-languages)

@@ -103,7 +103,9 @@ jobs:
           git ls-files -z | while IFS= read -r -d '' f; do
             case "$f" in
               .github/*|.config/*|_build/*|screenshots/*) continue ;;
-              .gitattributes|.gitignore)                   continue ;;
+              # AGENTS.md is for whoever edits this repository, not for the
+              # server that receives the zip
+              .gitattributes|.gitignore|AGENTS.md)         continue ;;
               # legacy leftovers of the pre-1.12.0 layout: they must not
               # travel with the release zip even if still in the repo
               docs/CHANGELOG.md|docs/RELEASE-NOTES-*|docs/screenshots/*) continue ;;
@@ -170,7 +172,7 @@ jobs:
               print('OK    ' + d + ' (absent)')
           # local secrets and machine state must never travel with the zip
           for f in ['settings.txt', 'settings-backup.txt', 'scripts/pwd',
-                    'scripts/install-state.txt']:
+                    'scripts/install-state.txt', 'AGENTS.md']:
               check(f, False)
           print('zip content validated')
           PY

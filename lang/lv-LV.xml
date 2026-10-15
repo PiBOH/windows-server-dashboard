@@ -15,7 +15,7 @@
   <string key="threads_w">pavedieni</string>
   <string key="sockets">ligzdas</string>
   <string key="temperature">Temperatūra</string>
-  <string key="temp_na">nav pieejama (nav ACPI sensora)</string>
+  <string key="temp_na">not available (no temperature source found)</string>
   <string key="core">Kodols</string>
   <string key="ram">Atmiņa (RAM)</string>
   <string key="ram_trend">Atmiņas dinamika</string>
@@ -181,5 +181,4 @@
   <string key="about_loading">Izmaiņu žurnāls tiek nolasīts no GitHub...</string>
   <string key="about_offline">Izmaiņu žurnālu no GitHub neizdevās nolasīt: šim logam ir vajadzīga interneta piekļuve no šīs pārlūkprogrammas.</string>
   <string key="about_empty">Izmaiņu žurnāls ir tukšs.</string>
-  <string key="about_src">nolasīts tiešraidē no github.com/PiBOH/windows-server-dashboard</string>
 </language>

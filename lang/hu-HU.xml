@@ -15,7 +15,7 @@
   <string key="threads_w">szál</string>
   <string key="sockets">foglalat</string>
   <string key="temperature">Hőmérséklet</string>
-  <string key="temp_na">nem érhető el (nincs ACPI-érzékelő)</string>
+  <string key="temp_na">not available (no temperature source found)</string>
   <string key="core">Mag</string>
   <string key="ram">Memória (RAM)</string>
   <string key="ram_trend">Memória alakulása</string>
@@ -181,5 +181,4 @@
   <string key="about_loading">A változásnapló olvasása a GitHubból...</string>
   <string key="about_offline">A változásnaplót nem sikerült beolvasni a GitHubból: ennek az ablaknak internetkapcsolatra van szüksége ebből a böngészőből.</string>
   <string key="about_empty">A változásnapló üres.</string>
-  <string key="about_src">élőben olvasva innen: github.com/PiBOH/windows-server-dashboard</string>
 </language>

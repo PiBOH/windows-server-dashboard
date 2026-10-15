@@ -7,6 +7,40 @@ Versioning follows Semantic Versioning: MAJOR.MINOR.PATCH.
 - MINOR - new backward compatible features.
 - PATCH - fixes and tweaks that add no feature.
 
+  1.16.20 - 2026-10-15
+  Fixed: the CPU % of the processes was a wall of zeros and the busy
+    percentage of a disk never moved. Both came from the "formatted" WMI
+    performance classes, which on a real machine reported 0.0 for 207
+    processes out of 214 and the same untouched value for every volume at
+    every sample, even while one was being written to. The raw counters behind
+    them grow exactly as they should, so the rates are computed from two
+    samples now - the arithmetic that class was supposed to do for us.
+  Changed: the Processes table refreshes at the pace of the rest of the page.
+    CPU %, memory, threads and handles are read every cycle, while the names,
+    the paths and the descriptions of the executables - which cost three times
+    as much to read and cannot change while a process runs - stay on a 30
+    second tier and are remembered in between. A process started during that
+    wait appears anyway, named the way the counter names it, until the next
+    pass spells its path out.
+  Changed: the Processes table opens sorted by CPU %, busiest first, like Task
+    Manager: two hundred rows sorted by name put a screenful of idle system
+    processes - all reading 0.0 - in front of the one process that is working.
+    Every column still sorts on a click and the choice stays in the browser.
+  Changed: the About panel draws its marks - the GitHub logo, the globe, the
+    envelope - as inline SVG instead of emoji, so they follow the colour of the
+    theme and look the same on every server; the "i" before the title, the
+    "read live from ..." line and the label before Releases are gone, the last
+    one because it said nothing about the link it sat on.
+  Changed: the panel that explains a missing CPU temperature stays open until
+    it is closed - its X, its Close button, Escape - or a click lands on the
+    dark area around it. A refresh no longer takes it away while it is read.
+  Changed: the line that says the temperature is missing is written in English
+    in the 27 languages that use the Latin alphabet, and translated in the 11
+    that do not (Arabic, Bulgarian, Greek, Hebrew, Japanese, Korean, Russian,
+    Thai, Ukrainian, Chinese).
+  Changed: docs\README.md documents the new sampling tiers and the order the
+    process table opens in.
+
   1.16.19 - 2026-10-15
   Fixed: with no password the header selector was a second command over the
     same refresh frequency, so a browser could drift from the value of the

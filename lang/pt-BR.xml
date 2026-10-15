@@ -15,7 +15,7 @@
   <string key="threads_w">threads</string>
   <string key="sockets">sockets</string>
   <string key="temperature">Temperatura</string>
-  <string key="temp_na">não disponível (sem sensor ACPI)</string>
+  <string key="temp_na">not available (no temperature source found)</string>
   <string key="core">Núcleo</string>
   <string key="ram">Memória (RAM)</string>
   <string key="ram_trend">Evolução da RAM</string>
@@ -181,5 +181,4 @@
   <string key="about_loading">Lendo o registro de alterações do GitHub...</string>
   <string key="about_offline">Não foi possível ler o registro de alterações do GitHub: este painel precisa de acesso à internet deste navegador.</string>
   <string key="about_empty">O registro de alterações está vazio.</string>
-  <string key="about_src">lido ao vivo de github.com/PiBOH/windows-server-dashboard</string>
 </language>

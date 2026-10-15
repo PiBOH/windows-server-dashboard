@@ -1,6 +1,6 @@
 ==============================================================================
   SERVER DASHBOARD - web monitoring for Windows Server 2016
-  Version 1.16.19
+  Version 1.16.20
 ==============================================================================
 
 A monitoring dashboard you can open from any computer on the local network by
@@ -303,9 +303,10 @@ PROCESSES
   list. Hover a name to see the full path of the executable; the filter
   searches the image name, the friendly name and the path, so you can
   type "task manager", "exe" or a folder name too.
-  The list opens sorted by that shown name, A to Z; clicking any column
-  header sorts by it (and clicking the Process column sorts on the name it
-  shows, the friendly one). The choice is remembered per browser.
+  The list opens sorted by CPU %, busiest first, like Task Manager, and the
+  numbers move at every refresh; clicking any column header sorts by it (and
+  clicking the Process column sorts on the name it shows, the friendly one).
+  The choice is remembered per browser.
 
 SERVICES
   The complete service list with display name, internal name, state, startup
@@ -534,16 +535,16 @@ TIERED SAMPLING (WHY IT IS CHEAP)
     | Metric                     | Read every                    |
     +----------------------------+-------------------------------+
     | CPU, memory, network       | every cycle (0.5 s by default) |
-    | Processes                  | 5 seconds                     |
+    | Process CPU %, memory      | every cycle (at least 1 s)     |
+    | Process names and paths    | 30 seconds                    |
     | Disks and partitions       | 10 seconds                    |
     | Services, sessions         | 30 seconds                    |
     | Windows events             | 60 seconds                    |
     | OS, BIOS, CPU model, RAM   | once at startup               |
     +----------------------------+-------------------------------+
 
-  The browser does its part too: the process, service, event and disk tables
-  are rebuilt only when the data actually changed, and polling stops
-  completely while the tab is in the background.
+  The browser does its part too: polling stops completely while the tab is in
+  the background.
 
 NOBODY WATCHING = NOTHING RUNNING
   When no browser has asked for data for a few refresh intervals (at least 15
@@ -962,4 +963,4 @@ The current version is shown in the centre of the footer and returned by
 /api/health. Changes follow Semantic Versioning (MAJOR.MINOR.PATCH); see
 Changelog\CHANGELOG.md.
 
-Current version: 1.16.19
+Current version: 1.16.20

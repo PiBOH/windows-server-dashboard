@@ -22,7 +22,6 @@ var EN = {
   about_loading:   'Reading the changelog from GitHub...',
   about_offline:   'The changelog could not be read from GitHub: this panel needs internet access from this browser.',
   about_empty:     'The changelog is empty.',
-  about_src:       'read live from github.com/PiBOH/windows-server-dashboard',
   /* the "?" next to a missing temperature and the panel behind it */
   temp_help_open:  'Why is the CPU temperature missing?',
   temp_help_title: 'Why the CPU temperature is missing',
@@ -495,12 +494,10 @@ var CHANGELOG_REQ = 0;
 
 function loadAboutChangelog(){
   var box = document.getElementById('aboutcl');
-  var src = document.getElementById('aboutsrc');
   /* reopening the panel or pressing Reload starts a new request: an answer
      that arrives late must not overwrite a newer one */
   var req = ++CHANGELOG_REQ;
   box.innerHTML = '<div class="cl plain">' + esc(T('about_loading')) + '</div>';
-  src.textContent = '';
   /* cache: 'no-store' and a key that never repeats: the answer must come from
      GitHub, not from a copy some layer kept */
   var url = CHANGELOG_URL + '?sb=' + Date.now() + '-' + Math.random().toString(36).slice(2);
@@ -510,12 +507,10 @@ function loadAboutChangelog(){
       if (req !== CHANGELOG_REQ) return;
       box.innerHTML = renderChangelog(txt) || '<div class="cl plain">' + esc(T('about_empty')) + '</div>';
       box.scrollTop = 0;
-      src.textContent = T('about_src') + ' \u00b7 ' + new Date().toLocaleTimeString();
     })
-    .catch(function(e){
+    .catch(function(){
       if (req !== CHANGELOG_REQ) return;
       box.innerHTML = '<div class="cl crit">' + esc(T('about_offline')) + '</div>';
-      src.textContent = (e && e.message) ? e.message : 'network';
     });
 }
 
@@ -751,7 +746,13 @@ var sig = { proc:'', svc:'', ev:'', disk:'' };
 function quickSig(a){
   if (!a || !a.length) return '0';
   var s = a.length + '|';
-  for (var i = 0; i < a.length; i += Math.max(1, Math.floor(a.length / 12))) {
+  /* every row, not one in twelve: sampling a couple of the rows meant that a
+     table of two hundred processes (or a disk whose line was not among those
+     few) could change and never be repainted, which reads exactly like a
+     dashboard that stopped updating. The cost is one pass over the payload
+     that a refresh already walked; the rebuild it avoids is the expensive
+     part, and it still happens only when the data really changed. */
+  for (var i = 0; i < a.length; i++){
     var o = a[i];
     s += (o.Pid || o.Name || o.EventId || o.Model || '') + ':' +
          (o.CpuPct != null ? o.CpuPct : (o.State || o.Time || o.BusyPct || '')) + ';';
@@ -763,7 +764,11 @@ var NUMKEYS = {Pid:1, CpuPct:1, RamMB:1, Threads:1, Handles:1, EventId:1, Level:
    shows), not by CPU: with two hundred of them a list that moves at every
    refresh is unreadable. Every column can still be clicked, and the choice
    is remembered per browser. */
-var DEFSORT = { tproc: {k:'Name', d:1}, tsvc: {k:'State', d:1}, tev: {k:'Time', d:-1} };
+/* The processes table opens on CPU % descending, like Task Manager: this is
+   the column that changes, and two hundred rows sorted by name put a screenful
+   of idle system processes - all reading 0.0 - in front of the one process
+   that is working. The header still sorts by anything else on a click. */
+var DEFSORT = { tproc: {k:'CpuPct', d:-1}, tsvc: {k:'State', d:1}, tev: {k:'Time', d:-1} };
 var sortState = { tproc: null, tsvc: null, tev: null };
 
 function loadSort(id){
@@ -1163,7 +1168,12 @@ document.getElementById('aboutreload').onclick = openAbout;  document.getElement
 document.getElementById('temphelp').onclick = openTempHelp;
 document.getElementById('tempclose').onclick = closeTempHelp;
 document.getElementById('tempok').onclick = closeTempHelp;
-document.getElementById('tempmodal').onclick = function(e){ if (e.target === this) closeTempHelp(); };
+/* the temperature panel is read, not passed through: it closes when the click
+   lands on the dark area around it (pointerdown, so a click that starts inside
+   the panel and ends a pixel outside - selecting the text of a link, say - does
+   not take it away), or on its X, its Close button, or Escape. Nothing else
+   closes it, and in particular nothing that the page does while it refreshes. */
+document.getElementById('tempmodal').addEventListener('pointerdown', function(e){ if (e.target === this) closeTempHelp(); });
 document.getElementById('propmodal').onclick = function(e){ if (e.target === this) closeProps(); };
 document.getElementById('propclose').onclick = closeProps;
 document.getElementById('propok').onclick = closeProps;

@@ -85,7 +85,7 @@ footer .fcenter #aboutbtn{color:var(--muted)}
   padding:5px 12px;font-size:12px;display:inline-flex;align-items:center;gap:6px;direction:ltr}
 #langbtn:hover,#themebtn:hover,#setbtn:hover{background:var(--hover);border-color:var(--accent)}
 .modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);z-index:50;
-  align-items:center;justify-content:center;padding:20px}
+  align-items:center;justify-content:center;padding:20px;overflow:auto}
 .modal.on{display:flex}
 .setbody{padding:16px 18px;overflow:auto;display:grid;gap:16px}
 .setrow{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
@@ -168,6 +168,11 @@ footer .fcenter #aboutbtn{color:var(--muted)}
 .aboutlinks a{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--border);
   border-radius:7px;padding:6px 11px;font-size:12.5px;color:var(--txt);text-decoration:none}
 .aboutlinks a:hover{border-color:var(--accent);background:var(--hover)}
+/* the marks of the links: outlined for the globe and the envelope, filled for
+   the GitHub logo, which is a shape and not a stroke */
+.aboutlinks .ico{width:14px;height:14px;flex:0 0 auto;fill:none;stroke:currentColor;
+  stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.aboutlinks .ico.ico-fill{fill:currentColor;stroke:none}
 .aboutcap{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px}
 .aboutcl{overflow:auto;max-height:36vh;background:var(--panel2);border:1px solid var(--border);border-radius:8px;
   padding:10px 12px;font-size:12px;line-height:1.5}

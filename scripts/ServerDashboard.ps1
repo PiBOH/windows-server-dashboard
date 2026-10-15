@@ -1117,7 +1117,10 @@ $CollectorScript = {
     # ------------------------------------------------------------------------
     $old = (Get-Date).AddYears(-1)
     $dkCache = $null; $dkStamp = $old      # disks      : every 10 s
-    $prCache = $null; $prStamp = $old      # processes  : every 5 s
+    $dkRaw   = $null                       # previous raw I/O counters: the rates are the difference of two of these
+    $prCache = $null; $prStamp = $old      # processes  : CPU% and counters, every cycle
+    $prIdCache = $null; $prIdStamp = $old  #              names, paths and command lines, every 30 s
+    $prRaw   = $null                       # previous raw CPU counters: the same, for the CPU% of every process
     $descCache = @{}                       # exe descriptions, read once per path
     $svCache = $null; $svStamp = $old      # services   : every 30 s
     # the temperature source already reported in the log: a value no source
@@ -1723,17 +1726,52 @@ $CollectorScript = {
             $dkEvery = [math]::Max(10, $Shared.Interval)
             if ((-not $dkCache) -or (((Get-Date) - $dkStamp).TotalSeconds -ge $dkEvery)) {
             try {
-            # Per-volume I/O counters (language independent WMI class)
-            $ioMap = @{}
-            foreach ($io in @(Get-CimSafe Win32_PerfFormattedData_PerfDisk_LogicalDisk)) {
-                if ($io.Name -match '^[A-Za-z]:$') {
-                    $ioMap["$($io.Name)".ToUpper()] = @{
-                        ReadKBs  = [math]::Round([double]$io.DiskReadBytesPersec / 1KB, 1)
-                        WriteKBs = [math]::Round([double]$io.DiskWriteBytesPersec / 1KB, 1)
-                        BusyPct  = [math]::Round(100 - [double]$io.PercentIdleTime, 1)
-                    }
+            # Per-volume I/O counters (language independent WMI class), read
+            # from the RAW class and turned into rates here.
+            #
+            # Why not the formatted class, which would hand the rates over
+            # ready-made: measured on a real machine it answers 0 KB/s and a
+            # busy percentage that never moves - the same "1.0" on every volume
+            # at every sample, even while 32 MB were being written and read -
+            # while the raw counters behind it grow exactly as they should. A
+            # rate is (value2 - value1) / (time2 - time1), which is the
+            # arithmetic that class is supposed to do for us. The first sample
+            # of a fresh start has nothing to subtract, so it is taken twice,
+            # 300 ms apart: without that the section would read zeros until the
+            # next cycle ten seconds later.
+            $ioNow = @{}
+            foreach ($io in @(Get-CimSafe Win32_PerfRawData_PerfDisk_LogicalDisk | Where-Object { $_ })) {
+                $ioNow["$($io.Name)".ToUpper()] = $io
+            }
+            if (-not $dkRaw -and $ioNow.Count) {
+                Start-Sleep -Milliseconds 300
+                $dkRaw = $ioNow
+                $ioNow = @{}
+                foreach ($io in @(Get-CimSafe Win32_PerfRawData_PerfDisk_LogicalDisk | Where-Object { $_ })) {
+                    $ioNow["$($io.Name)".ToUpper()] = $io
                 }
             }
+            $ioMap = @{}
+            foreach ($name in @($ioNow.Keys)) {
+                if ($name -notmatch '^[A-Za-z]:$') { continue }
+                $cur  = $ioNow[$name]
+                $prev = if ($dkRaw -and $dkRaw.ContainsKey($name)) { $dkRaw[$name] } else { $null }
+                if (-not $prev) { continue }
+                $dTs = ([double]$cur.Timestamp_Sys100NS - [double]$prev.Timestamp_Sys100NS) / 1e7
+                if ($dTs -le 0) { continue }
+                # a negative rate means the counters were reset (the volume was
+                # remounted): better a zero than a made up number
+                $rd = [math]::Max(0.0, (([double]$cur.DiskReadBytesPersec  - [double]$prev.DiskReadBytesPersec)  / 1KB) / $dTs)
+                $wr = [math]::Max(0.0, (([double]$cur.DiskWriteBytesPersec - [double]$prev.DiskWriteBytesPersec) / 1KB) / $dTs)
+                $idle = 100 * (([double]$cur.PercentIdleTime - [double]$prev.PercentIdleTime) /
+                               ([double]$cur.Timestamp_Sys100NS - [double]$prev.Timestamp_Sys100NS))
+                $ioMap[$name] = @{
+                    ReadKBs  = [math]::Round($rd, 1)
+                    WriteKBs = [math]::Round($wr, 1)
+                    BusyPct  = [math]::Round([math]::Min(100.0, [math]::Max(0.0, 100 - $idle)), 1)
+                }
+            }
+            $dkRaw = $ioNow
 
             # Every volume / partition, keyed by drive letter
             $volMap = @{}
@@ -2082,9 +2120,25 @@ $CollectorScript = {
                 Connections   = $tcpConn
             }
 
-            # ================== PROCESSES (tier: every 5 s) =================
-            $prEvery = [math]::Max(5, $Shared.Interval)
-            if ((-not $prCache) -or (((Get-Date) - $prStamp).TotalSeconds -ge $prEvery)) {
+            # ================== PROCESSES ==================================
+            # Two clocks, because the two halves of this section do not cost
+            # the same and do not age the same. The CPU%, the memory, the
+            # threads and the handles come from the performance counters and
+            # are a difference of two samples: they are read as often as the
+            # page refreshes, so the numbers move with the rest of the
+            # dashboard instead of standing still for five seconds while the
+            # clock in the header moves on. The image name, its full path and
+            # its command line come from Win32_Process, which costs about
+            # three times as much to enumerate (measured on a real machine:
+            # ~250 ms against ~80 ms with two hundred processes) and cannot
+            # change while the process runs, so they are read on a slow tier
+            # and remembered.
+            $prEvery   = [math]::Max(1, $Shared.Interval)    # counters and CPU%
+            $prIdEvery = [math]::Max(30, $Shared.Interval)   # names, paths, descriptions
+            $prDue   = (-not $prCache) -or (((Get-Date) - $prStamp).TotalSeconds -ge $prEvery)
+            # no identity sample yet, or the one in hand is old enough
+            $prIdDue = (-not $prIdCache) -or (((Get-Date) - $prIdStamp).TotalSeconds -ge $prIdEvery)
+            if ($prDue -or $prIdDue) {
             try {
             $nCpu = [math]::Max(1, [int]$static.CpuLogical)
             $procs = @()
@@ -2108,6 +2162,13 @@ $CollectorScript = {
                 $descCache[$dk] = $d
                 return $d
             }
+            # The identity of the processes, on its own slow tier. A process
+            # started during the wait below is not missing from the table:
+            # it is there, named the way the counter names it ("chrome.exe",
+            # out of "chrome#1") until the next identity sample spells its
+            # path out, and the $PID test keeps recognising the engine itself
+            # in the meantime.
+            if ($prIdDue) {
             $imgMap = @{}
             # The Where-Object is not decoration: when the CIM class cannot be
             # queried at all, Get-CimSafe returns a single $null, which @()
@@ -2120,12 +2181,33 @@ $CollectorScript = {
                     Cmd  = "$($wp.CommandLine)"          # full command line (self-identification)
                 }
             }
+            $prIdCache = $imgMap; $prIdStamp = Get-Date
+            } else { $imgMap = $prIdCache }
 
-            # same guard as above: a $null answer must not look like data
-            $pp = @(Get-CimSafe Win32_PerfFormattedData_PerfProc_Process | Where-Object { $_ })
+            # Same guard as above: a $null answer must not look like data, and
+            # the RAW class is read rather than the formatted one - measured on
+            # a real machine the formatted class reports 0.0 for 207 processes
+            # out of 214, so the column was a wall of zeros while Task Manager
+            # showed those processes working. The CPU% of a process is a
+            # difference anyway: it is CPU time (100 ns units) elapsed between
+            # two samples, divided by the time between them, and then divided by
+            # the number of logical processors to get Task Manager's scale.
+            # Memory, threads and handles are absolute values and come from the
+            # same instance. The first sample has nothing to subtract, so it is
+            # taken twice, 300 ms apart, instead of showing zeros for a cycle.
+            $pp = @(Get-CimSafe Win32_PerfRawData_PerfProc_Process | Where-Object { $_ })
             if ($pp.Count) {
-                foreach ($p in ($pp | Where-Object { $_.Name -ne '_Total' -and $_.IDProcess -ne 0 } |
-                                Sort-Object { [double]$_.PercentProcessorTime } -Descending)) {
+                $cpuNow = @{}
+                foreach ($p in $pp) { $cpuNow["$([int]$p.IDProcess)"] = $p }
+                if (-not $prRaw) {
+                    Start-Sleep -Milliseconds 300
+                    $prRaw = $cpuNow
+                    $cpuNow = @{}
+                    foreach ($p in @(Get-CimSafe Win32_PerfRawData_PerfProc_Process | Where-Object { $_ })) {
+                        $cpuNow["$([int]$p.IDProcess)"] = $p
+                    }
+                }
+                foreach ($p in ($cpuNow.Values | Where-Object { $_.Name -ne '_Total' -and $_.IDProcess -ne 0 })) {
                     $key  = "$([int]$p.IDProcess)"
                     $file = $null
                     $path = ''
@@ -2150,18 +2232,35 @@ $CollectorScript = {
                         $pDesc = $Shared.Brand
                         $isSelf = $true
                     }
+                    # CPU% of this process over the window between the two raw
+                    # samples. A process that was not there in the previous one
+                    # has nothing to subtract and reads 0: it was not running
+                    # during that window, so it used none of it.
+                    $CpuPercent = 0.0
+                    if ($prRaw.ContainsKey($key)) {
+                        $past = $prRaw[$key]
+                        $dCpu = [double]$p.PercentProcessorTime - [double]$past.PercentProcessorTime
+                        $dTs  = [double]$p.Timestamp_Sys100NS    - [double]$past.Timestamp_Sys100NS
+                        if ($dTs -gt 0 -and $dCpu -gt 0) {
+                            $CpuPercent = [math]::Round(100 * ($dCpu / $dTs) / $nCpu, 1)
+                        }
+                    }
                     $procs += @{
                         Name    = $file
                         Desc    = $pDesc
                         Self    = $isSelf
                         Path    = $path
                         Pid     = [int]$p.IDProcess
-                        CpuPct  = [math]::Round([double]$p.PercentProcessorTime / $nCpu, 1)
+                        CpuPct  = $CpuPercent
                         RamMB   = [math]::Round([double]$p.WorkingSetPrivate / 1MB, 1)
                         Threads = [int]$p.ThreadCount
                         Handles = [int]$p.HandleCount
                     }
                 }
+                # the list arrives in an arbitrary order: the consumers first,
+                # like before, so whoever reads the API without sorting sees
+                # what is working
+                $procs = @($procs | Sort-Object { -[double]$_.CpuPct })
             } else {
                 foreach ($p in (Get-Process | Sort-Object WorkingSet64 -Descending)) {
                     $key  = "$($p.Id)"
@@ -2183,6 +2282,7 @@ $CollectorScript = {
                 }
             }
 
+            $prRaw = $cpuNow
             $prCache = $procs; $prStamp = Get-Date
             } catch { Write-CollectorLog $Shared "processes: $($_.Exception.Message) (collector line $($_.InvocationInfo.ScriptLineNumber))"
                       $procs = @($prCache) }
@@ -2487,7 +2587,7 @@ footer .fcenter #aboutbtn{color:var(--muted)}
   padding:5px 12px;font-size:12px;display:inline-flex;align-items:center;gap:6px;direction:ltr}
 #langbtn:hover,#themebtn:hover,#setbtn:hover{background:var(--hover);border-color:var(--accent)}
 .modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);z-index:50;
-  align-items:center;justify-content:center;padding:20px}
+  align-items:center;justify-content:center;padding:20px;overflow:auto}
 .modal.on{display:flex}
 .setbody{padding:16px 18px;overflow:auto;display:grid;gap:16px}
 .setrow{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
@@ -2570,6 +2670,11 @@ footer .fcenter #aboutbtn{color:var(--muted)}
 .aboutlinks a{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--border);
   border-radius:7px;padding:6px 11px;font-size:12.5px;color:var(--txt);text-decoration:none}
 .aboutlinks a:hover{border-color:var(--accent);background:var(--hover)}
+/* the marks of the links: outlined for the globe and the envelope, filled for
+   the GitHub logo, which is a shape and not a stroke */
+.aboutlinks .ico{width:14px;height:14px;flex:0 0 auto;fill:none;stroke:currentColor;
+  stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.aboutlinks .ico.ico-fill{fill:currentColor;stroke:none}
 .aboutcap{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px}
 .aboutcl{overflow:auto;max-height:36vh;background:var(--panel2);border:1px solid var(--border);border-radius:8px;
   padding:10px 12px;font-size:12px;line-height:1.5}
@@ -2861,7 +2966,7 @@ footer .fcenter #aboutbtn{color:var(--muted)}
 
 <div id="aboutmodal" class="modal">
   <div class="modal-box aboutbox">
-    <h3>&#8505; <span data-i18n="about_title">About</span>
+    <h3><span data-i18n="about_title">About</span>
       <span class="close" id="aboutclose">&times;</span></h3>
     <div class="setbody">
       <div class="abouthead">
@@ -2871,15 +2976,20 @@ footer .fcenter #aboutbtn{color:var(--muted)}
         </div>
         <span class="tag" id="abouttag">v<span id="aboutver">__VERSION__</span></span>
       </div>
+      <!-- The marks are inline SVG in currentColor, never emoji: an emoji is
+           drawn by whatever font and set of emoji the machine has, so this
+           panel would not look the same on two servers, and several of them
+           (the globe, the label) say nothing about the link they sit on. A
+           link whose mark would not be understood goes without one. -->
       <div class="aboutlinks">
         <a href="https://piboh.github.io/" target="_blank" rel="noopener noreferrer">
-          &#127760; <span data-i18n="about_portfolio">Portfolio</span></a>
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.8 2.6 15.2 0 18M12 3c-2.6 2.8-2.6 15.2 0 18"/></svg><span data-i18n="about_portfolio">Portfolio</span></a>
         <a href="mailto:piboh.github@gmail.com">
-          &#9993; piboh.github@gmail.com</a>
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M3.2 6.6l8.8 6.3 8.8-6.3"/></svg>piboh.github@gmail.com</a>
         <a href="https://github.com/PiBOH/windows-server-dashboard" target="_blank" rel="noopener noreferrer">
-          &#128025; GitHub</a>
+          <svg class="ico ico-fill" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
         <a href="https://github.com/PiBOH/windows-server-dashboard/releases" target="_blank" rel="noopener noreferrer">
-          &#127991; <span data-i18n="about_releases">Releases</span></a>
+          <span data-i18n="about_releases">Releases</span></a>
       </div>
       <div>
         <div class="aboutcap">
@@ -2890,7 +3000,6 @@ footer .fcenter #aboutbtn{color:var(--muted)}
       </div>
     </div>
     <div class="modal-foot">
-      <span class="hint" id="aboutsrc"></span>
       <span style="flex:1"></span>
       <button class="btn" id="aboutreload" data-i18n="about_reload">Reload</button>
       <button class="btn primary" id="aboutok" data-i18n="about_close">Close</button>
@@ -2999,7 +3108,6 @@ var EN = {
   about_loading:   'Reading the changelog from GitHub...',
   about_offline:   'The changelog could not be read from GitHub: this panel needs internet access from this browser.',
   about_empty:     'The changelog is empty.',
-  about_src:       'read live from github.com/PiBOH/windows-server-dashboard',
   /* the "?" next to a missing temperature and the panel behind it */
   temp_help_open:  'Why is the CPU temperature missing?',
   temp_help_title: 'Why the CPU temperature is missing',
@@ -3472,12 +3580,10 @@ var CHANGELOG_REQ = 0;
 
 function loadAboutChangelog(){
   var box = document.getElementById('aboutcl');
-  var src = document.getElementById('aboutsrc');
   /* reopening the panel or pressing Reload starts a new request: an answer
      that arrives late must not overwrite a newer one */
   var req = ++CHANGELOG_REQ;
   box.innerHTML = '<div class="cl plain">' + esc(T('about_loading')) + '</div>';
-  src.textContent = '';
   /* cache: 'no-store' and a key that never repeats: the answer must come from
      GitHub, not from a copy some layer kept */
   var url = CHANGELOG_URL + '?sb=' + Date.now() + '-' + Math.random().toString(36).slice(2);
@@ -3487,12 +3593,10 @@ function loadAboutChangelog(){
       if (req !== CHANGELOG_REQ) return;
       box.innerHTML = renderChangelog(txt) || '<div class="cl plain">' + esc(T('about_empty')) + '</div>';
       box.scrollTop = 0;
-      src.textContent = T('about_src') + ' \u00b7 ' + new Date().toLocaleTimeString();
     })
-    .catch(function(e){
+    .catch(function(){
       if (req !== CHANGELOG_REQ) return;
       box.innerHTML = '<div class="cl crit">' + esc(T('about_offline')) + '</div>';
-      src.textContent = (e && e.message) ? e.message : 'network';
     });
 }
 
@@ -3728,7 +3832,13 @@ var sig = { proc:'', svc:'', ev:'', disk:'' };
 function quickSig(a){
   if (!a || !a.length) return '0';
   var s = a.length + '|';
-  for (var i = 0; i < a.length; i += Math.max(1, Math.floor(a.length / 12))) {
+  /* every row, not one in twelve: sampling a couple of the rows meant that a
+     table of two hundred processes (or a disk whose line was not among those
+     few) could change and never be repainted, which reads exactly like a
+     dashboard that stopped updating. The cost is one pass over the payload
+     that a refresh already walked; the rebuild it avoids is the expensive
+     part, and it still happens only when the data really changed. */
+  for (var i = 0; i < a.length; i++){
     var o = a[i];
     s += (o.Pid || o.Name || o.EventId || o.Model || '') + ':' +
          (o.CpuPct != null ? o.CpuPct : (o.State || o.Time || o.BusyPct || '')) + ';';
@@ -3740,7 +3850,11 @@ var NUMKEYS = {Pid:1, CpuPct:1, RamMB:1, Threads:1, Handles:1, EventId:1, Level:
    shows), not by CPU: with two hundred of them a list that moves at every
    refresh is unreadable. Every column can still be clicked, and the choice
    is remembered per browser. */
-var DEFSORT = { tproc: {k:'Name', d:1}, tsvc: {k:'State', d:1}, tev: {k:'Time', d:-1} };
+/* The processes table opens on CPU % descending, like Task Manager: this is
+   the column that changes, and two hundred rows sorted by name put a screenful
+   of idle system processes - all reading 0.0 - in front of the one process
+   that is working. The header still sorts by anything else on a click. */
+var DEFSORT = { tproc: {k:'CpuPct', d:-1}, tsvc: {k:'State', d:1}, tev: {k:'Time', d:-1} };
 var sortState = { tproc: null, tsvc: null, tev: null };
 
 function loadSort(id){
@@ -4140,7 +4254,12 @@ document.getElementById('aboutreload').onclick = openAbout;  document.getElement
 document.getElementById('temphelp').onclick = openTempHelp;
 document.getElementById('tempclose').onclick = closeTempHelp;
 document.getElementById('tempok').onclick = closeTempHelp;
-document.getElementById('tempmodal').onclick = function(e){ if (e.target === this) closeTempHelp(); };
+/* the temperature panel is read, not passed through: it closes when the click
+   lands on the dark area around it (pointerdown, so a click that starts inside
+   the panel and ends a pixel outside - selecting the text of a link, say - does
+   not take it away), or on its X, its Close button, or Escape. Nothing else
+   closes it, and in particular nothing that the page does while it refreshes. */
+document.getElementById('tempmodal').addEventListener('pointerdown', function(e){ if (e.target === this) closeTempHelp(); });
 document.getElementById('propmodal').onclick = function(e){ if (e.target === this) closeProps(); };
 document.getElementById('propclose').onclick = closeProps;
 document.getElementById('propok').onclick = closeProps;

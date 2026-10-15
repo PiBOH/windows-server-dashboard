@@ -181,5 +181,4 @@
   <string key="about_loading">GitHub에서 변경 로그를 읽는 중...</string>
   <string key="about_offline">GitHub에서 변경 로그를 읽을 수 없습니다: 이 패널은 이 브라우저에서 인터넷 연결이 필요합니다.</string>
   <string key="about_empty">변경 로그가 비어 있습니다.</string>
-  <string key="about_src">github.com/PiBOH/windows-server-dashboard에서 실시간으로 읽음</string>
 </language>
