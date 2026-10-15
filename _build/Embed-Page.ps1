@@ -19,7 +19,9 @@
                                        instead of a server: the preview block
                                        replaces what would ask the server, the
                                        placeholders get the values the engine
-                                       would fill in, and the version comes from
+                                       would fill in, the 38 language
+                                       dictionaries are built from lang\ here,
+                                       and the version comes from
                                        scripts\version.txt so it cannot go stale
 
     Run it after changing anything under _build\, then commit the sources and
@@ -77,6 +79,36 @@ function Read-Source([string]$Path) {
     return $t.Replace("`r`n", "`n").Replace("`r", "`n")
 }
 
+function Get-LanguageSnapshot([string]$LangDir) {
+    # The offline preview cannot ask the engine for lang\<code>.xml, so it has
+    # to carry all 38 dictionaries. They are built here, from the very files the
+    # engine serves: a string added to lang\ and left out of a snapshot kept by
+    # hand shows English in the one artefact nobody thinks to check.
+    $dicts = [ordered]@{}
+    $list  = New-Object System.Collections.Generic.List[object]
+    foreach ($f in (Get-ChildItem -Path $LangDir -Filter *.xml -File | Sort-Object Name)) {
+        $x = New-Object System.Xml.XmlDocument
+        $x.LoadXml([System.IO.File]::ReadAllText($f.FullName, [System.Text.Encoding]::UTF8))
+        $code = $f.BaseName
+        $strings = [ordered]@{}
+        foreach ($s in $x.DocumentElement.SelectNodes('string')) {
+            $strings[$s.GetAttribute('key')] = $s.InnerText
+        }
+        $dicts[$code] = $strings
+        $list.Add([ordered]@{
+            code    = $code
+            native  = $x.DocumentElement.GetAttribute('nativeName')
+            english = $x.DocumentElement.GetAttribute('englishName')
+            dir     = $x.DocumentElement.GetAttribute('dir')
+        })
+    }
+    if ($dicts.Count -eq 0) { throw "no language file found in $LangDir" }
+    return @{
+        Dicts = ($dicts | ConvertTo-Json -Depth 4 -Compress)
+        List  = (ConvertTo-Json -InputObject $list.ToArray() -Depth 4 -Compress)
+    }
+}
+
 function Get-FirstDifference([string]$A, [string]$B) {
     $la = $A -split "`n"
     $lb = $B -split "`n"
@@ -88,6 +120,10 @@ function Get-FirstDifference([string]$A, [string]$B) {
     }
     return "the two are equal for $n lines, one of them is longer (sources $($lb.Count) lines, on disk $($la.Count) lines)"
 }
+
+# the dictionaries are the preview's own need - the engine serves lang\<code>.xml
+# over HTTP - so they are filled into the preview block, not into the page
+$lang = Get-LanguageSnapshot (Join-Path $root 'lang')
 
 # ---- the page the sources produce ------------------------------------------
 $page = (Read-Source (Join-Path $webDir 'page.html')).TrimEnd("`n")
@@ -110,6 +146,14 @@ $built = $page.Replace("`n", "`r`n")
 
 # ---- the offline preview ----------------------------------------------------
 $shim = Read-Source (Join-Path $PSScriptRoot 'preview\preview.js').TrimEnd("`n")
+foreach ($t in @(
+    @{ Token = '__LANG_DICTS__'; Value = $lang.Dicts },
+    @{ Token = '__LANG_LIST__';  Value = $lang.List })) {
+    if (-not $shim.Contains($t.Token)) {
+        throw "_build\preview\preview.js no longer carries $($t.Token): the offline preview would drop its languages"
+    }
+    $shim = $shim.Replace($t.Token, $t.Value)
+}
 $version = (Read-Source $versionFile).Split("`n")[0].Trim()
 if ($version -notmatch '^\d+\.\d+\.\d+$') {
     throw "scripts\version.txt does not start with a version number: '$version'"

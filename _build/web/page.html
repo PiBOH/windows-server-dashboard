@@ -30,7 +30,13 @@
     <div class="bar"><i id="cpubar" style="width:0%"></i></div>
     <div class="row"><span data-i18n="frequency">Frequency</span><b id="cpughz">-</b></div>
     <div class="row"><span data-i18n="cores">cores</span><b id="cpucores">-</b></div>
-    <div class="row"><span data-i18n="temperature">Temperature</span><b id="cputemp">-</b></div>
+    <div class="row"><span data-i18n="temperature">Temperature</span>
+      <!-- the "?" appears only while there is no reading to show: it is the way
+           into the panel that explains why, and where to get one (see
+           openTempHelp in the page script) -->
+      <span class="val"><b id="cputemp">-</b><button type="button" id="temphelp" class="helpbtn"
+        aria-haspopup="dialog" data-i18n-title="temp_help_open"
+        title="Why is the CPU temperature missing?">?</button></span></div>
     <div class="cores" id="corelist"></div>
   </div>
 
@@ -201,7 +207,11 @@
           <span class="hint" data-i18n="stored_browser"></span></label>
         <select id="setlang"></select>
       </div>
-      <div class="setrow">
+      <!-- the personal refresh row: with no password the choice below (the
+           one of the server) already governs this page too, so this row
+           leaves the DOM (see syncRefreshRows). With a password the two ask
+           different questions again and it comes back. -->
+      <div class="setrow" id="prow">
         <label><span data-i18n="refresh_interval">Refresh interval</span>
           <span class="hint" data-i18n="stored_browser"></span></label>
         <select id="setrate"></select>
@@ -213,7 +223,9 @@
         <div id="srvnote" class="srvnote"></div>
         <div class="setrow" style="margin-top:10px">
           <label><span data-i18n="srv_refresh">Default refresh</span>
-            <span class="hint" data-i18n="stored_server"></span></label>
+            <span class="hint" data-i18n="stored_server"></span>
+            <span class="hint" id="srvbot" style="display:none"
+              data-i18n="srv_refresh_both"></span></label>
           <select id="setsrvrate"></select>
         </div>
         <div class="setrow" style="margin-top:10px">
@@ -285,6 +297,58 @@
   </div>
 </div>
 
+<div id="tempmodal" class="modal">
+  <div class="modal-box">
+    <h3>&#10067; <span data-i18n="temp_help_title">Why the CPU temperature is missing</span>
+      <span class="close" id="tempclose">&times;</span></h3>
+    <div class="setbody">
+      <div class="hint" data-i18n="temp_help_why">No source answered, so the dashboard has no
+        number to show. It does not measure the temperature itself and it starts nothing: it reads
+        what a program that does measure it publishes. Install one of these and leave it running -
+        no add-on, no plug-in, nothing to install inside the dashboard:</div>
+      <div class="helplinks">
+        <a href="https://www.alcpu.com/CoreTemp/" target="_blank" rel="noopener noreferrer">Core Temp
+          <span data-i18n="temp_help_ct_hint">the lightest, one reading per core</span></a>
+        <a href="https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/releases"
+           target="_blank" rel="noopener noreferrer">LibreHardwareMonitor
+          <span data-i18n="temp_help_lhm_hint">successor of Open Hardware Monitor</span></a>
+        <a href="https://openhardwaremonitor.org/downloads/" target="_blank" rel="noopener noreferrer">Open
+          Hardware Monitor <span data-i18n="temp_help_ohm_hint">the older, still used</span></a>
+        <a href="https://www.hwinfo.com/download/" target="_blank" rel="noopener noreferrer">HWiNFO
+          <span data-i18n="temp_help_hwinfo_hint">wants its WMI provider switched on</span></a>
+      </div>
+      <div class="hint" data-i18n="temp_help_bios">Do not count on the BIOS or on ACPI: the BIOS
+        almost never exposes the temperature of the CPU, and the ACPI thermal zone is a zone of the
+        motherboard - often the chassis - not the processor. Those programs read the CPU itself,
+        which is why they are the way that works.</div>
+      <div class="hint" data-i18n="temp_help_running">If one of them already runs and the reading is
+        still missing, look at the ServerDashboard log on the server: it names every source it tried
+        and the ones it found. Core Temp running on the desktop is not always visible to a dashboard
+        running as a service: switch on "enable global shared memory" in Core Temp &gt; Options &gt;
+        Advanced, or enable logging in Core Temp, so the dashboard can read its log file.</div>
+    </div>
+    <div class="modal-foot">
+      <span style="flex:1"></span>
+      <button id="tempok" class="btn primary" data-i18n="temp_help_close">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="propmodal" class="modal">
+  <div class="modal-box propbox">
+    <h3>&#128203; <span data-i18n="ctx_props">Properties</span>
+      <span id="propname"></span>
+      <span class="close" id="propclose">&times;</span></h3>
+    <div class="setbody">
+      <div class="kv" id="propkv"></div>
+    </div>
+    <div class="modal-foot">
+      <span style="flex:1"></span>
+      <button id="propok" class="btn primary" data-i18n="close">Close</button>
+    </div>
+  </div>
+</div>
+
 <div id="pwmodal" class="modal">
   <div class="modal-box pwbox">
     <h3>&#128274; <span data-i18n="pwd_title">Server password</span>
@@ -303,6 +367,11 @@
     </div>
   </div>
 </div>
+
+<!-- the menu the right button opens on a row of the process and service
+     tables: built on the spot from the data of that row (see openCtxMenu),
+     one at a time, and never above a panel -->
+<div id="ctxmenu" class="ctxmenu" role="menu" aria-hidden="true"></div>
 
 <script>
 /*@JS@*/

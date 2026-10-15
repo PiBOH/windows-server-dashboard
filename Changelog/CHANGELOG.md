@@ -7,6 +7,23 @@ Versioning follows Semantic Versioning: MAJOR.MINOR.PATCH.
 - MINOR - new backward compatible features.
 - PATCH - fixes and tweaks that add no feature.
 
+  1.16.18 - 2026-10-15
+  Added: the "?" next to the CPU temperature, when no program answers it, opens
+    the list of the ones that work (Core Temp, LibreHardwareMonitor,
+    OpenHardwareMonitor, HWiNFO); right-clicking a process or a service row
+    opens a menu with the web search, a Properties panel and the two copy
+    commands; the temperature unit follows the language, and temperature_unit
+    in settings.txt forces it.
+  Changed: the temperature row names the source that answered, the ACPI
+    thermal zone is read last and shown for what it is - a zone of the board,
+    not the CPU - and when nobody answers the row says so instead of showing a
+    number; without a password there is one refresh frequency for the server
+    and the page together.
+  Changed: the 33 new labels are translated into all 38 languages, and
+    scripts\Test-Languages.ps1 now fails the build when a language file loses
+    a key, an empty value or a placeholder; the offline preview builds its
+    dictionaries from lang\ instead of keeping a copy of them.
+
   1.16.17 - 2026-10-14
   Added: an About panel, reached by clicking the version line in the footer:
     the author, the portfolio, the e-mail, the repository and the release list

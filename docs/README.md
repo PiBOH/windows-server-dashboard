@@ -1,6 +1,6 @@
 ==============================================================================
   SERVER DASHBOARD - web monitoring for Windows Server 2016
-  Version 1.16.16
+  Version 1.16.18
 ==============================================================================
 
 A monitoring dashboard you can open from any computer on the local network by
@@ -39,6 +39,8 @@ Everything you normally need is in the root folder; the rest is tidied away.
     |   +-- Update-Now.bat               check GitHub for a new version now
     |   +-- version.txt                  the version: single source of truth
     |   +-- Test-Syntax.ps1              parse check of every script
+    |   +-- Test-Languages.ps1           lang\ folder: keys, placeholders,
+    |                                    encoding
     |   +-- New-DashboardTask.ps1        registers the boot task as SYSTEM
     |   +-- Set-UrlAcl.ps1               URL reservation, localized names
     |   +-- Show-StartupNotification.ps1 the notification itself
@@ -151,13 +153,14 @@ CPU
   a task named like the one above: switch it off in Core Temp > Options, or
   delete that task.
 
-  Temperature sources, tried in this order. Except the last one, which is off
-  unless you ask for it, none of them needs an add-on, a plug-in or anything
-  installed inside the dashboard:
-    1. BIOS/ACPI sensor (MSAcpi_ThermalZoneTemperature). Many Dell, HP and
-       Lenovo servers do not expose it, and a machine that does may still
-       refuse it to a non-elevated process.
-    2. Core Temp, the plain program from alcpu.com: while it runs, Core
+  Temperature sources, tried in this order. The order matters: the programs
+  that actually read the processor are asked first, and the ACPI thermal zone
+  - a zone of the board, not the CPU - only as the last resort, so that a
+  machine with Core Temp installed never shows a board zone in place of its
+  processor. Except the Core Temp WMI add-on, which is off unless you ask for
+  it, none of them needs an add-on, a plug-in or anything installed inside the
+  dashboard:
+    1. Core Temp, the plain program from alcpu.com: while it runs, Core
        Temp always publishes its readings in a shared memory block and the
        dashboard reads it directly - the 32-bit and the 64-bit build
        alike, one reading per core, Fahrenheit converted to Celsius
@@ -184,7 +187,7 @@ CPU
 
            coretemp_log = C:\MyLogs\CT-Log 2026-10-13 18-42-37.csv
 
-    4. Core Temp with its free "Core Temp WMI provider" add-on (namespace
+    3. Core Temp with its free "Core Temp WMI provider" add-on (namespace
        root\CoreTemp): same readings, but through WMI, which also works
        when Core Temp runs in another logon session than the dashboard.
        This one is OFF and stays off unless settings.txt says
@@ -200,18 +203,34 @@ CPU
        Core Temp's own logging works across sessions by design. If you
        had temperatures from this source and they are gone after updating,
        either turn it back on here or switch one of those two on.
-    5. LibreHardwareMonitor or OpenHardwareMonitor, with the WMI option
+    4. LibreHardwareMonitor or OpenHardwareMonitor, with the WMI option
        enabled (namespaces root\LibreHardwareMonitor and
        root\OpenHardwareMonitor).
-    6. HWiNFO with its shared WMI provider enabled (root\HWiNFO).
+    5. HWiNFO with its shared WMI provider enabled (root\HWiNFO).
+    6. The ACPI thermal zone (MSAcpi_ThermalZoneTemperature), asked last and
+       only when nothing above answered. It is not the CPU and it is not the
+       BIOS either: it is a zone of the board, often the chassis, and the page
+       and the log both show it for what it is - "ACPI thermal zone, not the
+       CPU" - instead of passing it off as a reading of the processor. Many
+       Dell, HP and Lenovo servers do not expose it at all, and a machine that
+       does may still refuse it to a non-elevated process.
   The page prints the reading together with the name of the source it came
-  from - Core Temp, Core Temp (log file), BIOS/ACPI, LibreHardwareMonitor,
-  OpenHardwareMonitor, HWiNFO - and /api/stats carries it as
-  Cpu.TempSource. If none of them answers, the dashboard writes "not
+  from - Core Temp, Core Temp (log file), Core Temp (WMI add-on),
+  LibreHardwareMonitor, OpenHardwareMonitor, HWiNFO, ACPI thermal zone, not
+  the CPU - and /api/stats carries it as Cpu.TempSource. Next to the reading
+  the page writes the unit asked for in settings.txt (temperature_unit):
+  auto, the default, follows the language of Windows, C and F force it. Only
+  the writing follows that choice - Cpu.Temperatures and the chart are always
+  Celsius. If none of the sources answers, the dashboard writes "not
   available (no temperature source found)" instead of a wrong number, and
   the log gets one line naming every source that was tried: when a
   temperature is missing, that line is the first thing to read. The log
   says the same thing whenever the source appears, changes or disappears.
+  Next to that message the page shows a small circular "?": it opens the
+  short panel that explains why the reading can be missing, why the BIOS
+  and the ACPI zone are not the answer, and links the download pages of
+  the programs above. With a real reading the "?" is not drawn: there is
+  nothing to explain.
   MSI Afterburner is deliberately not read: without a plugin it publishes
   no CPU temperature at all, only the graphics card, and this chain is
   about the CPU.
@@ -290,6 +309,22 @@ SERVICES
   type, PID and log-on account; text search plus a state filter (all / running
   / stopped / automatic not started) and a summary line.
 
+BOTH TABLES: THE RIGHT-CLICK MENU
+  A right click on a row of the process table or of the service table opens a
+  small menu next to the pointer, naming the row it belongs to and offering:
+  "Search the web" (a search for the image name, or for the service name, in a
+  new browser tab), "Properties" (a panel with what the dashboard has about
+  that row - a process: image name, friendly name, PID, CPU, memory, threads,
+  handles and the full path; a service: display name, internal name, state,
+  startup type, PID, log-on account and the path), "Copy name" and, when the
+  row has a process behind it, "Copy PID". The copy confirms itself inside the
+  menu, which then closes; on a plain http address, where the browser does not
+  offer the clipboard to a page, it copies the old way and still works.
+  Nothing in this menu kills a process or stops a service: the dashboard
+  cannot do either, so it does not offer to. Escape, a click elsewhere, a
+  resize or a scroll of the table close it, and anywhere outside those two
+  tables the menu of the browser stays exactly what it always was.
+
 EVENTS
   Critical, error and warning entries of the System and Application Windows
   event logs of the last 24 hours (up to 150), with timestamp, level, log,
@@ -354,6 +389,15 @@ To fix a translation edit the string and restart the service. To add a
 language copy an existing file, change code, nativeName and englishName,
 translate the values and restart: it shows up in the picker by itself, because
 the catalog is read from the folder.
+
+A language file carries the keys of lang\en-US.xml - no more, no less. A
+missing key shows English text to somebody; a key nothing asks for is a string
+kept for nothing. scripts\Test-Languages.ps1 is that contract, one rule per
+line: every file parses, keeps UTF-8 with no BOM and CRLF endings, carries
+exactly the keys of en-US.xml, has no empty value and keeps the placeholders
+({0}, {1}, ...) of the English sentence. A language file that drifts fails it,
+and the syntax check on GitHub runs it on every push, so the drift comes back
+only as a red build.
 
 
 ------------------------------------------------------------------------------
@@ -440,6 +484,10 @@ visible, logging on.
       coretemp_wmi    = no       (yes = also ask Core Temp's WMI add-on,
                                   see section on the temperature sources:
                                   off by default)
+      temperature_unit = auto    (unit of the CPU temperature on the page:
+                                  auto = the language of Windows decides,
+                                  C or F force it. Only how the reading is
+                                  written: the API is always Celsius)
       password_mode   = total    (with a pwd file: total = whole page,
                                   partial = server options only)
       show_cpu        = yes
@@ -906,4 +954,4 @@ The current version is shown in the centre of the footer and returned by
 /api/health. Changes follow Semantic Versioning (MAJOR.MINOR.PATCH); see
 Changelog\CHANGELOG.md.
 
-Current version: 1.16.17
+Current version: 1.16.18

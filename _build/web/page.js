@@ -22,7 +22,30 @@ var EN = {
   about_loading:   'Reading the changelog from GitHub...',
   about_offline:   'The changelog could not be read from GitHub: this panel needs internet access from this browser.',
   about_empty:     'The changelog is empty.',
-  about_src:       'read live from github.com/PiBOH/windows-server-dashboard'
+  about_src:       'read live from github.com/PiBOH/windows-server-dashboard',
+  /* the "?" next to a missing temperature and the panel behind it */
+  temp_help_open:  'Why is the CPU temperature missing?',
+  temp_help_title: 'Why the CPU temperature is missing',
+  temp_help_why:   'No source answered, so the dashboard has no number to show. It does not measure the temperature itself and it starts nothing: it reads what a program that does measure it publishes. Install one of these and leave it running - no add-on, no plug-in, nothing to install inside the dashboard:',
+  temp_help_ct_hint:     'the lightest, one reading per core',
+  temp_help_lhm_hint:    'successor of Open Hardware Monitor',
+  temp_help_ohm_hint:    'the older, still used',
+  temp_help_hwinfo_hint: 'wants its WMI provider switched on',
+  temp_help_bios:  'Do not count on the BIOS or on ACPI: the BIOS almost never exposes the temperature of the CPU, and the ACPI thermal zone is a zone of the motherboard - often the chassis - not the processor. Those programs read the CPU itself, which is why they are the way that works.',
+  temp_help_running: 'If one of them already runs and the reading is still missing, look at the ServerDashboard log on the server: it names every source it tried and the ones it found. Core Temp running on the desktop is not always visible to a dashboard running as a service: switch on "enable global shared memory" in Core Temp > Options > Advanced, or enable logging in Core Temp, so the dashboard can read its log file.',
+  temp_help_close: 'Close',
+  /* the right-click menu of the process and service rows, and its Properties
+     panel */
+  ctx_search:      'Search the web',
+  ctx_props:       'Properties',
+  ctx_copy_name:   'Copy name',
+  ctx_copy_pid:    'Copy PID',
+  ctx_copied_name: 'Name copied',
+  ctx_copied_pid:  'PID copied',
+  ctx_copy_failed: 'Could not copy: select the text in the Properties panel instead',
+  prop_path:       'Path',
+  close:           'Close',
+  srv_refresh_both: 'how often the server samples and this page refreshes'
 };
 
 function T(k){
@@ -204,11 +227,11 @@ function saveServer(){
       if (!r.ok) { throw new Error('http ' + r.status); }
       return r.json();
     }).then(function(o){
-      if (o && o.refreshSeconds) {
-        SRV = o;
-        if (!SRV.sections) { SRV.sections = {}; }
-        if (!SRV.passwordProtected) { SRV.passwordProtected = false; }
-        applySections();
+      /* the answer says what was APPLIED, not the new settings: the values
+         just sent are the ones settings.txt holds now, so the interval this
+         page uses follows them at once instead of at the next reload */
+      if (o && o.applied && o.applied.indexOf('refresh_seconds') >= 0) {
+        SRV.refreshSeconds = parseFloat(document.getElementById('setsrvrate').value);
       }
       return SRV;
     });
@@ -357,12 +380,36 @@ function fillSrvRate(){
   var el = document.getElementById('setsrvrate');
   if (el) { el.innerHTML = html; el.disabled = false; }
 }
+/* The refresh choice of this browser and the one of the server ask the same
+   question, and with no password there is nothing to protect in settings.txt:
+   they become one. The server row stays (it is the one that writes the file)
+   and the personal row leaves the DOM - kept aside, not hidden behind a
+   style, so no second field is left orphaned. With a password the two are
+   different things again and the row comes back. */
+var PERSONAL_ROW = null;
+function personalRow(){
+  return PERSONAL_ROW || (PERSONAL_ROW = document.getElementById('prow'));
+}
+function syncRefreshRows(){
+  var row = personalRow(), srv = document.getElementById('srvrow');
+  var merged = !SRV.passwordProtected;
+  if (merged && row && row.parentNode) { row.parentNode.removeChild(row); }
+  if (!merged && row && !row.parentNode) {
+    srv.parentNode.insertBefore(row, srv);
+    fillRates();                       /* its options may be stale in here */
+  }
+  var both = document.getElementById('srvbot');
+  if (both) { both.style.display = merged ? 'inline' : 'none'; }
+}
+
 function fillSettings(){
+  syncRefreshRows();
   document.getElementById('settheme').value = THEME;
   document.getElementById('setlang').innerHTML = LANGS.map(function(l){
     return '<option value="'+l.code+'"'+(l.code===CURLANG?' selected':'')+'>'+l.native+' ('+l.english+')</option>';
   }).join('');
-  document.getElementById('setrate').value = (LOCAL.refresh != null) ? String(LOCAL.refresh) : '';
+  var row = personalRow(), ps = row ? row.querySelector('select') : null;
+  if (ps) { ps.value = (LOCAL.refresh != null) ? String(LOCAL.refresh) : ''; }
   var sw = document.getElementById('storwarn');
   if (sw) { sw.style.display = storageOK() ? 'none' : 'block'; }
   var ed = serverEditable();
@@ -464,15 +511,153 @@ function openAbout(){
 }
 function closeAbout(){ document.getElementById('aboutmodal').className = 'modal'; }
 
+/* the same one-way-in rule as the About panel: the "?" and every way out of
+   the panel come through these two, so opening and closing cannot drift apart */
+function openTempHelp(){ document.getElementById('tempmodal').className = 'modal on'; }
+function closeTempHelp(){ document.getElementById('tempmodal').className = 'modal'; }
+
+/* ===================== right-click menu ===================== */
+/* The process and service tables open a menu on the right button. It works from
+   the data of the row it was opened on, copied when it opens, so the table
+   redrawing under it every few seconds cannot change what the entries mean.
+   Nothing here is destructive on purpose: the dashboard cannot kill a process
+   nor stop a service, so it does not offer to.
+   Only those rows suppress the menu of the browser; everywhere else it stays. */
+var ctxData = null;     /* { kind:'proc'|'svc', o:{...} } captured at open */
+var ctxTimer = null;    /* the confirmation shown after a copy hides itself */
+
+function ctxItems(){
+  var o = ctxData.o, out = [];
+  /* a real link, so the middle click and "open in a new tab" work the way
+     they do everywhere else: the browser decides how to open the search */
+  out.push({ href: 'https://www.google.com/search?q=' + encodeURIComponent(o.Name), label: T('ctx_search') });
+  out.push({ fn: openProps, label: T('ctx_props') });
+  out.push({ fn: function(){ copyCtx(o.Name, 'ctx_copied_name'); }, label: T('ctx_copy_name') });
+  /* a stopped service has no process, so there is no PID worth copying */
+  if (o.Pid) { out.push({ fn: function(){ copyCtx(String(o.Pid), 'ctx_copied_pid'); }, label: T('ctx_copy_pid') }); }
+  return out;
+}
+
+function openCtxMenu(x, y, kind, o){
+  closeCtxMenu();
+  ctxData = { kind: kind, o: o };
+  var m = document.getElementById('ctxmenu');
+  var where = (kind === 'svc') ? (o.Display || o.Name) : (o.Desc || o.Name);
+  m.innerHTML = '<div class="ctxhint">' + esc(where) + '</div>';
+  var items = ctxItems();
+  for (var i = 0; i < items.length; i++){
+    (function(it){
+      var el;
+      if (it.href){
+        el = document.createElement('a');
+        el.href = it.href;
+        el.target = '_blank';
+        el.rel = 'noopener noreferrer';
+      } else {
+        el = document.createElement('button');
+        el.type = 'button';
+        el.onclick = it.fn;
+      }
+      el.className = 'ctxitem';
+      el.setAttribute('role', 'menuitem');
+      el.textContent = it.label;
+      m.appendChild(el);
+    })(items[i]);
+  }
+  m.className = 'ctxmenu on';
+  m.setAttribute('aria-hidden', 'false');
+  var pad = 8;
+  m.style.left = x + 'px';
+  m.style.top  = y + 'px';
+  /* measured where it would sit, then pulled back inside the window: both
+     happen before the next paint, so it never shows up half outside */
+  var r = m.getBoundingClientRect();
+  m.style.left = Math.max(pad, Math.min(x, innerWidth  - pad - r.width))  + 'px';
+  m.style.top  = Math.max(pad, Math.min(y, innerHeight - pad - r.height)) + 'px';
+}
+
+/* the one way out, like the panels: the pointer elsewhere, Escape, a resize, a
+   scroll of the tables it belongs to, and the end of its own confirmation */
+function closeCtxMenu(){
+  if (ctxTimer) { clearTimeout(ctxTimer); ctxTimer = null; }
+  ctxData = null;
+  var m = document.getElementById('ctxmenu');
+  if (m && m.className !== 'ctxmenu'){
+    m.className = 'ctxmenu';
+    m.setAttribute('aria-hidden', 'true');
+    m.innerHTML = '';
+  }
+}
+
+function copyCtx(txt, okKey){
+  function fallback(){
+    /* over plain http - which is how this page is reached on a LAN - the
+       clipboard API is not available: copy the old way instead */
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = txt;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-1000px';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch (e) { return false; }
+  }
+  function done(ok){
+    var m = document.getElementById('ctxmenu');
+    if (!m || m.className !== 'ctxmenu on') { return; }
+    /* the copy answers in place - the entries become the confirmation - and
+       the menu closes on its own. A failed copy says what to do instead. */
+    m.innerHTML = '<div class="ctxitem msg">' +
+        esc(ok ? (T(okKey) + ': ' + txt) : T('ctx_copy_failed')) + '</div>';
+    if (ctxTimer) { clearTimeout(ctxTimer); }
+    ctxTimer = setTimeout(closeCtxMenu, ok ? 1400 : 3400);
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){ done(true); }, function(){ done(fallback()); });
+  } else { done(fallback()); }
+}
+
+/* the Properties panel: what the dashboard already has about that row, and
+   nothing else. /api/stats carries no owner and no start time for a process,
+   so none is shown rather than a guess. */
+function openProps(){
+  var d = ctxData;
+  if (!d) { return; }
+  var o = d.o, svc = (d.kind === 'svc');
+  var rows = svc
+    ? [['display_name', o.Display], ['service_name', o.Name],
+       ['status', tState(o.State)], ['startup', tMode(o.StartMode)],
+       ['pid', o.Pid || '-'], ['account', o.Account || '-'],
+       ['prop_path', o.Path || '-']]
+    : [['process', o.Name], ['pid', o.Pid], ['cpu_pct', fmt(o.CpuPct)],
+       ['ram_mb', fmt(o.RamMB)], ['threads_c', o.Threads],
+       ['handles', o.Handles], ['prop_path', o.Path || '-']];
+  if (!svc && o.Desc) { rows.splice(1, 0, ['display_name', o.Desc]); }
+  document.getElementById('propname').textContent = svc ? (o.Display || o.Name) : (o.Desc || o.Name);
+  document.getElementById('propkv').innerHTML = rows.map(function(r){
+    return '<b>' + esc(T(r[0])) + '</b><span>' + esc(r[1]) + '</span>';
+  }).join('');
+  closeCtxMenu();
+  document.getElementById('propmodal').className = 'modal on';
+}
+function closeProps(){ document.getElementById('propmodal').className = 'modal'; }
+
 function applySettings(){
   /* Personal choices are always saved in this browser. The server options are
      posted too when they are editable (no password set, password given, total
      mode): the server itself decides whether the change is accepted. */
   var th = document.getElementById('settheme').value;
   var lg = document.getElementById('setlang').value;
-  var rv = document.getElementById('setrate').value;
+  var row = personalRow(), ps = row ? row.querySelector('select') : null;
+  var rv = ps ? ps.value : '';
   LOCAL.theme = th;
-  LOCAL.refresh = (rv === '') ? null : parseFloat(rv);
+  /* with one option only, the choice IS the server one: this browser keeps no
+     override of its own, so the page and the engine cannot drift apart */
+  LOCAL.refresh = SRV.passwordProtected ? ((rv === '') ? null : parseFloat(rv)) : null;
   saveLocal();
   applyRate();
   applyTheme(th, true);
@@ -487,6 +672,8 @@ function applySettings(){
   });
   return q.then(function(){
     fillRates();
+    fillSrvRate();
+    applyRate();                       /* the saved interval, from now on */
     document.getElementById('setmsg').textContent = T('saved_ok');
     setTimeout(function(){ var m = document.getElementById('setmsg'); if (m) m.textContent = ''; }, 2500);
   }, function(){ /* refused: the note above already says why */ });
@@ -629,7 +816,10 @@ function drawProcs(){
      var nm = '<td title="'+esc(p.Path || p.Name).replace(/"/g,'&quot;')+'">'+
               ((p.Desc) ? esc(p.Desc)+'<span class="pd">'+esc(p.Name)+'</span>'
                         : esc(p.Name))+'</td>';
-     return '<tr'+(p.Self?' class="selfrow"':'')+'>'+nm+'<td class="num">'+p.Pid+'</td>'+
+     /* data-kind and data-pid are what the right-click menu reads to find the
+        row it was opened on (see openCtxMenu): the DOM carries the identity,
+        the data comes from lastProcs */
+     return '<tr data-kind="proc" data-pid="'+p.Pid+'"'+(p.Self?' class="selfrow"':'')+'>'+nm+'<td class="num">'+p.Pid+'</td>'+
             '<td class="num '+cls(p.CpuPct)+'">'+fmt(p.CpuPct)+'</td>'+
             '<td class="num">'+fmt(p.RamMB)+'</td><td class="num">'+p.Threads+'</td><td class="num">'+p.Handles+'</td></tr>';
   }).join('') : '<tr><td colspan="6" class="sub">'+T('no_match_proc')+'</td></tr>';
@@ -652,7 +842,7 @@ function drawSvcs(){
   document.getElementById('svccount').textContent = '\u2014 ' + rows.length + ' ' + T('shown_of') + ' ' + lastSvcs.length;
   document.getElementById('svclist').innerHTML = rows.length ? rows.map(function(v){
     var run = v.State === 'Running', bad = (v.StartMode === 'Auto' && !run);
-    return '<tr><td>'+esc(v.Display)+'</td><td class="sub">'+esc(v.Name)+'</td>'+
+    return '<tr data-kind="svc" data-name="'+esc(v.Name).replace(/"/g,'&quot;')+'"><td>'+esc(v.Display)+'</td><td class="sub">'+esc(v.Name)+'</td>'+
            '<td><span class="tag '+(run?'ok':(bad?'crit':'warn'))+'">'+esc(tState(v.State))+'</span></td>'+
            '<td>'+esc(tMode(v.StartMode))+'</td><td class="num">'+(v.Pid?v.Pid:'-')+'</td>'+
            '<td class="sub">'+esc(v.Account||'-')+'</td></tr>';
@@ -798,10 +988,17 @@ function render(d){
   document.getElementById('cpughz').textContent = fmt(c.CurrentGHz,2)+' GHz / '+T('max')+' '+fmt(c.MaxGHz,2)+' GHz';
   document.getElementById('cpucores').textContent = d.Static.CpuCores+' '+T('cores')+', '+d.Static.CpuLogical+' '+
       T('threads_w')+' ('+d.Static.CpuSockets+' '+T('sockets')+')';
-  document.getElementById('cputemp').innerHTML = (c.Temperatures && c.Temperatures.length)
-      ? c.Temperatures.map(function(t){return fmt(t.Celsius)+' \u00b0C';}).join(' | ') +
+  /* °C or °F: the engine decides (settings.txt, else the language of Windows)
+     and sends it with the reading; what arrives is always Celsius */
+  var tu = (c.TempUnit === 'F') ? 'F' : 'C';
+  var hasTemp = !!(c.Temperatures && c.Temperatures.length);
+  document.getElementById('cputemp').innerHTML = hasTemp
+      ? c.Temperatures.map(function(t){return fmt(tu === 'F' ? t.Celsius * 9 / 5 + 32 : t.Celsius)+' \u00b0'+tu;}).join(' | ') +
         (c.TempSource ? ' <small>('+esc(c.TempSource)+')</small>' : '')
       : T('temp_na');
+  /* the way out of a missing temperature is offered exactly while it is
+     missing: with a real reading there is nothing to explain */
+  document.getElementById('temphelp').className = hasTemp ? 'helpbtn' : 'helpbtn on';
   document.getElementById('cpunow').innerHTML = '<span class="'+cls(c.TotalLoad)+'">'+fmt(c.TotalLoad)+'%</span>';
   document.getElementById('corelist').innerHTML = (c.PerCore||[]).map(function(x){
      return '<div class="core"><div>'+T('core')+' '+esc(x.Core)+'</div><b class="'+cls(x.Load)+'">'+fmt(x.Load)+'%</b>'+
@@ -944,14 +1141,54 @@ document.getElementById('langmodal').onclick = function(e){ if (e.target === thi
 document.getElementById('aboutbtn').onclick = openAbout;
 document.getElementById('aboutclose').onclick = closeAbout;
 document.getElementById('aboutok').onclick = closeAbout;
-document.getElementById('aboutreload').onclick = openAbout;
-document.getElementById('aboutmodal').onclick = function(e){ if (e.target === this) closeAbout(); };
+document.getElementById('aboutreload').onclick = openAbout;  document.getElementById('aboutmodal').onclick = function(e){ if (e.target === this) closeAbout(); };
+document.getElementById('temphelp').onclick = openTempHelp;
+document.getElementById('tempclose').onclick = closeTempHelp;
+document.getElementById('tempok').onclick = closeTempHelp;
+document.getElementById('tempmodal').onclick = function(e){ if (e.target === this) closeTempHelp(); };
+document.getElementById('propmodal').onclick = function(e){ if (e.target === this) closeProps(); };
+document.getElementById('propclose').onclick = closeProps;
+document.getElementById('propok').onclick = closeProps;
+/* the right button: only on a row of the process and service tables, so the
+   menu of the browser stays exactly what it was everywhere else */
+document.addEventListener('contextmenu', function(e){
+  var tr = (e.target && e.target.closest) ? e.target.closest('tr[data-kind]') : null;
+  if (!tr) { return; }
+  var kind = tr.getAttribute('data-kind'), o = null, i;
+  if (kind === 'proc'){
+    var pid = parseInt(tr.getAttribute('data-pid'), 10);
+    for (i = 0; i < lastProcs.length; i++) { if (lastProcs[i].Pid === pid) { o = lastProcs[i]; break; } }
+  } else {
+    var nm = tr.getAttribute('data-name');
+    for (i = 0; i < lastSvcs.length; i++) { if (lastSvcs[i].Name === nm) { o = lastSvcs[i]; break; } }
+  }
+  if (!o) { return; }
+  e.preventDefault();
+  openCtxMenu(e.clientX, e.clientY, kind, o);
+});
+document.addEventListener('pointerdown', function(e){
+  var m = document.getElementById('ctxmenu');
+  if (m && m.className === 'ctxmenu on' && !m.contains(e.target)) { closeCtxMenu(); }
+});
+/* a menu left hanging next to a row that moved, or that is no longer on
+   screen, would say the wrong thing about it */
+document.addEventListener('scroll', closeCtxMenu, true);
 document.addEventListener('keydown', function(e){
-  if (e.key === 'Escape' && document.getElementById('aboutmodal').className === 'modal on'){
+  if (e.key !== 'Escape') { return; }
+  if (document.getElementById('aboutmodal').className === 'modal on'){
     e.preventDefault(); closeAbout();
   }
+  if (document.getElementById('tempmodal').className === 'modal on'){
+    e.preventDefault(); closeTempHelp();
+  }
+  if (document.getElementById('propmodal').className === 'modal on'){
+    e.preventDefault(); closeProps();
+  }
+  closeCtxMenu();
 });
-window.addEventListener('resize', draw);
+/* a resize redraws the charts and takes the menu away: the row it belonged to
+   is not where it was any more */
+window.addEventListener('resize', function(){ closeCtxMenu(); draw(); });
 initSort('tproc', drawProcs);
 initSort('tsvc', drawSvcs);
 initSort('tev', drawEvents);

@@ -10,7 +10,7 @@ No agent, no IIS, no external module, no database: a single PowerShell script
 publishes the page, and you open it from any computer on the LAN by typing the
 IP of the server.
 
-[![Version](https://img.shields.io/badge/version-1.16.17-blue)](Changelog/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.16.18-blue)](Changelog/CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/Windows%20Server-2016%2B-0078D6?logo=windows)](#requirements)
 [![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)](#requirements)
 [![Languages](https://img.shields.io/badge/UI%20languages-38-brightgreen)](#-38-languages)
@@ -225,10 +225,14 @@ the served page (`_build\Embed-Page.ps1`), so it cannot lag behind it.
 - Administrator rights for the installation only
 - 32-bit and 64-bit Windows both work: it is one script, run by
   whichever Windows PowerShell is installed
-- CPU temperature needs a sensor: BIOS/ACPI, or just
+- CPU temperature needs a sensor: just
   [Core Temp](https://www.alcpu.com/CoreTemp/) running (the plain program, 32-bit or
   64-bit - no add-on, its own CSV log works too), LibreHardwareMonitor or
-  HWiNFO; the page always names the source it used
+  HWiNFO, and the ACPI thermal zone only as the last resort (it is a zone of
+  the board, not the CPU, and the page says so); the page always names the
+  source it used, and writes the unit asked for in settings.txt
+  (`temperature_unit`: `auto` follows the language of Windows, `C` or `F`
+  force it)
 
 ## Troubleshooting
 
