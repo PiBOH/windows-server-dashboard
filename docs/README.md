@@ -1,6 +1,6 @@
 ==============================================================================
   SERVER DASHBOARD - web monitoring for Windows Server 2016
-  Version 1.16.18
+  Version 1.16.19
 ==============================================================================
 
 A monitoring dashboard you can open from any computer on the local network by
@@ -122,8 +122,11 @@ before. Program files are never deleted.
 ------------------------------------------------------------------------------
 
 HEADER (always visible)
-  The top bar is sticky: server name, connection state, uptime, last update
-  and the refresh selector stay on screen while you scroll.
+  The top bar is sticky: server name, connection state, uptime and last update
+  stay on screen while you scroll. The refresh selector is in it too while the
+  server has a password, because there the interval is a choice of this
+  browser; with no password the interval belongs to the server and lives in
+  the settings panel alone, so the page has one command for it and not two.
 
 CPU
   Total load %, load per single core with bars, real clock speed in GHz and
@@ -427,7 +430,8 @@ The gear button opens the settings panel:
 |-------------------|------------------------------|------------------------|
 | Theme             | browser cache (localStorage) | every visitor          |
 | Language          | browser cache (localStorage) | every visitor          |
-| Refresh interval  | browser cache (localStorage) | every visitor          |
+| Refresh interval  | browser cache (localStorage) | every visitor while the |
+|                   |                              | page asks a password   |
 | Default interval  | server, settings.txt         | on the server, or from |
 |                   |                              | the panel with the pwd |
 | Visible sections  | server, settings.txt         | (same as above)        |
@@ -437,14 +441,18 @@ The gear button opens the settings panel:
 Defaults: dark theme, language of Windows, half a second refresh, everything
 visible, logging on.
 
-- Theme, language and refresh interval are personal: every workstation keeps
-  its own choice in its browser cache, and they are what the settings panel
-  changes.
-- The refresh interval offered by default is the one in settings.txt, shown in
-  the list as "server default (5 seconds)". A visitor can pick any other value,
-  from half a second to five minutes: it only changes how often THEIR browser
-  asks for data, it does not touch the server and it does not affect the other
-  viewers. Choosing "server default" again gives back the configured value.
+- Theme and language are always personal: every workstation keeps its own
+  choice in its browser cache, and they are what the settings panel changes.
+- The refresh interval is personal too WHILE the server has a password: the
+  header selector and the panel's own row both keep a choice of this browser,
+  from half a second to five minutes, and it only changes how often THIS
+  browser asks for data - it touches neither the server nor the other viewers.
+  "server default (5 seconds)" gives back the value configured on the server.
+- With NO password there is nothing for a personal interval to differ from, so
+  there is one interval and one command: the server option, changed in the
+  settings panel. The header selector and the personal row are not in the page
+  in that state, and an interval this browser saved in an older visit is
+  ignored rather than left to fight the value of the server.
 - The server options (default interval, visible sections, logging, automatic
   updates) belong to the server, and what the panel lets you do depends on
   the password (see section 9):
@@ -954,4 +962,4 @@ The current version is shown in the centre of the footer and returned by
 /api/health. Changes follow Semantic Versioning (MAJOR.MINOR.PATCH); see
 Changelog\CHANGELOG.md.
 
-Current version: 1.16.18
+Current version: 1.16.19

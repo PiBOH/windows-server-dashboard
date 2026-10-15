@@ -7,6 +7,12 @@ Versioning follows Semantic Versioning: MAJOR.MINOR.PATCH.
 - MINOR - new backward compatible features.
 - PATCH - fixes and tweaks that add no feature.
 
+  1.16.19 - 2026-10-15
+  Fixed: with no password the header selector was a second command over the
+    same refresh frequency, so a browser could drift from the value of the
+    server; it is not in the page in that state, and an interval an older
+    visit saved is ignored. With a password both work as before.
+
   1.16.18 - 2026-10-15
   Added: the "?" next to the CPU temperature, when no program answers it, opens
     the list of the ones that work (Core Temp, LibreHardwareMonitor,

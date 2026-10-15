@@ -10,7 +10,7 @@ No agent, no IIS, no external module, no database: a single PowerShell script
 publishes the page, and you open it from any computer on the LAN by typing the
 IP of the server.
 
-[![Version](https://img.shields.io/badge/version-1.16.18-blue)](Changelog/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.16.19-blue)](Changelog/CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/Windows%20Server-2016%2B-0078D6?logo=windows)](#requirements)
 [![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)](#requirements)
 [![Languages](https://img.shields.io/badge/UI%20languages-38-brightgreen)](#-38-languages)
@@ -97,8 +97,10 @@ task that happened to have the same name.
   refreshing every 0.5 s, over nine minutes, Task Manager's Memory column went
   from 35.5-203.9 MB to 15.2-127.1 MB and private bytes from 202.7-239.7 MB to
   156.0-159.8 MB.
-- **Live by default**: the refresh interval is **0.5 s** out of the box and can
-  be set per browser from 0.5 s to 5 min; the server only sets the default.
+- **Live by default**: the refresh interval is **0.5 s** out of the box, from
+  0.5 s to 5 min. While the page asks a password it is a choice of each
+  browser; with no password there is one interval for everybody, changed in the
+  settings panel.
 - **Light and dark theme**, dark by default, saved per browser.
 - **About panel** — click the version in the footer: who wrote it, the
   portfolio, the e-mail, and the changelog read from GitHub every time the
@@ -142,7 +144,7 @@ picker by itself.
 |---|---|---|
 | Theme | browser cache | every visitor |
 | Language | browser cache | every visitor |
-| Refresh interval | browser cache | every visitor |
+| Refresh interval | browser cache | every visitor, while a password is set |
 | Default interval | `settings.txt` | the settings panel: everyone, unless a password is set |
 | Visible sections | `settings.txt` | the settings panel: everyone, unless a password is set |
 | Logging on/off | `settings.txt` | the settings panel: everyone, unless a password is set |

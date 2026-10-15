@@ -343,9 +343,13 @@ function applySections(){
    changes how often THIS browser asks for data - it does not touch the server
    settings, and it does not affect anybody else. */
 function effRate(){
-  return (LOCAL.refresh != null) ? LOCAL.refresh : SRV.refreshSeconds;
+  /* with no password the value of the server IS the value of this browser: an
+     override left in its cache by an older visit must not outlive the choice
+     that owns it, or the page would keep a pace of its own again */
+  return (LOCAL.refresh != null && SRV.passwordProtected) ? LOCAL.refresh : SRV.refreshSeconds;
 }
 function applyRate(){
+  syncRefreshRows();           /* the settings are known here: one interval, or two */
   clearInterval(timer);
   var sel = document.getElementById('rate');
   if (sel) sel.value = (LOCAL.refresh != null) ? String(LOCAL.refresh) : '';
@@ -387,17 +391,31 @@ function fillSrvRate(){
    style, so no second field is left orphaned. With a password the two are
    different things again and the row comes back. */
 var PERSONAL_ROW = null;
+/* The badge of the header holds the same choice, so with no password it is one
+   command too many over one value: it goes with the row, kept aside with the
+   bar it belongs to (the page puts it last, and it comes back last). */
+var HEADER_BADGE = null, HEADER_BAR = null;
 function personalRow(){
   return PERSONAL_ROW || (PERSONAL_ROW = document.getElementById('prow'));
+}
+function headerBadge(){
+  if (!HEADER_BADGE) {
+    var sel = document.getElementById('rate');
+    if (sel) { HEADER_BADGE = sel.parentNode; HEADER_BAR = HEADER_BADGE.parentNode; }
+  }
+  return HEADER_BADGE;
 }
 function syncRefreshRows(){
   var row = personalRow(), srv = document.getElementById('srvrow');
   var merged = !SRV.passwordProtected;
   if (merged && row && row.parentNode) { row.parentNode.removeChild(row); }
-  if (!merged && row && !row.parentNode) {
-    srv.parentNode.insertBefore(row, srv);
-    fillRates();                       /* its options may be stale in here */
+  if (!merged && row && !row.parentNode) { srv.parentNode.insertBefore(row, srv); }
+  var badge = headerBadge();
+  if (badge) {
+    if (merged && badge.parentNode) { HEADER_BAR.removeChild(badge); }
+    if (!merged && !badge.parentNode) { HEADER_BAR.appendChild(badge); }
   }
+  fillRates();                 /* the selects that came back may be stale */
   var both = document.getElementById('srvbot');
   if (both) { both.style.display = merged ? 'inline' : 'none'; }
 }
