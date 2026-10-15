@@ -175,7 +175,6 @@
   <string key="about_portfolio">Portefølje</string>
   <string key="about_releases">Versjoner</string>
   <string key="about_changelog">Endringslogg</string>
-  <string key="about_live">leses direkte fra GitHub hver gang dette panelet åpnes</string>
   <string key="about_reload">Last inn på nytt</string>
   <string key="about_close">Lukk</string>
   <string key="about_loading">Endringsloggen leses fra GitHub...</string>

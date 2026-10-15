@@ -1,6 +1,6 @@
 ==============================================================================
   SERVER DASHBOARD - web monitoring for Windows Server 2016
-  Version 1.16.20
+  Version 1.16.21
 ==============================================================================
 
 A monitoring dashboard you can open from any computer on the local network by
@@ -327,7 +327,9 @@ BOTH TABLES: THE RIGHT-CLICK MENU
   Nothing in this menu kills a process or stops a service: the dashboard
   cannot do either, so it does not offer to. Escape, a click elsewhere, a
   resize or a scroll of the table close it, and anywhere outside those two
-  tables the menu of the browser stays exactly what it always was.
+  tables the menu of the browser stays exactly what it always was. A touch
+  screen has no right button: a long press on the row opens the same menu
+  (see PHONES AND TABLETS).
 
 EVENTS
   Critical, error and warning entries of the System and Application Windows
@@ -344,6 +346,40 @@ TABLE SORTING
   File Explorer: click to sort, click again to reverse; a triangle marks the
   active column. The choice is stored in the browser. Numeric columns sort by
   value, text columns alphabetically.
+
+PHONES AND TABLETS
+  One layout, every screen: from a 360 pixel phone to a wide monitor nothing
+  scrolls sideways and nothing is cut off. Under 480 pixels of width the cards
+  stack in a single column, the form controls become 16 pixels - a smaller
+  font makes Safari on iOS zoom the page when an input takes the focus, and it
+  stays zoomed and scrolled sideways afterwards - the buttons and the "?" of
+  the temperature grow to the size of a fingertip, and the header stops being
+  sticky, so the badges do not eat the top of a small screen while the page is
+  read. Rotating the phone redraws the trend charts at the new width. Up to 480
+  pixels wide, and on any touch screen up to 900, the four wide tables
+  (processes, services, events, adapters) stop being tables: each row becomes a
+  block of labelled values as wide as the card, with the header of every column
+  kept above it as a row of chips that still sort on a tap. A table 882 pixels
+  wide in a pane of 312 was read by dragging it left and right, one column at a
+  time, and the message of an event - the one column that cannot be narrow -
+  made every row as tall as the whole text while its column sat off the screen,
+  so a phone showed two events and a screenful of empty space. As blocks every
+  column is read without dragging, the message of an event wraps in full
+  because a touch screen has no hover, and the coloured bar of an engine or an
+  event row marks the whole block. The label of a value is a real element and
+  not a mark drawn by the stylesheet, so a screen reader reads every value
+  together with the column it belongs to ("PID 15688"); on a large screen,
+  where the header above a real table says the same thing for every column, it
+  is drawn out of sight and the value is read on its own, as before. Above 900
+  pixels a tablet keeps the table:
+  there it fits, and a table is a better answer than a list. A touch screen has
+  no right button either: half a second with the finger still on a row of the
+  process or the service table opens the row menu where the finger is, and ten
+  pixels of travel cancel it, so scrolling a list is never taken for a press. A
+  menu pulled back inside the screen because the press came close to an edge
+  refuses the click that ends that same press, so lifting the finger to a
+  choice that appeared under it is not a choice; a tap, and a tap alone, opens
+  an entry.
 
 BROWSER TAB
   The tab shows the logo of the package (docs\logo.png): the dashboard answers
@@ -963,4 +999,4 @@ The current version is shown in the centre of the footer and returned by
 /api/health. Changes follow Semantic Versioning (MAJOR.MINOR.PATCH); see
 Changelog\CHANGELOG.md.
 
-Current version: 1.16.20
+Current version: 1.16.21

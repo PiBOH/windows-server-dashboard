@@ -175,7 +175,6 @@
   <string key="about_portfolio">Portfolio</string>
   <string key="about_releases">Izdaje</string>
   <string key="about_changelog">Dnevnik sprememb</string>
-  <string key="about_live">bere se v živo iz GitHuba ob vsakem odprtju tega okna</string>
   <string key="about_reload">Ponovno naloži</string>
   <string key="about_close">Zapri</string>
   <string key="about_loading">Dnevnik sprememb se bere iz GitHuba...</string>

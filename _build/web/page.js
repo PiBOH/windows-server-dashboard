@@ -16,7 +16,6 @@ var EN = {
   about_portfolio: 'Portfolio',
   about_releases:  'Releases',
   about_changelog: 'Changelog',
-  about_live:      'read live from GitHub every time this panel opens',
   about_reload:    'Reload',
   about_close:     'Close',
   about_loading:   'Reading the changelog from GitHub...',
@@ -463,10 +462,10 @@ function openSettings(){ fillSettings(); document.getElementById('setmodal').cla
 function closeSettings(){ document.getElementById('setmodal').className = 'modal'; }
 
 /* ===================== About =====================
-   The changelog is not shipped in the package and not stored anywhere: it is
-   read from GitHub every time this panel opens, with a cache key that is never
-   the same twice, so the browser never answers from its own cache. The answer
-   is escaped before it reaches the page. */
+   The changelog is not shipped in the package and not stored anywhere: the
+   panel asks GitHub for it when it opens, with a cache key that is never the
+   same twice, so the browser never answers from its own cache. The answer is
+   escaped before it reaches the page. */
 var CHANGELOG_URL = 'https://raw.githubusercontent.com/PiBOH/windows-server-dashboard/main/Changelog/CHANGELOG.md';
 
 function renderChangelog(md){
@@ -551,8 +550,17 @@ function ctxItems(){
   return out;
 }
 
-function openCtxMenu(x, y, kind, o){
+/* A menu opened by a long press that had to be pulled back inside the screen
+   can land under the finger that called it: the click the browser sends when
+   the finger is lifted would then choose the entry under it - "Copy PID", or
+   the web search - for a reader who only held the row. The first click of that
+   same gesture is dropped; the next touch starts a gesture of its own and is
+   answered normally. */
+var ctxIgnoreClick = false;
+
+function openCtxMenu(x, y, kind, o, fromTouch){
   closeCtxMenu();
+  ctxIgnoreClick = !!fromTouch;
   ctxData = { kind: kind, o: o };
   var m = document.getElementById('ctxmenu');
   var where = (kind === 'svc') ? (o.Display || o.Name) : (o.Desc || o.Name);
@@ -579,11 +587,15 @@ function openCtxMenu(x, y, kind, o){
   }
   m.className = 'ctxmenu on';
   m.setAttribute('aria-hidden', 'false');
+  /* Measured at the top left corner first, where the room is widest: a menu
+     near an edge is narrower than the same menu in the middle - the hint wraps
+     in the space it is given - so the width read where the menu is finally put
+     is not the width it takes there, and an entry that grew afterwards would
+     hang off the screen. The corner gives the largest width it can ever take,
+     so the clamp holds however the menu is then placed. */
   var pad = 8;
-  m.style.left = x + 'px';
-  m.style.top  = y + 'px';
-  /* measured where it would sit, then pulled back inside the window: both
-     happen before the next paint, so it never shows up half outside */
+  m.style.left = pad + 'px';
+  m.style.top  = pad + 'px';
   var r = m.getBoundingClientRect();
   m.style.left = Math.max(pad, Math.min(x, innerWidth  - pad - r.width))  + 'px';
   m.style.top  = Math.max(pad, Math.min(y, innerHeight - pad - r.height)) + 'px';
@@ -593,6 +605,7 @@ function openCtxMenu(x, y, kind, o){
    scroll of the tables it belongs to, and the end of its own confirmation */
 function closeCtxMenu(){
   if (ctxTimer) { clearTimeout(ctxTimer); ctxTimer = null; }
+  ctxIgnoreClick = false;
   ctxData = null;
   var m = document.getElementById('ctxmenu');
   if (m && m.className !== 'ctxmenu'){
@@ -720,6 +733,22 @@ var hist = [], lastData = null;
 function col(v){ return v < 60 ? '#3fb950' : (v < 85 ? '#d29922' : '#f85149'); }
 function cls(v){ return v < 60 ? 'ok' : (v < 85 ? 'warn' : 'crit'); }
 function esc(s){ return String(s==null?'':s).replace(/[<>&]/g, function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c];}); }
+/* The label of a cell, for the screens where the tables of processes,
+   services, events and adapters are read as blocks of values and no longer
+   under a header (see the media query at the end of the stylesheet).
+   It is a real element and not a generated one for one reason: it has to be
+   read together with the value it belongs to. A ::before is drawn for the eye
+   alone, and sight is precisely what a screen reader has not got; a span is
+   shown where it is asked for and hidden everywhere else, so on a large screen
+   - a real table, whose header row says the same thing above every column -
+   the value is read on its own, as it was before any of this existed. A cell
+   with nothing to show is given no label, so it stays empty and the stylesheet
+   can drop it. The header of the column takes its text from the same key, so
+   the two cannot drift apart. */
+function cl(k, v){
+  return (v === undefined || v === null || v === '') ? ''
+    : '<span class="cl">' + esc(T(k)) + '</span>';
+}
 function fmt(n,d){ return (n==null?0:n).toFixed(d===undefined?1:d); }
 function tState(v){ return v === 'Running' ? T('st_running') : (v === 'Stopped' ? T('st_stopped') : v); }
 function tMode(v){ return v === 'Auto' ? T('sm_auto') : (v === 'Manual' ? T('sm_manual')
@@ -803,6 +832,11 @@ function paintHeaders(id){
   for (var i = 0; i < ths.length; i++){
     var th = ths[i], on = (th.getAttribute('data-k') === st.k);
     th.className = th.className.replace(/\s*sorted/g, '') + (on ? ' sorted' : '');
+    /* the arrow is not only for the eye: it is part of the text of the header,
+       so the column that is sorted, and the way it is sorted, is what a screen
+       reader reads out ("PID ▼"). aria-sort was tried here and dropped: this
+       engine does not carry it into the tree, on either layout, so it would
+       have been a promise nothing keeps. */
     th.querySelector('.arr').innerHTML = on ? (st.d === 1 ? '&#9650;' : '&#9660;') : '';
   }
 }
@@ -836,15 +870,16 @@ function drawProcs(){
         extension goes right under it, grayed; when there is no
         friendly name the image name alone is shown. The full path
         stays in the tooltip */
-     var nm = '<td title="'+esc(p.Path || p.Name).replace(/"/g,'&quot;')+'">'+
+     var nm = '<td title="'+esc(p.Path || p.Name).replace(/"/g,'&quot;')+'">'+cl('process', p.Desc || p.Name)+
               ((p.Desc) ? esc(p.Desc)+'<span class="pd">'+esc(p.Name)+'</span>'
                         : esc(p.Name))+'</td>';
      /* data-kind and data-pid are what the right-click menu reads to find the
         row it was opened on (see openCtxMenu): the DOM carries the identity,
         the data comes from lastProcs */
-     return '<tr data-kind="proc" data-pid="'+p.Pid+'"'+(p.Self?' class="selfrow"':'')+'>'+nm+'<td class="num">'+p.Pid+'</td>'+
-            '<td class="num '+cls(p.CpuPct)+'">'+fmt(p.CpuPct)+'</td>'+
-            '<td class="num">'+fmt(p.RamMB)+'</td><td class="num">'+p.Threads+'</td><td class="num">'+p.Handles+'</td></tr>';
+     return '<tr data-kind="proc" data-pid="'+p.Pid+'"'+(p.Self?' class="selfrow"':'')+'>'+nm+'<td class="num">'+cl('pid', p.Pid)+p.Pid+'</td>'+
+            '<td class="num '+cls(p.CpuPct)+'">'+cl('cpu_pct', p.CpuPct)+fmt(p.CpuPct)+'</td>'+
+            '<td class="num">'+cl('ram_mb', p.RamMB)+fmt(p.RamMB)+'</td><td class="num">'+cl('threads_c', p.Threads)+p.Threads+'</td>'+
+            '<td class="num">'+cl('handles', p.Handles)+p.Handles+'</td></tr>';
   }).join('') : '<tr><td colspan="6" class="sub">'+T('no_match_proc')+'</td></tr>';
   if (box) box.scrollTop = top;
 }
@@ -865,10 +900,14 @@ function drawSvcs(){
   document.getElementById('svccount').textContent = '\u2014 ' + rows.length + ' ' + T('shown_of') + ' ' + lastSvcs.length;
   document.getElementById('svclist').innerHTML = rows.length ? rows.map(function(v){
     var run = v.State === 'Running', bad = (v.StartMode === 'Auto' && !run);
-    return '<tr data-kind="svc" data-name="'+esc(v.Name).replace(/"/g,'&quot;')+'"><td>'+esc(v.Display)+'</td><td class="sub">'+esc(v.Name)+'</td>'+
-           '<td><span class="tag '+(run?'ok':(bad?'crit':'warn'))+'">'+esc(tState(v.State))+'</span></td>'+
-           '<td>'+esc(tMode(v.StartMode))+'</td><td class="num">'+(v.Pid?v.Pid:'-')+'</td>'+
-           '<td class="sub">'+esc(v.Account||'-')+'</td></tr>';
+    var pid = v.Pid ? v.Pid : '-', acct = v.Account || '-';
+    var st = tState(v.State), md = tMode(v.StartMode);
+    return '<tr data-kind="svc" data-name="'+esc(v.Name).replace(/"/g,'&quot;')+'">'+
+           '<td>'+cl('display_name', v.Display)+esc(v.Display)+'</td>'+
+           '<td class="sub">'+cl('service_name', v.Name)+esc(v.Name)+'</td>'+
+           '<td>'+cl('status', st)+'<span class="tag '+(run?'ok':(bad?'crit':'warn'))+'">'+esc(st)+'</span></td>'+
+           '<td>'+cl('startup', md)+esc(md)+'</td><td class="num">'+cl('pid', pid)+pid+'</td>'+
+           '<td class="sub">'+cl('account', acct)+esc(acct)+'</td></tr>';
   }).join('') : '<tr><td colspan="6" class="sub">'+T('no_match_svc')+'</td></tr>';
   if (box) box.scrollTop = top;
 }
@@ -893,12 +932,12 @@ function drawEvents(){
   document.getElementById('evcount').textContent =
       '\u2014 ' + rows.length + ' ' + T('shown_of') + ' ' + lastEvents.length + ' \u2014 ' + T('ev_recent');
   document.getElementById('evlist').innerHTML = rows.length ? rows.map(function(e){
-    var c = evLevelCls(e.Level);
-    return '<tr class="'+c+'"><td>'+esc(e.Time)+'</td>'+
-           '<td><span class="tag '+c+'">'+esc(evLevelName(e.Level))+'</span></td>'+
-           '<td>'+esc(e.Log)+'</td><td>'+esc(e.Source)+'</td>'+
-           '<td class="num">'+e.EventId+'</td>'+
-           '<td title="'+esc(e.Message).replace(/"/g,'&quot;')+'">'+esc(e.Message)+'</td></tr>';
+    var c = evLevelCls(e.Level), lv = evLevelName(e.Level);
+    return '<tr class="'+c+'"><td>'+cl('ev_time', e.Time)+esc(e.Time)+'</td>'+
+           '<td>'+cl('ev_level', lv)+'<span class="tag '+c+'">'+esc(lv)+'</span></td>'+
+           '<td>'+cl('ev_log', e.Log)+esc(e.Log)+'</td><td>'+cl('ev_source', e.Source)+esc(e.Source)+'</td>'+
+           '<td class="num">'+cl('ev_id', e.EventId)+e.EventId+'</td>'+
+           '<td title="'+esc(e.Message).replace(/"/g,'&quot;')+'">'+cl('ev_message', e.Message)+esc(e.Message)+'</td></tr>';
   }).join('') : '<tr><td colspan="6" class="sub">'+T('no_match_ev')+'</td></tr>';
   if (box) box.scrollTop = top;
 }
@@ -1044,10 +1083,10 @@ function render(d){
   document.getElementById('netup').innerHTML = (n.TotalUpKBs>1024? fmt(n.TotalUpKBs/1024,2)+' <small>MB/s</small>' : fmt(n.TotalUpKBs)+' <small>KB/s</small>');
   document.getElementById('tcp').textContent = n.Connections;
   document.getElementById('nics').innerHTML = (n.Adapters||[]).map(function(a){
-     return '<tr><td>'+esc(a.Name)+'<div class="sub">'+esc(a.Description)+' &bull; '+esc(a.LinkSpeed)+'</div></td>'+
-            '<td><span class="tag '+(a.Status=='Up'?'ok':'crit')+'">'+esc(a.Status)+'</span></td>'+
-            '<td class="num">'+fmt(a.DownKBs)+'</td><td class="num">'+fmt(a.UpKBs)+'</td>'+
-            '<td class="num">'+fmt(a.TotalRxGB,2)+' GB</td><td class="num">'+fmt(a.TotalTxGB,2)+' GB</td></tr>';
+     return '<tr><td>'+cl('adapter_c', a.Name)+esc(a.Name)+'<div class="sub">'+esc(a.Description)+' &bull; '+esc(a.LinkSpeed)+'</div></td>'+
+            '<td>'+cl('status', a.Status)+'<span class="tag '+(a.Status=='Up'?'ok':'crit')+'">'+esc(a.Status)+'</span></td>'+
+            '<td class="num">'+cl('download', a.DownKBs)+fmt(a.DownKBs)+'</td><td class="num">'+cl('upload', a.UpKBs)+fmt(a.UpKBs)+'</td>'+
+            '<td class="num">'+cl('total_rx', a.TotalRxGB)+fmt(a.TotalRxGB,2)+' GB</td><td class="num">'+cl('total_tx', a.TotalTxGB)+fmt(a.TotalTxGB,2)+' GB</td></tr>';
   }).join('');
   document.getElementById('ipinfo').innerHTML = (n.IpConfig||[]).map(function(i){
      return '<div style="margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #283040">'+
@@ -1177,11 +1216,10 @@ document.getElementById('tempmodal').addEventListener('pointerdown', function(e)
 document.getElementById('propmodal').onclick = function(e){ if (e.target === this) closeProps(); };
 document.getElementById('propclose').onclick = closeProps;
 document.getElementById('propok').onclick = closeProps;
-/* the right button: only on a row of the process and service tables, so the
-   menu of the browser stays exactly what it was everywhere else */
-document.addEventListener('contextmenu', function(e){
-  var tr = (e.target && e.target.closest) ? e.target.closest('tr[data-kind]') : null;
-  if (!tr) { return; }
+/* The row the menu belongs to: the process or the service the row is about.
+   One lookup, two ways in - the right button and, on a phone, a long press. */
+function ctxRowData(tr){
+  if (!tr) { return null; }
   var kind = tr.getAttribute('data-kind'), o = null, i;
   if (kind === 'proc'){
     var pid = parseInt(tr.getAttribute('data-pid'), 10);
@@ -1190,10 +1228,72 @@ document.addEventListener('contextmenu', function(e){
     var nm = tr.getAttribute('data-name');
     for (i = 0; i < lastSvcs.length; i++) { if (lastSvcs[i].Name === nm) { o = lastSvcs[i]; break; } }
   }
-  if (!o) { return; }
+  return o ? { kind: kind, o: o } : null;
+}
+
+/* the right button: only on a row of the process and service tables, so the
+   menu of the browser stays exactly what it was everywhere else */
+document.addEventListener('contextmenu', function(e){
+  var tr = (e.target && e.target.closest) ? e.target.closest('tr[data-kind]') : null;
+  var d = ctxRowData(tr);
+  if (!d) { return; }
   e.preventDefault();
-  openCtxMenu(e.clientX, e.clientY, kind, o);
+  openCtxMenu(e.clientX, e.clientY, d.kind, d.o);
 });
+/* A touch screen has no right button. Half a second with the finger still on
+   the row opens the same menu where the finger is: a tap that answers the
+   usual way, and a scroll, never trigger it. */
+var touchHold = null, touchAt = null;
+/* the hold is over, whatever it was waiting for: a lift, a scroll, a second
+   finger (a pinch is not a long press) or a screen that changed */
+function stopTouchHold(){ if (touchHold) { clearTimeout(touchHold); touchHold = null; } touchAt = null; }
+document.addEventListener('touchstart', function(e){
+  stopTouchHold();
+  ctxIgnoreClick = false;      /* a new press, a new answer */
+  var t = e.touches && e.touches[0];
+  if (!t || e.touches.length > 1) { return; }
+  var m = document.getElementById('ctxmenu');
+  /* Held down on the menu itself: the finger is resting on an entry, and a
+     menu that the same finger never left is not being read. Half a second has
+     to mean the same thing here as it does on a row - a hold, not a choice -
+     so the click the browser sends when the finger is lifted is dropped. A tap
+     on an entry is short and is answered as usual. */
+  if (m.className === 'ctxmenu on' && m.contains(e.target)){
+    touchAt = { x: t.clientX, y: t.clientY, menuHold: true };
+    touchHold = setTimeout(function(){ touchHold = null; touchAt = null; ctxIgnoreClick = true; }, 500);
+    return;
+  }
+  var tr = (e.target && e.target.closest) ? e.target.closest('tr[data-kind]') : null;
+  if (!tr) { return; }
+  /* the press is read where it started, and the timer holds its own copy: the
+     shared variables may already have been cleared by the time it fires */
+  var at = { x: t.clientX, y: t.clientY, tr: tr };
+  touchAt = at;
+  touchHold = setTimeout(function(){
+    touchHold = null; touchAt = null;
+    var d = ctxRowData(at.tr);
+    if (d) { openCtxMenu(at.x, at.y, d.kind, d.o, true); }
+  }, 500);
+}, { passive: true });
+document.addEventListener('touchmove', function(e){
+  if (!touchHold || !touchAt) { return; }
+  var t = e.touches && e.touches[0];
+  /* ten pixels of travel mean the reader is scrolling the list, and a second
+     finger means a pinch: neither is calling the menu */
+  if (!t || e.touches.length > 1) { return stopTouchHold(); }
+  if (Math.abs(t.clientX - touchAt.x) > 10 || Math.abs(t.clientY - touchAt.y) > 10) {
+    stopTouchHold();
+  }
+}, { passive: true });
+document.addEventListener('touchend', stopTouchHold);
+document.addEventListener('touchcancel', stopTouchHold);
+/* the click that ends the press that opened the menu is not a choice */
+document.getElementById('ctxmenu').addEventListener('click', function(e){
+  if (!ctxIgnoreClick) { return; }
+  ctxIgnoreClick = false;
+  e.preventDefault();
+  e.stopPropagation();
+}, true);
 document.addEventListener('pointerdown', function(e){
   var m = document.getElementById('ctxmenu');
   if (m && m.className === 'ctxmenu on' && !m.contains(e.target)) { closeCtxMenu(); }
@@ -1214,9 +1314,12 @@ document.addEventListener('keydown', function(e){
   }
   closeCtxMenu();
 });
-/* a resize redraws the charts and takes the menu away: the row it belonged to
-   is not where it was any more */
-window.addEventListener('resize', function(){ closeCtxMenu(); draw(); });
+/* A resize redraws the charts and takes the menu away: the row it belonged to
+   is not where it was any more. A hold still running is dropped with it -
+   turning the phone mid-press would otherwise open the menu, half a second
+   later, at the coordinates of a layout that no longer exists, next to a row
+   the reader never pressed. */
+window.addEventListener('resize', function(){ stopTouchHold(); closeCtxMenu(); draw(); });
 initSort('tproc', drawProcs);
 initSort('tsvc', drawSvcs);
 initSort('tev', drawEvents);

@@ -175,7 +175,6 @@
   <string key="about_portfolio">Portföy</string>
   <string key="about_releases">Sürümler</string>
   <string key="about_changelog">Değişiklik günlüğü</string>
-  <string key="about_live">bu panel her açıldığında GitHub'dan canlı okunur</string>
   <string key="about_reload">Yeniden yükle</string>
   <string key="about_close">Kapat</string>
   <string key="about_loading">Değişiklik günlüğü GitHub'dan okunuyor...</string>

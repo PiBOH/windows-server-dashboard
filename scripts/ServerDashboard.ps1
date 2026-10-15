@@ -2526,7 +2526,11 @@ header h1 span{color:var(--accent)}
 .badge b{color:var(--txt)}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:6px;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(330px,1fr))}
+/* min(330px,100%) and not 330px: on a phone the content box is narrower than
+   the floor of a track, and a floor that cannot go below the screen width is
+   the whole page scrolling sideways by the difference. The same guard is on
+   every other minmax() below. */
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(330px,100%),1fr))}
 .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
 .card.wide{grid-column:1/-1}
 .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:12px;
@@ -2549,8 +2553,14 @@ tr:hover td{background:var(--hover)}
 .num{text-align:right;font-variant-numeric:tabular-nums}
 /* second line of the process cell: the friendly name of the executable */
 .pd{display:block;font-size:11px;line-height:1.3;color:var(--muted);font-weight:400}
+/* The name of the column inside a cell. It is shown only where the tables are
+   read as blocks of labelled values - on a screen a finger reads, see the media
+   query at the end of this file. On a large screen the header above the column
+   says it already, and the value has to be read on its own. It is a real span
+   and not a ::before so that a screen reader reads it where it is shown. */
+.cl{display:none}
 .row b small{font-weight:400;color:var(--muted)}
-.cores{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:8px;margin-top:6px}
+.cores{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(86px,100%),1fr));gap:8px;margin-top:6px}
 .core{background:var(--panel2);border-radius:6px;padding:6px 8px}
 .core div:first-child{font-size:10.5px;color:var(--muted)}
 .core b{font-size:15px}
@@ -2575,6 +2585,12 @@ th.sorted{color:var(--txt);background:var(--sortbg)}
 .ok{color:var(--ok)} .warn{color:var(--warn)} .crit{color:var(--crit)}
 input,select{background:var(--input);color:var(--txt);border:1px solid var(--border);border-radius:5px;
   padding:3px 8px;font-size:12px;text-transform:none;font-family:inherit}
+/* the filter box of the Processes, Services and Events tables, and the row of
+   tools next to it: the width is here and not in a style attribute, because on
+   a phone it has to be able to become the full width of the card (see the
+   media query at the end of this file) */
+.filterbox{width:180px}
+.h2tools{display:flex;gap:6px;align-items:center}
 footer{margin-top:18px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;
   color:var(--muted);font-size:12px;padding:12px 4px;border-top:1px solid var(--border)}
 footer .fside{display:flex;align-items:center;gap:10px}
@@ -2595,7 +2611,7 @@ footer .fcenter #aboutbtn{color:var(--muted)}
 .setrow label{display:flex;flex-direction:column;gap:2px;font-size:13.5px;color:var(--txt)}
 .setrow .hint{font-size:11px;color:var(--muted)}
 .setrow select{min-width:230px;padding:6px 10px;font-size:13px}
-.seclist{margin-top:10px;display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.seclist{margin-top:10px;display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(min(190px,100%),1fr))}
 .seclist label{flex-direction:row;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--border);
   border-radius:7px;padding:7px 10px;cursor:pointer;font-size:13px}
 .seclist label:hover{border-color:var(--accent)}
@@ -2622,7 +2638,7 @@ footer .fcenter #aboutbtn{color:var(--muted)}
   justify-content:space-between;align-items:center}
 .modal-box .close{cursor:pointer;color:var(--muted);font-size:20px;line-height:1;padding:0 4px}
 .modal-box .close:hover{color:var(--crit)}
-.langgrid{overflow:auto;padding:14px 18px;display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.langgrid{overflow:auto;padding:14px 18px;display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(min(230px,100%),1fr))}
 .langitem{cursor:pointer;background:var(--panel2);border:1px solid var(--border);border-radius:7px;padding:8px 11px;
   font-size:13px;transition:all .15s;text-align:left}
 .langitem:hover{background:var(--hover);border-color:var(--accent)}
@@ -2653,7 +2669,7 @@ footer .fcenter #aboutbtn{color:var(--muted)}
 .helpbtn.on{display:inline-block}
 .helpbtn:hover{border-color:var(--accent);color:var(--txt)}
 .helpbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.helplinks{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.helplinks{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(min(230px,100%),1fr))}
 .helplinks a{display:flex;align-items:center;justify-content:space-between;gap:8px;
   background:var(--panel2);border:1px solid var(--border);border-radius:7px;padding:9px 11px;
   font-size:13px;color:var(--txt);text-decoration:none}
@@ -2695,12 +2711,137 @@ footer .fcenter #aboutbtn{color:var(--muted)}
 .dhead .name{font-size:15px;font-weight:600}
 .dhead .meta{color:var(--muted);font-size:12px}
 .dhead .io{margin-left:auto;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
-.parts{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(255px,1fr))}
+.parts{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(255px,100%),1fr))}
 .part{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
 .part .pt{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
 .part .pt b{font-size:15px}
 .part .io{display:flex;justify-content:space-between;gap:8px;margin-top:6px;padding-top:6px;
   border-top:1px dashed var(--border);font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+/* --- a phone in the hand: 360 to 430 CSS pixels wide ---
+   Three rules decide everything here. The page must never scroll sideways,
+   so every track that has a floor uses min(...,100%) above and nothing on
+   this screen keeps a fixed width. A control smaller than 16px makes Safari
+   on iOS zoom the page when it takes the focus - and it stays zoomed and
+   scrolled sideways afterwards - so the form controls are 16px here, which
+   is also what makes them comfortable to tap. And the header stops being
+   sticky: wrapped on four rows it takes a fifth of the screen and it would
+   stay there while the page is read. */
+@media(max-width:480px){
+  body{padding:10px}
+  header{position:static;margin:-10px -10px 12px;padding:10px 12px;gap:8px 10px}
+  header h1{font-size:17px}
+  .badge{padding:3px 10px;font-size:11.5px}
+  .card{padding:12px}
+  .card.wide{padding:12px}
+  .big{font-size:28px}
+  .card h2{flex-wrap:wrap;gap:8px}
+  /* the filter row of a table: the select and the box take a line each and the
+     full width, because a select shrunk to fit beside the box cut its own
+     value in half ("Tutti gli stat" for "Tutti gli stati") with no ellipsis to
+     say it had been cut */
+  .h2tools{flex:1 1 100%;flex-wrap:wrap}
+  .h2tools select,.h2tools .filterbox{flex:1 1 100%;max-width:100%;width:auto}
+  .filterbox{width:100%}
+  /* touching the screen instead of pointing at it: no hover to lean on, and
+     the targets are the size of a fingertip */
+  input,select{font-size:16px;padding:6px 8px}
+  .btn{padding:9px 14px}
+  #langbtn,#themebtn,#setbtn{padding:9px 12px}
+  #aboutbtn{padding:8px 10px}
+  .helpbtn{width:28px;height:28px;font:700 14px/26px inherit}
+  .seclist input{width:18px;height:18px}
+  .modal{padding:10px}
+  .modal-box{max-height:88vh}
+  .setbody{padding:12px;gap:12px}
+  .langgrid,.helplinks{padding:12px}
+  .modal-foot{padding:10px 12px;flex-wrap:wrap}
+  .modal-foot .btn{flex:1 1 auto}
+  .modal-note{padding:10px 12px}
+  .ctxmenu{max-width:calc(100vw - 16px)}
+  .ctxhint,.ctxitem.msg{max-width:none}
+  .ctxitem{padding:10px;font-size:14px}
+  .scroll{max-height:260px}
+  th,td{padding:6px 7px}
+  .dbox{padding:10px 12px}
+  .part{padding:10px}
+  footer{gap:8px}
+}
+
+/* --- The four wide tables, on any screen that a finger reads: a phone (up to
+   480 pixels wide) and the same phone turned on its side, where the screen is
+   844 wide and the table of the events still runs 311 pixels past the card -
+   the message of an event being the column that cannot be narrow.
+   A table 882 pixels wide in a box of 312 is read by dragging it left and
+   right, one column at a time, and the message made every row as tall as the
+   whole text while its column sat off the screen, so a phone showed two rows
+   and a lot of empty space. Each row is a block of labelled values instead, as
+   wide as the card: every column is read without dragging, a long text wraps
+   inside the card, and the coloured bar of a self or event row marks the whole
+   block. The header survives as a row of chips, so the sort is still one tap
+   away. A tablet held in the hand is left alone above 900 pixels: there the
+   table fits, and a table is a better answer than a list of blocks. */
+@media(max-width:480px),(pointer:coarse) and (max-width:900px){
+  #tproc,#tsvc,#tev,#tnic{display:block}
+  /* The header stays where it can be reached. It is the row you tap to sort,
+     and two hundred rows below it there is no coming back to it otherwise: as
+     a sticky block it holds the top of the pane, exactly like the header of
+     the same table above 480 pixels. The chips are greyed as a group while a
+     list is scrolled, so they read as a bar and not as content. */
+  #tproc thead,#tsvc thead,#tev thead,#tnic thead{display:block;position:sticky;top:0;z-index:2;
+    background:var(--panel2);padding:5px 0 6px;border-bottom:1px solid var(--border)}
+  #tproc thead tr,#tsvc thead tr,#tev thead tr,#tnic thead tr{display:flex;flex-wrap:wrap;gap:6px}
+  #tproc th,#tsvc th,#tev th,#tnic th{position:static;display:inline-flex;align-items:center;
+    box-shadow:none;border:1px solid var(--border);border-radius:6px;background:var(--panel);
+    padding:8px 10px;font-size:12px}
+  #tproc tbody tr,#tsvc tbody tr,#tev tbody tr,#tnic tbody tr{display:block;padding:7px 2px;
+    border-bottom:1px solid var(--border)}
+  /* the values of a row flow one after the other and wrap, the way the cells of
+     a table are read left to right, instead of taking a line each: a process is
+     three lines and not six */
+  #tproc td,#tsvc td,#tev td,#tnic td{display:inline-flex;align-items:baseline;gap:6px;
+    min-width:0;max-width:100%;margin:2px 14px 2px 0;border:0;padding:0;
+    white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
+  /* the identity of the row has a line of its own */
+  #tproc td:first-child,#tsvc td:first-child,#tev td:first-child,#tnic td:first-child{display:flex;margin-right:0}
+  /* the message of an event is cut to one line on a large screen, where the
+     whole of it is a hover away; here it is the point of the row and it wraps */
+  #tev td:last-child{max-width:none;overflow:visible;text-overflow:clip;white-space:normal}
+  /* The label never breaks in half the way a value does: MESSAGGIO stays one
+     word while the message beside it wraps. It is a span and not a ::before,
+     and the span is the whole accessibility of this layout: shown it is read
+     with the value it belongs to, hidden on a large screen it leaves the value
+     alone under the header of a real table. */
+  #tproc .cl,#tsvc .cl,#tev .cl,#tnic .cl{display:inline-flex;flex:0 0 auto;white-space:nowrap;
+    color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.4px}
+  /* a cell with nothing in it says nothing, not even its label */
+  #tproc td:empty,#tsvc td:empty,#tev td:empty,#tnic td:empty{display:none}
+  /* the "nothing matches the filter" line spans the row the old way */
+  #tproc td[colspan],#tsvc td[colspan],#tev td[colspan]{display:block}
+  #tproc td[colspan] .cl,#tsvc td[colspan] .cl,#tev td[colspan] .cl{display:none}
+  /* the second line of a cell (the image name of a process, the description of
+     an adapter) starts under the name */
+  #tproc td:first-child,#tnic td:first-child{flex-wrap:wrap}
+  #tproc td:first-child .pd,#tnic td:first-child .sub{flex-basis:100%}
+  #tproc tr.selfrow td:first-child,#tev tr.crit td:first-child,#tev tr.warn td:first-child{box-shadow:none}
+  #tproc tr.selfrow{box-shadow:inset 3px 0 0 var(--accent)}
+  #tev tr.crit{box-shadow:inset 3px 0 0 var(--crit)}
+  #tev tr.warn{box-shadow:inset 3px 0 0 var(--warn)}
+  /* the rows are read one at a time now, so the box can be taller - but never
+     taller than the screen it stands on */
+  .scroll-proc{height:min(65vh,440px)}
+}
+
+/* --- the long press that opens the row menu (see ctxRowMenu in page.js) ---
+   A finger held on a row is a long press in the browser too: it starts
+   selecting the text of the cell and, on a phone, raises its own callout with
+   Copy and Look up right where our menu opens, so the two menus land on top of
+   each other. On a touch screen the menu of the row is the only one that has
+   anything to say about that row; the text of a table is still selectable with
+   a mouse, where the right button already opens the same menu. */
+@media(pointer:coarse){
+  tr[data-kind],tr[data-kind] td{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+}
+
 ::-webkit-scrollbar{width:12px;height:12px}
 ::-webkit-scrollbar-thumb{background:var(--scroll);border-radius:5px}
 /* The arrow buttons. As soon as ::-webkit-scrollbar is styled, Chromium stops
@@ -2801,7 +2942,7 @@ footer .fcenter #aboutbtn{color:var(--muted)}
   <div data-sec="net_adapters" class="card">
     <h2 data-i18n="net_adapters">Network adapters</h2>
     <div class="scroll">
-      <table><thead><tr>
+      <table id="tnic"><thead><tr>
         <th data-i18n="adapter_c">Adapter</th><th data-i18n="status">Status</th>
         <th class="num">&#11015; <span data-i18n="download">Download</span> KB/s</th>
         <th class="num">&#11014; <span data-i18n="upload">Upload</span> KB/s</th>
@@ -2813,7 +2954,7 @@ footer .fcenter #aboutbtn{color:var(--muted)}
   <div data-sec="processes" class="card wide">
     <h2><span data-i18n="processes">Active processes</span>
       <span id="procount" style="text-transform:none;letter-spacing:0;flex:1"></span>
-      <input id="pfilter" type="text" data-i18n-ph="filter_ph" autocomplete="off" style="width:180px">
+      <input id="pfilter" type="text" data-i18n-ph="filter_ph" autocomplete="off" class="filterbox">
     </h2>
     <div class="scroll-proc">
       <table id="tproc"><thead><tr>
@@ -2830,14 +2971,14 @@ footer .fcenter #aboutbtn{color:var(--muted)}
   <div data-sec="services" class="card wide">
     <h2><span data-i18n="services">Services</span>
       <span id="svccount" style="text-transform:none;letter-spacing:0;flex:1"></span>
-      <span style="display:flex;gap:6px;align-items:center">
+      <span class="h2tools">
         <select id="sstate">
           <option value="" data-i18n="all_states">All states</option>
           <option value="run" data-i18n="only_running">Running only</option>
           <option value="stop" data-i18n="only_stopped">Stopped only</option>
           <option value="prob" data-i18n="auto_not_started">Automatic not started</option>
         </select>
-        <input id="sfilter" type="text" data-i18n-ph="filter_ph" autocomplete="off" style="width:180px">
+        <input id="sfilter" type="text" data-i18n-ph="filter_ph" autocomplete="off" class="filterbox">
       </span>
     </h2>
     <div class="scroll-proc">
@@ -2856,14 +2997,14 @@ footer .fcenter #aboutbtn{color:var(--muted)}
   <div data-sec="events" class="card wide">
     <h2><span data-i18n="events">Events</span>
       <span id="evcount" style="text-transform:none;letter-spacing:0;flex:1"></span>
-      <span style="display:flex;gap:6px;align-items:center">
+      <span class="h2tools">
         <select id="evlevel">
           <option value="" data-i18n="all_levels">All levels</option>
           <option value="1" data-i18n="lvl_critical">Critical</option>
           <option value="2" data-i18n="lvl_error">Error</option>
           <option value="3" data-i18n="lvl_warning">Warning</option>
         </select>
-        <input id="evfilter" type="text" data-i18n-ph="filter_ph" autocomplete="off" style="width:180px">
+        <input id="evfilter" type="text" data-i18n-ph="filter_ph" autocomplete="off" class="filterbox">
       </span>
     </h2>
     <div class="scroll-proc">
@@ -2994,7 +3135,6 @@ footer .fcenter #aboutbtn{color:var(--muted)}
       <div>
         <div class="aboutcap">
           <span data-i18n="about_changelog">Changelog</span>
-          <span class="hint" data-i18n="about_live">read live from GitHub every time this panel opens</span>
         </div>
         <div id="aboutcl" class="aboutcl"></div>
       </div>
@@ -3102,7 +3242,6 @@ var EN = {
   about_portfolio: 'Portfolio',
   about_releases:  'Releases',
   about_changelog: 'Changelog',
-  about_live:      'read live from GitHub every time this panel opens',
   about_reload:    'Reload',
   about_close:     'Close',
   about_loading:   'Reading the changelog from GitHub...',
@@ -3549,10 +3688,10 @@ function openSettings(){ fillSettings(); document.getElementById('setmodal').cla
 function closeSettings(){ document.getElementById('setmodal').className = 'modal'; }
 
 /* ===================== About =====================
-   The changelog is not shipped in the package and not stored anywhere: it is
-   read from GitHub every time this panel opens, with a cache key that is never
-   the same twice, so the browser never answers from its own cache. The answer
-   is escaped before it reaches the page. */
+   The changelog is not shipped in the package and not stored anywhere: the
+   panel asks GitHub for it when it opens, with a cache key that is never the
+   same twice, so the browser never answers from its own cache. The answer is
+   escaped before it reaches the page. */
 var CHANGELOG_URL = 'https://raw.githubusercontent.com/PiBOH/windows-server-dashboard/main/Changelog/CHANGELOG.md';
 
 function renderChangelog(md){
@@ -3637,8 +3776,17 @@ function ctxItems(){
   return out;
 }
 
-function openCtxMenu(x, y, kind, o){
+/* A menu opened by a long press that had to be pulled back inside the screen
+   can land under the finger that called it: the click the browser sends when
+   the finger is lifted would then choose the entry under it - "Copy PID", or
+   the web search - for a reader who only held the row. The first click of that
+   same gesture is dropped; the next touch starts a gesture of its own and is
+   answered normally. */
+var ctxIgnoreClick = false;
+
+function openCtxMenu(x, y, kind, o, fromTouch){
   closeCtxMenu();
+  ctxIgnoreClick = !!fromTouch;
   ctxData = { kind: kind, o: o };
   var m = document.getElementById('ctxmenu');
   var where = (kind === 'svc') ? (o.Display || o.Name) : (o.Desc || o.Name);
@@ -3665,11 +3813,15 @@ function openCtxMenu(x, y, kind, o){
   }
   m.className = 'ctxmenu on';
   m.setAttribute('aria-hidden', 'false');
+  /* Measured at the top left corner first, where the room is widest: a menu
+     near an edge is narrower than the same menu in the middle - the hint wraps
+     in the space it is given - so the width read where the menu is finally put
+     is not the width it takes there, and an entry that grew afterwards would
+     hang off the screen. The corner gives the largest width it can ever take,
+     so the clamp holds however the menu is then placed. */
   var pad = 8;
-  m.style.left = x + 'px';
-  m.style.top  = y + 'px';
-  /* measured where it would sit, then pulled back inside the window: both
-     happen before the next paint, so it never shows up half outside */
+  m.style.left = pad + 'px';
+  m.style.top  = pad + 'px';
   var r = m.getBoundingClientRect();
   m.style.left = Math.max(pad, Math.min(x, innerWidth  - pad - r.width))  + 'px';
   m.style.top  = Math.max(pad, Math.min(y, innerHeight - pad - r.height)) + 'px';
@@ -3679,6 +3831,7 @@ function openCtxMenu(x, y, kind, o){
    scroll of the tables it belongs to, and the end of its own confirmation */
 function closeCtxMenu(){
   if (ctxTimer) { clearTimeout(ctxTimer); ctxTimer = null; }
+  ctxIgnoreClick = false;
   ctxData = null;
   var m = document.getElementById('ctxmenu');
   if (m && m.className !== 'ctxmenu'){
@@ -3806,6 +3959,22 @@ var hist = [], lastData = null;
 function col(v){ return v < 60 ? '#3fb950' : (v < 85 ? '#d29922' : '#f85149'); }
 function cls(v){ return v < 60 ? 'ok' : (v < 85 ? 'warn' : 'crit'); }
 function esc(s){ return String(s==null?'':s).replace(/[<>&]/g, function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c];}); }
+/* The label of a cell, for the screens where the tables of processes,
+   services, events and adapters are read as blocks of values and no longer
+   under a header (see the media query at the end of the stylesheet).
+   It is a real element and not a generated one for one reason: it has to be
+   read together with the value it belongs to. A ::before is drawn for the eye
+   alone, and sight is precisely what a screen reader has not got; a span is
+   shown where it is asked for and hidden everywhere else, so on a large screen
+   - a real table, whose header row says the same thing above every column -
+   the value is read on its own, as it was before any of this existed. A cell
+   with nothing to show is given no label, so it stays empty and the stylesheet
+   can drop it. The header of the column takes its text from the same key, so
+   the two cannot drift apart. */
+function cl(k, v){
+  return (v === undefined || v === null || v === '') ? ''
+    : '<span class="cl">' + esc(T(k)) + '</span>';
+}
 function fmt(n,d){ return (n==null?0:n).toFixed(d===undefined?1:d); }
 function tState(v){ return v === 'Running' ? T('st_running') : (v === 'Stopped' ? T('st_stopped') : v); }
 function tMode(v){ return v === 'Auto' ? T('sm_auto') : (v === 'Manual' ? T('sm_manual')
@@ -3889,6 +4058,11 @@ function paintHeaders(id){
   for (var i = 0; i < ths.length; i++){
     var th = ths[i], on = (th.getAttribute('data-k') === st.k);
     th.className = th.className.replace(/\s*sorted/g, '') + (on ? ' sorted' : '');
+    /* the arrow is not only for the eye: it is part of the text of the header,
+       so the column that is sorted, and the way it is sorted, is what a screen
+       reader reads out ("PID ▼"). aria-sort was tried here and dropped: this
+       engine does not carry it into the tree, on either layout, so it would
+       have been a promise nothing keeps. */
     th.querySelector('.arr').innerHTML = on ? (st.d === 1 ? '&#9650;' : '&#9660;') : '';
   }
 }
@@ -3922,15 +4096,16 @@ function drawProcs(){
         extension goes right under it, grayed; when there is no
         friendly name the image name alone is shown. The full path
         stays in the tooltip */
-     var nm = '<td title="'+esc(p.Path || p.Name).replace(/"/g,'&quot;')+'">'+
+     var nm = '<td title="'+esc(p.Path || p.Name).replace(/"/g,'&quot;')+'">'+cl('process', p.Desc || p.Name)+
               ((p.Desc) ? esc(p.Desc)+'<span class="pd">'+esc(p.Name)+'</span>'
                         : esc(p.Name))+'</td>';
      /* data-kind and data-pid are what the right-click menu reads to find the
         row it was opened on (see openCtxMenu): the DOM carries the identity,
         the data comes from lastProcs */
-     return '<tr data-kind="proc" data-pid="'+p.Pid+'"'+(p.Self?' class="selfrow"':'')+'>'+nm+'<td class="num">'+p.Pid+'</td>'+
-            '<td class="num '+cls(p.CpuPct)+'">'+fmt(p.CpuPct)+'</td>'+
-            '<td class="num">'+fmt(p.RamMB)+'</td><td class="num">'+p.Threads+'</td><td class="num">'+p.Handles+'</td></tr>';
+     return '<tr data-kind="proc" data-pid="'+p.Pid+'"'+(p.Self?' class="selfrow"':'')+'>'+nm+'<td class="num">'+cl('pid', p.Pid)+p.Pid+'</td>'+
+            '<td class="num '+cls(p.CpuPct)+'">'+cl('cpu_pct', p.CpuPct)+fmt(p.CpuPct)+'</td>'+
+            '<td class="num">'+cl('ram_mb', p.RamMB)+fmt(p.RamMB)+'</td><td class="num">'+cl('threads_c', p.Threads)+p.Threads+'</td>'+
+            '<td class="num">'+cl('handles', p.Handles)+p.Handles+'</td></tr>';
   }).join('') : '<tr><td colspan="6" class="sub">'+T('no_match_proc')+'</td></tr>';
   if (box) box.scrollTop = top;
 }
@@ -3951,10 +4126,14 @@ function drawSvcs(){
   document.getElementById('svccount').textContent = '\u2014 ' + rows.length + ' ' + T('shown_of') + ' ' + lastSvcs.length;
   document.getElementById('svclist').innerHTML = rows.length ? rows.map(function(v){
     var run = v.State === 'Running', bad = (v.StartMode === 'Auto' && !run);
-    return '<tr data-kind="svc" data-name="'+esc(v.Name).replace(/"/g,'&quot;')+'"><td>'+esc(v.Display)+'</td><td class="sub">'+esc(v.Name)+'</td>'+
-           '<td><span class="tag '+(run?'ok':(bad?'crit':'warn'))+'">'+esc(tState(v.State))+'</span></td>'+
-           '<td>'+esc(tMode(v.StartMode))+'</td><td class="num">'+(v.Pid?v.Pid:'-')+'</td>'+
-           '<td class="sub">'+esc(v.Account||'-')+'</td></tr>';
+    var pid = v.Pid ? v.Pid : '-', acct = v.Account || '-';
+    var st = tState(v.State), md = tMode(v.StartMode);
+    return '<tr data-kind="svc" data-name="'+esc(v.Name).replace(/"/g,'&quot;')+'">'+
+           '<td>'+cl('display_name', v.Display)+esc(v.Display)+'</td>'+
+           '<td class="sub">'+cl('service_name', v.Name)+esc(v.Name)+'</td>'+
+           '<td>'+cl('status', st)+'<span class="tag '+(run?'ok':(bad?'crit':'warn'))+'">'+esc(st)+'</span></td>'+
+           '<td>'+cl('startup', md)+esc(md)+'</td><td class="num">'+cl('pid', pid)+pid+'</td>'+
+           '<td class="sub">'+cl('account', acct)+esc(acct)+'</td></tr>';
   }).join('') : '<tr><td colspan="6" class="sub">'+T('no_match_svc')+'</td></tr>';
   if (box) box.scrollTop = top;
 }
@@ -3979,12 +4158,12 @@ function drawEvents(){
   document.getElementById('evcount').textContent =
       '\u2014 ' + rows.length + ' ' + T('shown_of') + ' ' + lastEvents.length + ' \u2014 ' + T('ev_recent');
   document.getElementById('evlist').innerHTML = rows.length ? rows.map(function(e){
-    var c = evLevelCls(e.Level);
-    return '<tr class="'+c+'"><td>'+esc(e.Time)+'</td>'+
-           '<td><span class="tag '+c+'">'+esc(evLevelName(e.Level))+'</span></td>'+
-           '<td>'+esc(e.Log)+'</td><td>'+esc(e.Source)+'</td>'+
-           '<td class="num">'+e.EventId+'</td>'+
-           '<td title="'+esc(e.Message).replace(/"/g,'&quot;')+'">'+esc(e.Message)+'</td></tr>';
+    var c = evLevelCls(e.Level), lv = evLevelName(e.Level);
+    return '<tr class="'+c+'"><td>'+cl('ev_time', e.Time)+esc(e.Time)+'</td>'+
+           '<td>'+cl('ev_level', lv)+'<span class="tag '+c+'">'+esc(lv)+'</span></td>'+
+           '<td>'+cl('ev_log', e.Log)+esc(e.Log)+'</td><td>'+cl('ev_source', e.Source)+esc(e.Source)+'</td>'+
+           '<td class="num">'+cl('ev_id', e.EventId)+e.EventId+'</td>'+
+           '<td title="'+esc(e.Message).replace(/"/g,'&quot;')+'">'+cl('ev_message', e.Message)+esc(e.Message)+'</td></tr>';
   }).join('') : '<tr><td colspan="6" class="sub">'+T('no_match_ev')+'</td></tr>';
   if (box) box.scrollTop = top;
 }
@@ -4130,10 +4309,10 @@ function render(d){
   document.getElementById('netup').innerHTML = (n.TotalUpKBs>1024? fmt(n.TotalUpKBs/1024,2)+' <small>MB/s</small>' : fmt(n.TotalUpKBs)+' <small>KB/s</small>');
   document.getElementById('tcp').textContent = n.Connections;
   document.getElementById('nics').innerHTML = (n.Adapters||[]).map(function(a){
-     return '<tr><td>'+esc(a.Name)+'<div class="sub">'+esc(a.Description)+' &bull; '+esc(a.LinkSpeed)+'</div></td>'+
-            '<td><span class="tag '+(a.Status=='Up'?'ok':'crit')+'">'+esc(a.Status)+'</span></td>'+
-            '<td class="num">'+fmt(a.DownKBs)+'</td><td class="num">'+fmt(a.UpKBs)+'</td>'+
-            '<td class="num">'+fmt(a.TotalRxGB,2)+' GB</td><td class="num">'+fmt(a.TotalTxGB,2)+' GB</td></tr>';
+     return '<tr><td>'+cl('adapter_c', a.Name)+esc(a.Name)+'<div class="sub">'+esc(a.Description)+' &bull; '+esc(a.LinkSpeed)+'</div></td>'+
+            '<td>'+cl('status', a.Status)+'<span class="tag '+(a.Status=='Up'?'ok':'crit')+'">'+esc(a.Status)+'</span></td>'+
+            '<td class="num">'+cl('download', a.DownKBs)+fmt(a.DownKBs)+'</td><td class="num">'+cl('upload', a.UpKBs)+fmt(a.UpKBs)+'</td>'+
+            '<td class="num">'+cl('total_rx', a.TotalRxGB)+fmt(a.TotalRxGB,2)+' GB</td><td class="num">'+cl('total_tx', a.TotalTxGB)+fmt(a.TotalTxGB,2)+' GB</td></tr>';
   }).join('');
   document.getElementById('ipinfo').innerHTML = (n.IpConfig||[]).map(function(i){
      return '<div style="margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #283040">'+
@@ -4263,11 +4442,10 @@ document.getElementById('tempmodal').addEventListener('pointerdown', function(e)
 document.getElementById('propmodal').onclick = function(e){ if (e.target === this) closeProps(); };
 document.getElementById('propclose').onclick = closeProps;
 document.getElementById('propok').onclick = closeProps;
-/* the right button: only on a row of the process and service tables, so the
-   menu of the browser stays exactly what it was everywhere else */
-document.addEventListener('contextmenu', function(e){
-  var tr = (e.target && e.target.closest) ? e.target.closest('tr[data-kind]') : null;
-  if (!tr) { return; }
+/* The row the menu belongs to: the process or the service the row is about.
+   One lookup, two ways in - the right button and, on a phone, a long press. */
+function ctxRowData(tr){
+  if (!tr) { return null; }
   var kind = tr.getAttribute('data-kind'), o = null, i;
   if (kind === 'proc'){
     var pid = parseInt(tr.getAttribute('data-pid'), 10);
@@ -4276,10 +4454,72 @@ document.addEventListener('contextmenu', function(e){
     var nm = tr.getAttribute('data-name');
     for (i = 0; i < lastSvcs.length; i++) { if (lastSvcs[i].Name === nm) { o = lastSvcs[i]; break; } }
   }
-  if (!o) { return; }
+  return o ? { kind: kind, o: o } : null;
+}
+
+/* the right button: only on a row of the process and service tables, so the
+   menu of the browser stays exactly what it was everywhere else */
+document.addEventListener('contextmenu', function(e){
+  var tr = (e.target && e.target.closest) ? e.target.closest('tr[data-kind]') : null;
+  var d = ctxRowData(tr);
+  if (!d) { return; }
   e.preventDefault();
-  openCtxMenu(e.clientX, e.clientY, kind, o);
+  openCtxMenu(e.clientX, e.clientY, d.kind, d.o);
 });
+/* A touch screen has no right button. Half a second with the finger still on
+   the row opens the same menu where the finger is: a tap that answers the
+   usual way, and a scroll, never trigger it. */
+var touchHold = null, touchAt = null;
+/* the hold is over, whatever it was waiting for: a lift, a scroll, a second
+   finger (a pinch is not a long press) or a screen that changed */
+function stopTouchHold(){ if (touchHold) { clearTimeout(touchHold); touchHold = null; } touchAt = null; }
+document.addEventListener('touchstart', function(e){
+  stopTouchHold();
+  ctxIgnoreClick = false;      /* a new press, a new answer */
+  var t = e.touches && e.touches[0];
+  if (!t || e.touches.length > 1) { return; }
+  var m = document.getElementById('ctxmenu');
+  /* Held down on the menu itself: the finger is resting on an entry, and a
+     menu that the same finger never left is not being read. Half a second has
+     to mean the same thing here as it does on a row - a hold, not a choice -
+     so the click the browser sends when the finger is lifted is dropped. A tap
+     on an entry is short and is answered as usual. */
+  if (m.className === 'ctxmenu on' && m.contains(e.target)){
+    touchAt = { x: t.clientX, y: t.clientY, menuHold: true };
+    touchHold = setTimeout(function(){ touchHold = null; touchAt = null; ctxIgnoreClick = true; }, 500);
+    return;
+  }
+  var tr = (e.target && e.target.closest) ? e.target.closest('tr[data-kind]') : null;
+  if (!tr) { return; }
+  /* the press is read where it started, and the timer holds its own copy: the
+     shared variables may already have been cleared by the time it fires */
+  var at = { x: t.clientX, y: t.clientY, tr: tr };
+  touchAt = at;
+  touchHold = setTimeout(function(){
+    touchHold = null; touchAt = null;
+    var d = ctxRowData(at.tr);
+    if (d) { openCtxMenu(at.x, at.y, d.kind, d.o, true); }
+  }, 500);
+}, { passive: true });
+document.addEventListener('touchmove', function(e){
+  if (!touchHold || !touchAt) { return; }
+  var t = e.touches && e.touches[0];
+  /* ten pixels of travel mean the reader is scrolling the list, and a second
+     finger means a pinch: neither is calling the menu */
+  if (!t || e.touches.length > 1) { return stopTouchHold(); }
+  if (Math.abs(t.clientX - touchAt.x) > 10 || Math.abs(t.clientY - touchAt.y) > 10) {
+    stopTouchHold();
+  }
+}, { passive: true });
+document.addEventListener('touchend', stopTouchHold);
+document.addEventListener('touchcancel', stopTouchHold);
+/* the click that ends the press that opened the menu is not a choice */
+document.getElementById('ctxmenu').addEventListener('click', function(e){
+  if (!ctxIgnoreClick) { return; }
+  ctxIgnoreClick = false;
+  e.preventDefault();
+  e.stopPropagation();
+}, true);
 document.addEventListener('pointerdown', function(e){
   var m = document.getElementById('ctxmenu');
   if (m && m.className === 'ctxmenu on' && !m.contains(e.target)) { closeCtxMenu(); }
@@ -4300,9 +4540,12 @@ document.addEventListener('keydown', function(e){
   }
   closeCtxMenu();
 });
-/* a resize redraws the charts and takes the menu away: the row it belonged to
-   is not where it was any more */
-window.addEventListener('resize', function(){ closeCtxMenu(); draw(); });
+/* A resize redraws the charts and takes the menu away: the row it belonged to
+   is not where it was any more. A hold still running is dropped with it -
+   turning the phone mid-press would otherwise open the menu, half a second
+   later, at the coordinates of a layout that no longer exists, next to a row
+   the reader never pressed. */
+window.addEventListener('resize', function(){ stopTouchHold(); closeCtxMenu(); draw(); });
 initSort('tproc', drawProcs);
 initSort('tsvc', drawSvcs);
 initSort('tev', drawEvents);

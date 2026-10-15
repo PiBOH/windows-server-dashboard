@@ -175,7 +175,6 @@
   <string key="about_portfolio">포트폴리오</string>
   <string key="about_releases">릴리스</string>
   <string key="about_changelog">변경 로그</string>
-  <string key="about_live">이 패널을 열 때마다 GitHub에서 실시간으로 읽습니다</string>
   <string key="about_reload">다시 로드</string>
   <string key="about_close">닫기</string>
   <string key="about_loading">GitHub에서 변경 로그를 읽는 중...</string>

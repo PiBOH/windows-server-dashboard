@@ -175,7 +175,6 @@
   <string key="about_portfolio">أعمالي</string>
   <string key="about_releases">الإصدارات</string>
   <string key="about_changelog">سجل التغييرات</string>
-  <string key="about_live">يُقرأ مباشرة من GitHub في كل مرة تُفتح هذه اللوحة</string>
   <string key="about_reload">إعادة التحميل</string>
   <string key="about_close">إغلاق</string>
   <string key="about_loading">جارٍ قراءة سجل التغييرات من GitHub...</string>

@@ -175,7 +175,6 @@
   <string key="about_portfolio">Portfolio</string>
   <string key="about_releases">Vydání</string>
   <string key="about_changelog">Protokol změn</string>
-  <string key="about_live">čte se živě z GitHubu při každém otevření tohoto panelu</string>
   <string key="about_reload">Načíst znovu</string>
   <string key="about_close">Zavřít</string>
   <string key="about_loading">Načítá se protokol změn z GitHubu...</string>

@@ -175,7 +175,6 @@
   <string key="about_portfolio">Portfolio</string>
   <string key="about_releases">Versioni</string>
   <string key="about_changelog">Registro delle modifiche</string>
-  <string key="about_live">letto in diretta da GitHub ogni volta che si apre questo pannello</string>
   <string key="about_reload">Ricarica</string>
   <string key="about_close">Chiudi</string>
   <string key="about_loading">Lettura del registro delle modifiche da GitHub...</string>

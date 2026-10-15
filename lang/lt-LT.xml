@@ -175,7 +175,6 @@
   <string key="about_portfolio">Portfelis</string>
   <string key="about_releases">Leidimai</string>
   <string key="about_changelog">Pakeitimų žurnalas</string>
-  <string key="about_live">skaitoma tiesiogiai iš GitHub kiekvieną kartą atidarius šį langą</string>
   <string key="about_reload">Įkelti iš naujo</string>
   <string key="about_close">Uždaryti</string>
   <string key="about_loading">Pakeitimų žurnalas skaitomas iš GitHub...</string>

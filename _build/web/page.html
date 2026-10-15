@@ -95,7 +95,7 @@
   <div data-sec="net_adapters" class="card">
     <h2 data-i18n="net_adapters">Network adapters</h2>
     <div class="scroll">
-      <table><thead><tr>
+      <table id="tnic"><thead><tr>
         <th data-i18n="adapter_c">Adapter</th><th data-i18n="status">Status</th>
         <th class="num">&#11015; <span data-i18n="download">Download</span> KB/s</th>
         <th class="num">&#11014; <span data-i18n="upload">Upload</span> KB/s</th>
@@ -107,7 +107,7 @@
   <div data-sec="processes" class="card wide">
     <h2><span data-i18n="processes">Active processes</span>
       <span id="procount" style="text-transform:none;letter-spacing:0;flex:1"></span>
-      <input id="pfilter" type="text" data-i18n-ph="filter_ph" autocomplete="off" style="width:180px">
+      <input id="pfilter" type="text" data-i18n-ph="filter_ph" autocomplete="off" class="filterbox">
     </h2>
     <div class="scroll-proc">
       <table id="tproc"><thead><tr>
@@ -124,14 +124,14 @@
   <div data-sec="services" class="card wide">
     <h2><span data-i18n="services">Services</span>
       <span id="svccount" style="text-transform:none;letter-spacing:0;flex:1"></span>
-      <span style="display:flex;gap:6px;align-items:center">
+      <span class="h2tools">
         <select id="sstate">
           <option value="" data-i18n="all_states">All states</option>
           <option value="run" data-i18n="only_running">Running only</option>
           <option value="stop" data-i18n="only_stopped">Stopped only</option>
           <option value="prob" data-i18n="auto_not_started">Automatic not started</option>
         </select>
-        <input id="sfilter" type="text" data-i18n-ph="filter_ph" autocomplete="off" style="width:180px">
+        <input id="sfilter" type="text" data-i18n-ph="filter_ph" autocomplete="off" class="filterbox">
       </span>
     </h2>
     <div class="scroll-proc">
@@ -150,14 +150,14 @@
   <div data-sec="events" class="card wide">
     <h2><span data-i18n="events">Events</span>
       <span id="evcount" style="text-transform:none;letter-spacing:0;flex:1"></span>
-      <span style="display:flex;gap:6px;align-items:center">
+      <span class="h2tools">
         <select id="evlevel">
           <option value="" data-i18n="all_levels">All levels</option>
           <option value="1" data-i18n="lvl_critical">Critical</option>
           <option value="2" data-i18n="lvl_error">Error</option>
           <option value="3" data-i18n="lvl_warning">Warning</option>
         </select>
-        <input id="evfilter" type="text" data-i18n-ph="filter_ph" autocomplete="off" style="width:180px">
+        <input id="evfilter" type="text" data-i18n-ph="filter_ph" autocomplete="off" class="filterbox">
       </span>
     </h2>
     <div class="scroll-proc">
@@ -288,7 +288,6 @@
       <div>
         <div class="aboutcap">
           <span data-i18n="about_changelog">Changelog</span>
-          <span class="hint" data-i18n="about_live">read live from GitHub every time this panel opens</span>
         </div>
         <div id="aboutcl" class="aboutcl"></div>
       </div>

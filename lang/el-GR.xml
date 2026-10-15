@@ -175,7 +175,6 @@
   <string key="about_portfolio">Χαρτοφυλάκιο</string>
   <string key="about_releases">Εκδόσεις</string>
   <string key="about_changelog">Ημερολόγιο αλλαγών</string>
-  <string key="about_live">διαβάζεται ζωντανά από το GitHub κάθε φορά που ανοίγει αυτό το παράθυρο</string>
   <string key="about_reload">Επαναφόρτωση</string>
   <string key="about_close">Κλείσιμο</string>
   <string key="about_loading">Ανάγνωση του ημερολογίου αλλαγών από το GitHub...</string>

@@ -175,7 +175,6 @@
   <string key="about_portfolio">Portfolio</string>
   <string key="about_releases">Julkaisut</string>
   <string key="about_changelog">Muutosloki</string>
-  <string key="about_live">luetaan suoraan GitHubista aina kun tämä paneeli avataan</string>
   <string key="about_reload">Lataa uudelleen</string>
   <string key="about_close">Sulje</string>
   <string key="about_loading">Muutoslokia luetaan GitHubista...</string>

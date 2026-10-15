@@ -175,7 +175,6 @@
   <string key="about_portfolio">Portfolio</string>
   <string key="about_releases">Versies</string>
   <string key="about_changelog">Wijzigingslog</string>
-  <string key="about_live">wordt bij elk openen van dit venster live van GitHub gelezen</string>
   <string key="about_reload">Opnieuw laden</string>
   <string key="about_close">Sluiten</string>
   <string key="about_loading">Het wijzigingslog wordt van GitHub gelezen...</string>

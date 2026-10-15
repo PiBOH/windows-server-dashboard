@@ -175,7 +175,6 @@
   <string key="about_portfolio">Portfolio</string>
   <string key="about_releases">Versionen</string>
   <string key="about_changelog">Änderungsprotokoll</string>
-  <string key="about_live">wird bei jedem Öffnen dieses Fensters live von GitHub gelesen</string>
   <string key="about_reload">Neu laden</string>
   <string key="about_close">Schließen</string>
   <string key="about_loading">Das Änderungsprotokoll wird von GitHub gelesen...</string>

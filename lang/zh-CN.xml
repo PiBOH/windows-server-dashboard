@@ -175,7 +175,6 @@
   <string key="about_portfolio">作品集</string>
   <string key="about_releases">发行版</string>
   <string key="about_changelog">更新日志</string>
-  <string key="about_live">每次打开此面板时都从 GitHub 实时读取</string>
   <string key="about_reload">重新加载</string>
   <string key="about_close">关闭</string>
   <string key="about_loading">正在从 GitHub 读取更新日志...</string>

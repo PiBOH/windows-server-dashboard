@@ -175,7 +175,6 @@
   <string key="about_portfolio">ポートフォリオ</string>
   <string key="about_releases">リリース</string>
   <string key="about_changelog">変更履歴</string>
-  <string key="about_live">このパネルを開くたびに GitHub から直接読み込みます</string>
   <string key="about_reload">再読み込み</string>
   <string key="about_close">閉じる</string>
   <string key="about_loading">GitHub から変更履歴を読み込んでいます...</string>

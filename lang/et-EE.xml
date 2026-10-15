@@ -175,7 +175,6 @@
   <string key="about_portfolio">Portfoolio</string>
   <string key="about_releases">Väljaanded</string>
   <string key="about_changelog">Muudatuste logi</string>
-  <string key="about_live">loetakse GitHubist otse iga kord, kui see paneel avaneb</string>
   <string key="about_reload">Laadi uuesti</string>
   <string key="about_close">Sulge</string>
   <string key="about_loading">Muudatuste logi lugemine GitHubist...</string>

@@ -175,7 +175,6 @@
   <string key="about_portfolio">Portfólió</string>
   <string key="about_releases">Kiadások</string>
   <string key="about_changelog">Változásnapló</string>
-  <string key="about_live">minden megnyitáskor élőben olvasva a GitHubból</string>
   <string key="about_reload">Újratöltés</string>
   <string key="about_close">Bezárás</string>
   <string key="about_loading">A változásnapló olvasása a GitHubból...</string>

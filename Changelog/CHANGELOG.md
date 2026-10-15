@@ -7,6 +7,32 @@ Versioning follows Semantic Versioning: MAJOR.MINOR.PATCH.
 - MINOR - new backward compatible features.
 - PATCH - fixes and tweaks that add no feature.
 
+  1.16.21 - 2026-10-15
+  Added: on a phone - up to 480 pixels wide, and on any touch screen up to 900 -
+    the processes, services, events and adapters tables are read as blocks of
+    labelled values as wide as their card, with the header of every column kept
+    above them as a row of chips that still sorts on a tap. A table 882 pixels
+    wide in a pane of 312 was read by dragging it sideways one column at a time,
+    and the message of an event - the column that cannot be narrow - made every
+    row as tall as the whole text while its own column sat off the screen.
+  Added: a touch screen has no right button, so half a second with the finger
+    still on a row of the process or the service table opens the row menu where
+    the finger is, with the web search, the Properties panel and the two copy
+    commands. Ten pixels of travel and a second finger cancel it, a resize
+    cancels a hold that is still running, and the click that ends the press
+    which opened the menu is not a choice, so an entry is picked by a tap and
+    never by a finger being lifted onto it.
+  Changed: the label of a value is a real element and not a mark drawn by the
+    stylesheet, so a screen reader reads every value together with the column it
+    belongs to ("PID 15688"); on a large screen, where a real table says the
+    same thing above every column, it is drawn out of sight and the value is
+    read on its own, as before.
+  Changed: the About panel no longer draws the line that said its changelog is
+    read live from GitHub - the caption alone says what the link is - and that
+    key is out of all 38 language files.
+  Changed: docs\README.md documents the phone layout of the wide tables and the
+    long press that opens the row menu.
+
   1.16.20 - 2026-10-15
   Fixed: the CPU % of the processes was a wall of zeros and the busy
     percentage of a disk never moved. Both came from the "formatted" WMI

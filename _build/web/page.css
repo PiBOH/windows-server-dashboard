@@ -24,7 +24,11 @@ header h1 span{color:var(--accent)}
 .badge b{color:var(--txt)}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:6px;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(330px,1fr))}
+/* min(330px,100%) and not 330px: on a phone the content box is narrower than
+   the floor of a track, and a floor that cannot go below the screen width is
+   the whole page scrolling sideways by the difference. The same guard is on
+   every other minmax() below. */
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(330px,100%),1fr))}
 .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
 .card.wide{grid-column:1/-1}
 .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:12px;
@@ -47,8 +51,14 @@ tr:hover td{background:var(--hover)}
 .num{text-align:right;font-variant-numeric:tabular-nums}
 /* second line of the process cell: the friendly name of the executable */
 .pd{display:block;font-size:11px;line-height:1.3;color:var(--muted);font-weight:400}
+/* The name of the column inside a cell. It is shown only where the tables are
+   read as blocks of labelled values - on a screen a finger reads, see the media
+   query at the end of this file. On a large screen the header above the column
+   says it already, and the value has to be read on its own. It is a real span
+   and not a ::before so that a screen reader reads it where it is shown. */
+.cl{display:none}
 .row b small{font-weight:400;color:var(--muted)}
-.cores{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:8px;margin-top:6px}
+.cores{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(86px,100%),1fr));gap:8px;margin-top:6px}
 .core{background:var(--panel2);border-radius:6px;padding:6px 8px}
 .core div:first-child{font-size:10.5px;color:var(--muted)}
 .core b{font-size:15px}
@@ -73,6 +83,12 @@ th.sorted{color:var(--txt);background:var(--sortbg)}
 .ok{color:var(--ok)} .warn{color:var(--warn)} .crit{color:var(--crit)}
 input,select{background:var(--input);color:var(--txt);border:1px solid var(--border);border-radius:5px;
   padding:3px 8px;font-size:12px;text-transform:none;font-family:inherit}
+/* the filter box of the Processes, Services and Events tables, and the row of
+   tools next to it: the width is here and not in a style attribute, because on
+   a phone it has to be able to become the full width of the card (see the
+   media query at the end of this file) */
+.filterbox{width:180px}
+.h2tools{display:flex;gap:6px;align-items:center}
 footer{margin-top:18px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;
   color:var(--muted);font-size:12px;padding:12px 4px;border-top:1px solid var(--border)}
 footer .fside{display:flex;align-items:center;gap:10px}
@@ -93,7 +109,7 @@ footer .fcenter #aboutbtn{color:var(--muted)}
 .setrow label{display:flex;flex-direction:column;gap:2px;font-size:13.5px;color:var(--txt)}
 .setrow .hint{font-size:11px;color:var(--muted)}
 .setrow select{min-width:230px;padding:6px 10px;font-size:13px}
-.seclist{margin-top:10px;display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.seclist{margin-top:10px;display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(min(190px,100%),1fr))}
 .seclist label{flex-direction:row;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--border);
   border-radius:7px;padding:7px 10px;cursor:pointer;font-size:13px}
 .seclist label:hover{border-color:var(--accent)}
@@ -120,7 +136,7 @@ footer .fcenter #aboutbtn{color:var(--muted)}
   justify-content:space-between;align-items:center}
 .modal-box .close{cursor:pointer;color:var(--muted);font-size:20px;line-height:1;padding:0 4px}
 .modal-box .close:hover{color:var(--crit)}
-.langgrid{overflow:auto;padding:14px 18px;display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.langgrid{overflow:auto;padding:14px 18px;display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(min(230px,100%),1fr))}
 .langitem{cursor:pointer;background:var(--panel2);border:1px solid var(--border);border-radius:7px;padding:8px 11px;
   font-size:13px;transition:all .15s;text-align:left}
 .langitem:hover{background:var(--hover);border-color:var(--accent)}
@@ -151,7 +167,7 @@ footer .fcenter #aboutbtn{color:var(--muted)}
 .helpbtn.on{display:inline-block}
 .helpbtn:hover{border-color:var(--accent);color:var(--txt)}
 .helpbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.helplinks{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.helplinks{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(min(230px,100%),1fr))}
 .helplinks a{display:flex;align-items:center;justify-content:space-between;gap:8px;
   background:var(--panel2);border:1px solid var(--border);border-radius:7px;padding:9px 11px;
   font-size:13px;color:var(--txt);text-decoration:none}
@@ -193,12 +209,137 @@ footer .fcenter #aboutbtn{color:var(--muted)}
 .dhead .name{font-size:15px;font-weight:600}
 .dhead .meta{color:var(--muted);font-size:12px}
 .dhead .io{margin-left:auto;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
-.parts{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(255px,1fr))}
+.parts{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(255px,100%),1fr))}
 .part{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
 .part .pt{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
 .part .pt b{font-size:15px}
 .part .io{display:flex;justify-content:space-between;gap:8px;margin-top:6px;padding-top:6px;
   border-top:1px dashed var(--border);font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+/* --- a phone in the hand: 360 to 430 CSS pixels wide ---
+   Three rules decide everything here. The page must never scroll sideways,
+   so every track that has a floor uses min(...,100%) above and nothing on
+   this screen keeps a fixed width. A control smaller than 16px makes Safari
+   on iOS zoom the page when it takes the focus - and it stays zoomed and
+   scrolled sideways afterwards - so the form controls are 16px here, which
+   is also what makes them comfortable to tap. And the header stops being
+   sticky: wrapped on four rows it takes a fifth of the screen and it would
+   stay there while the page is read. */
+@media(max-width:480px){
+  body{padding:10px}
+  header{position:static;margin:-10px -10px 12px;padding:10px 12px;gap:8px 10px}
+  header h1{font-size:17px}
+  .badge{padding:3px 10px;font-size:11.5px}
+  .card{padding:12px}
+  .card.wide{padding:12px}
+  .big{font-size:28px}
+  .card h2{flex-wrap:wrap;gap:8px}
+  /* the filter row of a table: the select and the box take a line each and the
+     full width, because a select shrunk to fit beside the box cut its own
+     value in half ("Tutti gli stat" for "Tutti gli stati") with no ellipsis to
+     say it had been cut */
+  .h2tools{flex:1 1 100%;flex-wrap:wrap}
+  .h2tools select,.h2tools .filterbox{flex:1 1 100%;max-width:100%;width:auto}
+  .filterbox{width:100%}
+  /* touching the screen instead of pointing at it: no hover to lean on, and
+     the targets are the size of a fingertip */
+  input,select{font-size:16px;padding:6px 8px}
+  .btn{padding:9px 14px}
+  #langbtn,#themebtn,#setbtn{padding:9px 12px}
+  #aboutbtn{padding:8px 10px}
+  .helpbtn{width:28px;height:28px;font:700 14px/26px inherit}
+  .seclist input{width:18px;height:18px}
+  .modal{padding:10px}
+  .modal-box{max-height:88vh}
+  .setbody{padding:12px;gap:12px}
+  .langgrid,.helplinks{padding:12px}
+  .modal-foot{padding:10px 12px;flex-wrap:wrap}
+  .modal-foot .btn{flex:1 1 auto}
+  .modal-note{padding:10px 12px}
+  .ctxmenu{max-width:calc(100vw - 16px)}
+  .ctxhint,.ctxitem.msg{max-width:none}
+  .ctxitem{padding:10px;font-size:14px}
+  .scroll{max-height:260px}
+  th,td{padding:6px 7px}
+  .dbox{padding:10px 12px}
+  .part{padding:10px}
+  footer{gap:8px}
+}
+
+/* --- The four wide tables, on any screen that a finger reads: a phone (up to
+   480 pixels wide) and the same phone turned on its side, where the screen is
+   844 wide and the table of the events still runs 311 pixels past the card -
+   the message of an event being the column that cannot be narrow.
+   A table 882 pixels wide in a box of 312 is read by dragging it left and
+   right, one column at a time, and the message made every row as tall as the
+   whole text while its column sat off the screen, so a phone showed two rows
+   and a lot of empty space. Each row is a block of labelled values instead, as
+   wide as the card: every column is read without dragging, a long text wraps
+   inside the card, and the coloured bar of a self or event row marks the whole
+   block. The header survives as a row of chips, so the sort is still one tap
+   away. A tablet held in the hand is left alone above 900 pixels: there the
+   table fits, and a table is a better answer than a list of blocks. */
+@media(max-width:480px),(pointer:coarse) and (max-width:900px){
+  #tproc,#tsvc,#tev,#tnic{display:block}
+  /* The header stays where it can be reached. It is the row you tap to sort,
+     and two hundred rows below it there is no coming back to it otherwise: as
+     a sticky block it holds the top of the pane, exactly like the header of
+     the same table above 480 pixels. The chips are greyed as a group while a
+     list is scrolled, so they read as a bar and not as content. */
+  #tproc thead,#tsvc thead,#tev thead,#tnic thead{display:block;position:sticky;top:0;z-index:2;
+    background:var(--panel2);padding:5px 0 6px;border-bottom:1px solid var(--border)}
+  #tproc thead tr,#tsvc thead tr,#tev thead tr,#tnic thead tr{display:flex;flex-wrap:wrap;gap:6px}
+  #tproc th,#tsvc th,#tev th,#tnic th{position:static;display:inline-flex;align-items:center;
+    box-shadow:none;border:1px solid var(--border);border-radius:6px;background:var(--panel);
+    padding:8px 10px;font-size:12px}
+  #tproc tbody tr,#tsvc tbody tr,#tev tbody tr,#tnic tbody tr{display:block;padding:7px 2px;
+    border-bottom:1px solid var(--border)}
+  /* the values of a row flow one after the other and wrap, the way the cells of
+     a table are read left to right, instead of taking a line each: a process is
+     three lines and not six */
+  #tproc td,#tsvc td,#tev td,#tnic td{display:inline-flex;align-items:baseline;gap:6px;
+    min-width:0;max-width:100%;margin:2px 14px 2px 0;border:0;padding:0;
+    white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
+  /* the identity of the row has a line of its own */
+  #tproc td:first-child,#tsvc td:first-child,#tev td:first-child,#tnic td:first-child{display:flex;margin-right:0}
+  /* the message of an event is cut to one line on a large screen, where the
+     whole of it is a hover away; here it is the point of the row and it wraps */
+  #tev td:last-child{max-width:none;overflow:visible;text-overflow:clip;white-space:normal}
+  /* The label never breaks in half the way a value does: MESSAGGIO stays one
+     word while the message beside it wraps. It is a span and not a ::before,
+     and the span is the whole accessibility of this layout: shown it is read
+     with the value it belongs to, hidden on a large screen it leaves the value
+     alone under the header of a real table. */
+  #tproc .cl,#tsvc .cl,#tev .cl,#tnic .cl{display:inline-flex;flex:0 0 auto;white-space:nowrap;
+    color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.4px}
+  /* a cell with nothing in it says nothing, not even its label */
+  #tproc td:empty,#tsvc td:empty,#tev td:empty,#tnic td:empty{display:none}
+  /* the "nothing matches the filter" line spans the row the old way */
+  #tproc td[colspan],#tsvc td[colspan],#tev td[colspan]{display:block}
+  #tproc td[colspan] .cl,#tsvc td[colspan] .cl,#tev td[colspan] .cl{display:none}
+  /* the second line of a cell (the image name of a process, the description of
+     an adapter) starts under the name */
+  #tproc td:first-child,#tnic td:first-child{flex-wrap:wrap}
+  #tproc td:first-child .pd,#tnic td:first-child .sub{flex-basis:100%}
+  #tproc tr.selfrow td:first-child,#tev tr.crit td:first-child,#tev tr.warn td:first-child{box-shadow:none}
+  #tproc tr.selfrow{box-shadow:inset 3px 0 0 var(--accent)}
+  #tev tr.crit{box-shadow:inset 3px 0 0 var(--crit)}
+  #tev tr.warn{box-shadow:inset 3px 0 0 var(--warn)}
+  /* the rows are read one at a time now, so the box can be taller - but never
+     taller than the screen it stands on */
+  .scroll-proc{height:min(65vh,440px)}
+}
+
+/* --- the long press that opens the row menu (see ctxRowMenu in page.js) ---
+   A finger held on a row is a long press in the browser too: it starts
+   selecting the text of the cell and, on a phone, raises its own callout with
+   Copy and Look up right where our menu opens, so the two menus land on top of
+   each other. On a touch screen the menu of the row is the only one that has
+   anything to say about that row; the text of a table is still selectable with
+   a mouse, where the right button already opens the same menu. */
+@media(pointer:coarse){
+  tr[data-kind],tr[data-kind] td{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+}
+
 ::-webkit-scrollbar{width:12px;height:12px}
 ::-webkit-scrollbar-thumb{background:var(--scroll);border-radius:5px}
 /* The arrow buttons. As soon as ::-webkit-scrollbar is styled, Chromium stops

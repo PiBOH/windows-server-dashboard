@@ -175,7 +175,6 @@
   <string key="about_portfolio">Portfolio</string>
   <string key="about_releases">Laidieni</string>
   <string key="about_changelog">Izmaiņu žurnāls</string>
-  <string key="about_live">tiek nolasīts tiešraidē no GitHub katru reizi, kad šis logs tiek atvērts</string>
   <string key="about_reload">Pārlādēt</string>
   <string key="about_close">Aizvērt</string>
   <string key="about_loading">Izmaiņu žurnāls tiek nolasīts no GitHub...</string>

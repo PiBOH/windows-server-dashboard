@@ -175,7 +175,6 @@
   <string key="about_portfolio">Portfólio</string>
   <string key="about_releases">Vydania</string>
   <string key="about_changelog">Protokol zmien</string>
-  <string key="about_live">číta sa naživo z GitHubu pri každom otvorení tohto panela</string>
   <string key="about_reload">Načítať znova</string>
   <string key="about_close">Zavrieť</string>
   <string key="about_loading">Protokol zmien sa načítava z GitHubu...</string>

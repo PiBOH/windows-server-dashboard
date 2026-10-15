@@ -175,7 +175,6 @@
   <string key="about_portfolio">Portefólio</string>
   <string key="about_releases">Versões</string>
   <string key="about_changelog">Registo de alterações</string>
-  <string key="about_live">lido em direto do GitHub sempre que este painel abre</string>
   <string key="about_reload">Recarregar</string>
   <string key="about_close">Fechar</string>
   <string key="about_loading">A ler o registo de alterações do GitHub...</string>

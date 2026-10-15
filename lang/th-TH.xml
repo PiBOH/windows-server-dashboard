@@ -175,7 +175,6 @@
   <string key="about_portfolio">ผลงาน</string>
   <string key="about_releases">รุ่นเผยแพร่</string>
   <string key="about_changelog">บันทึกการเปลี่ยนแปลง</string>
-  <string key="about_live">อ่านสดจาก GitHub ทุกครั้งที่เปิดแผงนี้</string>
   <string key="about_reload">โหลดใหม่</string>
   <string key="about_close">ปิด</string>
   <string key="about_loading">กำลังอ่านบันทึกการเปลี่ยนแปลงจาก GitHub...</string>
