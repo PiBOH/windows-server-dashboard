@@ -85,12 +85,23 @@ files here - so starting it from this repository deletes tracked files. Copy
    it: the badge in `README.md`, `docs\README.md` (header and the versioning
    section), and the regenerated preview.
 2. A short entry at the top of `Changelog\CHANGELOG.md` (one entry per version,
-   in-line labels, two or three lines at most) and
+   in-line labels with emoji, two or three lines at most) and
    `Changelog\release-notes\RELEASE-NOTES-v<version>.md`, which the release
-   workflow reads and refuses to build without.
+   workflow reads and refuses to build without. **Changelog must follow keepachangelog
+   format with emoji, be in English, and be short and nice to read.**
 3. Commit with a message whose **first word** is `v<version>`: that is what
    starts `auto-release.yml`. No `Co-authored-by` and no "Generated with" line.
 4. One commit, no pull request: the workflow builds the zip, the `.sha512` and
    the release (not a draft, not a prerelease) from the tracked files, without
    the development folders. `AGENTS.md`, `_build\`, `screenshots\`, `.github\`
    and the local settings never travel with it.
+
+## Changelog format
+
+- Format based on [keepachangelog.com](https://keepachangelog.com/)
+- Emoji used for visual categories
+- All text in English
+- Short and concise entries (2-3 lines max per item)
+- Categories: Added, Changed, Fixed, Deprecated, Removed, Security
+- Version sections: ## [x.y.z] - YYYY-MM-DD
+- Unreleased section at top for ongoing work

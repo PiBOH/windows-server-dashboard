@@ -18,29 +18,6 @@ The dashboard starts **at boot as SYSTEM**, no interactive logon needed.
 
 ## What's new in 1.16.17
 
-**An About panel, one click away.** The line in the centre of the footer -
-the version - is now a button. It opens a panel with the author, a link to the
-portfolio, the e-mail address, the repository and the release list.
+📋 **About panel:** reached via version line in footer; author, portfolio, e-mail, repository and release links; changelog read from GitHub each time (never cached)
 
-The panel also carries the changelog, and that part is not shipped with the
-package: it is read from GitHub every time the panel opens, never cached, so
-what you read is always the published history and never a copy of it that
-travelled with an old zip. A *Reload* button does the same on demand. Because
-it comes from the network, that panel needs internet access from the browser;
-when GitHub cannot be reached the panel says so instead of showing something
-older. What arrives is escaped before it is displayed, so the remote file
-cannot put markup into the page.
-
-**The changelog reads one release per line.** Every release and every *Added*,
-*Fixed*, *Changed* or *Removed* line now sits on its own line, which is what
-makes the About panel readable. Nothing was cut: the same entries, the same
-categories, only laid out again - and the first entry, 1.16.16, no longer runs
-into the paragraph that explains what MAJOR, MINOR and PATCH mean.
-
-Everything else is unchanged. Coming from 1.16.16 this is a small release.
-
-## Requirements
-
-Windows Server 2016 or newer (Windows 10/11 work too), 32-bit or 64-bit,
-PowerShell 5.1 (the one already in the box), administrator rights for the
-installation only.
+📝 **Changelog format:** every release and every Added/Fixed/Changed/Removed line gets its own line

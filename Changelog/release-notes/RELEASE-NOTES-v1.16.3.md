@@ -2,7 +2,8 @@
 
 Web dashboard for Windows Server 2016+, reachable from any PC on the LAN.
 No agent, no IIS, no external module: copy the folder, run `Install.bat`,
-done.
+done. It works on 32-bit and 64-bit Windows: it is one PowerShell script,
+run by whichever Windows PowerShell the machine has.
 
 ## Install
 
@@ -17,29 +18,6 @@ The dashboard starts **at boot as SYSTEM**, no interactive logon needed.
 
 ## What's new in 1.16.3
 
-- **Process list, new order**: the friendly name ("Windows Explorer") is
-  the main line of the column and the image name (explorer.exe) sits
-  right under it, grayed; without a friendly name the image name is
-  shown alone. Filtering and sorting work exactly as before.
-- **The browser tab shows the server name first**, "<server> -
-  Dashboard", translated like before 1.16.2: the full product name
-  stays in the page footer, in the process list, in the logon
-  notification, in the scheduled task and in the event log.
-- **Less memory**: every 5 minutes the engine releases the memory pages
-  it is not using (working set trim), so Task Manager shows what the
-  dashboard really needs instead of the pages accumulated since the
-  start (about 80 MB until now).
-- Servers that auto-updated to 1.16.2 received a few pre-1.16.0
-  leftovers in their docs folder: the first start of 1.16.3 removes
-  them. A logo.png kept in the root is a personal file and is never
-  touched.
+👯 **Friendly name:** main line in process list; tab title back to `"<server> - Dashboard"`; five minute memory trim
 
-Everything else stays as before: temperature chain with 5 sources (Core
-Temp plain program first), tiered sampling, no sampling while nobody
-watches, per-browser refresh and theme, self update from GitHub
-(`auto_update = no` to disable).
-
-## Requirements
-
-Windows Server 2016 or newer (Windows 10/11 work too), PowerShell 5.1,
-administrator rights for the installation only.
+🧹 **Pre-1.16.0 leftovers:** removed from docs\\

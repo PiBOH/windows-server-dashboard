@@ -18,29 +18,6 @@ The dashboard starts **at boot as SYSTEM**, no interactive logon needed.
 
 ## What's new in 1.16.15
 
-**The tab shows the logo of the package.** Until now the browser showed the
-generic icon next to the page title: the dashboard answered `/favicon.ico`
-with an empty `204` on purpose, so nothing was ever sent. It now answers with
-`docs\logo.png` - the same logo the README and the manual show - read once,
-kept in memory and served exactly like the page itself, with a one day cache
-so the browser does not ask again at every refresh. Nothing is started and
-nothing is written to serve it, and if the file is not there the answer is the
-same empty `204` as before: a package without `docs\logo.png` loses the icon
-and nothing else.
+🖼️ **Browser tab logo:** `/favicon.ico` serves `docs\\logo.png`
 
-**The screenshots of the README are the interface you actually get.** The five
-images were still the ones taken at 1.15.2 and showed a page that no longer
-exists; they were taken again from the offline preview, in English, every one
-of them from the top of the page and at a 1600x900 window (the dark one covers
-the whole page). They are not part of the archive - `screenshots\` never was -
-so this is about the repository, not about the update.
-
-Nothing else changed: same temperature chain with Core Temp read only while it
-runs, same settings panel, same updater. If you use 1.16.14 there is no
-functional reason to update.
-
-## Requirements
-
-Windows Server 2016 or newer (Windows 10/11 work too), 32-bit or 64-bit,
-PowerShell 5.1 (the one already in the box), administrator rights for the
-installation only.
+📸 **README screenshots:** taken in English

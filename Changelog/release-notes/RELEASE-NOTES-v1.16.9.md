@@ -18,19 +18,4 @@ The dashboard starts **at boot as SYSTEM**, no interactive logon needed.
 
 ## What's new in 1.16.9
 
-**The dashboard itself is unchanged.** This release only fixes the automated
-check added with the 32-bit test: it asked `/api/stats` once, immediately
-after `/api/health` answered, and failed the build with *"carries no CPU
-section"* when the first sampling cycle had not finished yet - which is what
-happened once on a busy runner, while the same commit passed on a re-run.
-The check now waits, up to a minute, for the CPU section and then asserts
-exactly what it did before: the CPU section, `Cpu.TempSource`, the temperature
-row in the page, and the engine and the temperature chain in the log.
-
-Nothing else changed: if you use 1.16.8 there is no reason to update.
-
-## Requirements
-
-Windows Server 2016 or newer (Windows 10/11 work too), 32-bit or 64-bit,
-PowerShell 5.1 (the one already in the box), administrator rights for the
-installation only.
+🖥️ **32-bit CI:** waits for CPU section instead of failing on slow runner

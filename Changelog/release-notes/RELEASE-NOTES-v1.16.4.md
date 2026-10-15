@@ -2,7 +2,8 @@
 
 Web dashboard for Windows Server 2016+, reachable from any PC on the LAN.
 No agent, no IIS, no external module: copy the folder, run `Install.bat`,
-done.
+done. It works on 32-bit and 64-bit Windows: it is one PowerShell script,
+run by whichever Windows PowerShell the machine has.
 
 ## Install
 
@@ -17,23 +18,6 @@ The dashboard starts **at boot as SYSTEM**, no interactive logon needed.
 
 ## What's new in 1.16.4
 
-- **Manual update now really restarts the dashboard by itself**:
-  `Update-Now.bat` restarts itself as administrator, like Diagnose.bat.
-  Without those rights the old instance could not be stopped and the
-  task could not be started again: the update looked successful while
-  the OLD version kept serving, and the new one only appeared at the
-  next boot.
-- **Same version republished? Everybody updates anyway**: every release
-  now records its build commit, so when the same number comes out again
-  with different content every dashboard downloads it - which used to
-  need a hand with the version file.
-- The restart after an update got two more safeties: if the port never
-  frees, the log says that the old version is still the one answering;
-  and the direct launch of the last resort reserves the URL first, so
-  it can really listen.
+📝 **version.txt:** carries build commit on second line; republishing a version updates running dashboards; startup log names that commit
 
-Everything else stays as before: temperature chain with 5 sources (Core
-Temp plain program first), tiered sampling, no sampling while nobody
-watches, per-browser refresh and theme, self update from GitHub
-(`auto_update = no` to disable).
-
+🔄 **Manual update:** Update-Now.bat elevates; restart waits for port; last-resort launch reserves URL first
