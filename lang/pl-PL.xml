@@ -146,7 +146,7 @@
   <string key="pwd_title">Hasło serwera</string>
   <string key="pwd_explain">Wprowadź hasło, aby zmienić opcje serwera.</string>
   <string key="logging_opt">Pliki dziennika na serwerze</string>
-  <string key="auto_update_opt">Aktualizacje automatyczne</string>
+  <string key="auto_update_opt">Automatyczne aktualizacje (panel)</string>
   <string key="server_default">domyślne serwera</string>
   <string key="no_data">Brak dostępnych danych</string>
   <string key="temp_help_open">Dlaczego brakuje temperatury procesora?</string>

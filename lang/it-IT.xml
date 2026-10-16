@@ -166,7 +166,7 @@
   <string key="pwd_title">Password del server</string>
   <string key="pwd_explain">Inserisci la password per modificare le opzioni del server.</string>
   <string key="logging_opt">File di log sul server</string>
-  <string key="auto_update_opt">Aggiornamenti automatici</string>
+  <string key="auto_update_opt">Aggiornamenti automatici (dashboard)</string>
   <string key="server_default">predefinita del server</string>
   <string key="no_data">Nessun dato disponibile</string>
   <string key="about_open">Informazioni su questa dashboard</string>

@@ -146,7 +146,7 @@
   <string key="pwd_title">סיסמת השרת</string>
   <string key="pwd_explain">הזן את הסיסמה כדי לשנות את אפשרויות השרת.</string>
   <string key="logging_opt">קבצי יומן בשרת</string>
-  <string key="auto_update_opt">עדכונים אוטומטיים</string>
+  <string key="auto_update_opt">עדכונים אוטומטיים (לוח בקרה)</string>
   <string key="server_default">ברירת המחדל של השרת</string>
   <string key="no_data">אין נתונים זמינים</string>
   <string key="temp_help_open">מדוע טמפרטורת המעבד חסרה?</string>

@@ -146,7 +146,7 @@
   <string key="pwd_title">Serverio slaptažodis</string>
   <string key="pwd_explain">Įveskite slaptažodį, kad pakeistumėte serverio parinktis.</string>
   <string key="logging_opt">Žurnalo failai serveryje</string>
-  <string key="auto_update_opt">Automatiniai atnaujinimai</string>
+  <string key="auto_update_opt">Automatiniai atnaujinimai (prižiūrėjimo pultas)</string>
   <string key="server_default">serverio numatytoji</string>
   <string key="no_data">Nėra duomenų</string>
   <string key="temp_help_open">Kodėl nerodoma procesoriaus temperatūra?</string>

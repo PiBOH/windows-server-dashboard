@@ -146,7 +146,7 @@
   <string key="pwd_title">Senha do servidor</string>
   <string key="pwd_explain">Digite a senha para alterar as opções do servidor.</string>
   <string key="logging_opt">Arquivos de log no servidor</string>
-  <string key="auto_update_opt">Atualizações automáticas</string>
+  <string key="auto_update_opt">Atualizações automáticas (painel)</string>
   <string key="server_default">padrão do servidor</string>
   <string key="no_data">Nenhum dado disponível</string>
   <string key="temp_help_open">Por que a temperatura da CPU está faltando?</string>

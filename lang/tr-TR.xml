@@ -146,7 +146,7 @@
   <string key="pwd_title">Sunucu parolası</string>
   <string key="pwd_explain">Sunucu seçeneklerini değiştirmek için parolayı girin.</string>
   <string key="logging_opt">Sunucudaki günlük dosyaları</string>
-  <string key="auto_update_opt">Otomatik güncellemeler</string>
+  <string key="auto_update_opt">Otomatik güncellemeler (gösterge paneli)</string>
   <string key="server_default">sunucu varsayılanı</string>
   <string key="no_data">Veri yok</string>
   <string key="temp_help_open">İşlemci sıcaklığı neden yok?</string>

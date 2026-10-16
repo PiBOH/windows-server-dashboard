@@ -146,7 +146,7 @@
   <string key="pwd_title">Пароль сервера</string>
   <string key="pwd_explain">Введите пароль, чтобы изменить параметры сервера.</string>
   <string key="logging_opt">Файлы журналов на сервере</string>
-  <string key="auto_update_opt">Автоматические обновления</string>
+  <string key="auto_update_opt">Автоматическое обновление (панель управления)</string>
   <string key="server_default">по умолчанию с сервера</string>
   <string key="no_data">Нет доступных данных</string>
   <string key="temp_help_open">Почему нет температуры процессора?</string>

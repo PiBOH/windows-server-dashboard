@@ -146,7 +146,7 @@
   <string key="pwd_title">Contraseña del servidor</string>
   <string key="pwd_explain">Escriba la contraseña para cambiar las opciones del servidor.</string>
   <string key="logging_opt">Archivos de registro en el servidor</string>
-  <string key="auto_update_opt">Actualizaciones automáticas</string>
+  <string key="auto_update_opt">Actualizaciones automáticas (panel)</string>
   <string key="server_default">predeterminado del servidor</string>
   <string key="no_data">No hay datos disponibles</string>
   <string key="temp_help_open">¿Por qué falta la temperatura de la CPU?</string>

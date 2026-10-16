@@ -146,7 +146,7 @@
   <string key="pwd_title">サーバーのパスワード</string>
   <string key="pwd_explain">サーバーオプションを変更するにはパスワードを入力してください。</string>
   <string key="logging_opt">サーバー上のログファイル</string>
-  <string key="auto_update_opt">自動更新</string>
+  <string key="auto_update_opt">自動更新（ダッシュボード）</string>
   <string key="server_default">サーバーの既定値</string>
   <string key="no_data">データがありません</string>
   <string key="temp_help_open">CPU の温度が表示されないのはなぜですか?</string>

@@ -146,7 +146,7 @@
   <string key="pwd_title">Serverlösenord</string>
   <string key="pwd_explain">Skriv in lösenordet för att ändra serveralternativen.</string>
   <string key="logging_opt">Loggfiler på servern</string>
-  <string key="auto_update_opt">Automatiska uppdateringar</string>
+  <string key="auto_update_opt">Automatiska uppdateringar (instrumentbräda)</string>
   <string key="server_default">serverns standardvärde</string>
   <string key="no_data">Inga data tillgängliga</string>
   <string key="temp_help_open">Varför saknas CPU-temperaturen?</string>

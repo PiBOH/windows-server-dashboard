@@ -146,7 +146,7 @@
   <string key="pwd_title">Serverpassord</string>
   <string key="pwd_explain">Skriv inn passordet for å endre serveralternativene.</string>
   <string key="logging_opt">Loggfiler på serveren</string>
-  <string key="auto_update_opt">Automatiske oppdateringer</string>
+  <string key="auto_update_opt">Automatiske oppdateringer (instrumentpult)</string>
   <string key="server_default">serverstandard</string>
   <string key="no_data">Ingen data tilgjengelig</string>
   <string key="temp_help_open">Hvorfor mangler CPU-temperaturen?</string>

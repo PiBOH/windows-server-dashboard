@@ -146,7 +146,7 @@
   <string key="pwd_title">Serveri parool</string>
   <string key="pwd_explain">Sisestage parool serveri valikute muutmiseks.</string>
   <string key="logging_opt">Logifailid serveris</string>
-  <string key="auto_update_opt">Automaatsed värskendused</string>
+  <string key="auto_update_opt">Automaatsed värskendused (juhtnokepult)</string>
   <string key="server_default">serveri vaikeväärtus</string>
   <string key="no_data">Andmed puuduvad</string>
   <string key="temp_help_open">Miks CPU temperatuur puudub?</string>

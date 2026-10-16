@@ -146,7 +146,7 @@
   <string key="pwd_title">Serverwachtwoord</string>
   <string key="pwd_explain">Voer het wachtwoord in om de serveropties te wijzigen.</string>
   <string key="logging_opt">Logbestanden op de server</string>
-  <string key="auto_update_opt">Automatische updates</string>
+  <string key="auto_update_opt">Automatische updates (dashboard)</string>
   <string key="server_default">standaard van de server</string>
   <string key="no_data">Geen gegevens beschikbaar</string>
   <string key="temp_help_open">Waarom ontbreekt de CPU-temperatuur?</string>

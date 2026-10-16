@@ -146,7 +146,7 @@
   <string key="pwd_title">Serveradgangskode</string>
   <string key="pwd_explain">Indtast adgangskoden for at ændre serverindstillingerne.</string>
   <string key="logging_opt">Logfiler på serveren</string>
-  <string key="auto_update_opt">Automatiske opdateringer</string>
+  <string key="auto_update_opt">Automatiske opdateringer (dashboard)</string>
   <string key="server_default">serverstandard</string>
   <string key="no_data">Ingen data tilgængelige</string>
   <string key="temp_help_open">Hvorfor mangler CPU-temperaturen?</string>

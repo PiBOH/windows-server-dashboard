@@ -146,7 +146,7 @@
   <string key="pwd_title">Parola serverului</string>
   <string key="pwd_explain">Introduceți parola pentru a schimba opțiunile serverului.</string>
   <string key="logging_opt">Fișiere jurnal pe server</string>
-  <string key="auto_update_opt">Actualizări automate</string>
+  <string key="auto_update_opt">Actualizări automate (panoul de control)</string>
   <string key="server_default">implicit de la server</string>
   <string key="no_data">Nu există date disponibile</string>
   <string key="temp_help_open">De ce lipsește temperatura procesorului?</string>

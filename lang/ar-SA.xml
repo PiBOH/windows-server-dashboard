@@ -146,7 +146,7 @@
   <string key="pwd_title">كلمة مرور الخادم</string>
   <string key="pwd_explain">أدخل كلمة المرور لتغيير خيارات الخادم.</string>
   <string key="logging_opt">ملفات السجل على الخادم</string>
-  <string key="auto_update_opt">التحديثات التلقائية</string>
+  <string key="auto_update_opt">التحديثات التلقائية للوحة</string>
   <string key="server_default">الافتراضي من الخادم</string>
   <string key="no_data">لا توجد بيانات متاحة</string>
   <string key="temp_help_open">لماذا لا تظهر درجة حرارة المعالج؟</string>

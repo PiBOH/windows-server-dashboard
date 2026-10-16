@@ -146,7 +146,7 @@
   <string key="pwd_title">Heslo servera</string>
   <string key="pwd_explain">Zadajte heslo na zmenu možností servera.</string>
   <string key="logging_opt">Súbory protokolu na serveri</string>
-  <string key="auto_update_opt">Automatické aktualizácie</string>
+  <string key="auto_update_opt">Automatické aktualizácie (riadiací panely)</string>
   <string key="server_default">predvolené zo servera</string>
   <string key="no_data">Nie sú k dispozícii žiadne údaje</string>
   <string key="temp_help_open">Prečo chýba teplota procesora?</string>

@@ -146,7 +146,7 @@
   <string key="pwd_title">Servera parole</string>
   <string key="pwd_explain">Ievadiet paroli, lai mainītu servera opcijas.</string>
   <string key="logging_opt">Žurnāla faili serverī</string>
-  <string key="auto_update_opt">Automātiski atjauninājumi</string>
+  <string key="auto_update_opt">Automātiski atjauninājumi (pārvaldības pannells)</string>
   <string key="server_default">servera noklusējums</string>
   <string key="no_data">Nav pieejamu datu</string>
   <string key="temp_help_open">Kāpēc trūkst procesora temperatūras?</string>

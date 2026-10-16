@@ -146,7 +146,7 @@
   <string key="pwd_title">Парола на сървъра</string>
   <string key="pwd_explain">Въведете паролата, за да промените настройките на сървъра.</string>
   <string key="logging_opt">Лог файлове на сървъра</string>
-  <string key="auto_update_opt">Автоматични актуализации</string>
+  <string key="auto_update_opt">Автоматични актуализации (табло)</string>
   <string key="server_default">по подразбиране от сървъра</string>
   <string key="no_data">Няма налични данни</string>
   <string key="temp_help_open">Защо липсва температурата на процесора?</string>

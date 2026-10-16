@@ -146,7 +146,7 @@
   <string key="pwd_title">服务器密码</string>
   <string key="pwd_explain">输入密码以更改服务器选项。</string>
   <string key="logging_opt">服务器上的日志文件</string>
-  <string key="auto_update_opt">自动更新</string>
+  <string key="auto_update_opt">自动更新（仪表板）</string>
   <string key="server_default">服务器默认值</string>
   <string key="no_data">没有可用数据</string>
   <string key="temp_help_open">为什么缺少 CPU 温度?</string>

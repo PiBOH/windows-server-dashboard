@@ -146,7 +146,7 @@
   <string key="pwd_title">Mot de passe du serveur</string>
   <string key="pwd_explain">Saisissez le mot de passe pour modifier les options du serveur.</string>
   <string key="logging_opt">Fichiers journaux sur le serveur</string>
-  <string key="auto_update_opt">Mises à jour automatiques</string>
+  <string key="auto_update_opt">Mises à jour automatiques (tableau de bord)</string>
   <string key="server_default">valeur par défaut du serveur</string>
   <string key="no_data">Aucune donnée disponible</string>
   <string key="temp_help_open">Pourquoi la température du processeur manque-t-elle ?</string>

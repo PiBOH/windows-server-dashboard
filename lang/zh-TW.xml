@@ -146,7 +146,7 @@
   <string key="pwd_title">伺服器密碼</string>
   <string key="pwd_explain">輸入密碼以變更伺服器選項。</string>
   <string key="logging_opt">伺服器上的記錄檔</string>
-  <string key="auto_update_opt">自動更新</string>
+  <string key="auto_update_opt">自動更新（儀表板）</string>
   <string key="server_default">伺服器預設值</string>
   <string key="no_data">沒有可用的資料</string>
   <string key="temp_help_open">為什麼缺少 CPU 溫度?</string>

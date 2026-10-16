@@ -146,7 +146,7 @@
   <string key="pwd_title">Geslo strežnika</string>
   <string key="pwd_explain">Vnesite geslo za spreminjanje možnosti strežnika.</string>
   <string key="logging_opt">Dnevniške datoteke na strežniku</string>
-  <string key="auto_update_opt">Samodejne posodobitve</string>
+  <string key="auto_update_opt">Samodejne posodobitve (krmilna plošča)</string>
   <string key="server_default">privzeto iz strežnika</string>
   <string key="no_data">Ni podatkov</string>
   <string key="temp_help_open">Zakaj manjka temperatura procesorja?</string>

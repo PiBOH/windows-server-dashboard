@@ -146,7 +146,7 @@
   <string key="pwd_title">Κωδικός διακομιστή</string>
   <string key="pwd_explain">Εισαγάγετε τον κωδικό για να αλλάξετε τις ρυθμίσεις του διακομιστή.</string>
   <string key="logging_opt">Αρχεία καταγραφής στον διακομιστή</string>
-  <string key="auto_update_opt">Αυτόματες ενημερώσεις</string>
+  <string key="auto_update_opt">Αυτόματες ενημερώσεις (πίνακας διαχείρισης)</string>
   <string key="server_default">προεπιλογή διακομιστή</string>
   <string key="no_data">Δεν υπάρχουν διαθέσιμα δεδομένα</string>
   <string key="temp_help_open">Γιατί λείπει η θερμοκρασία του επεξεργαστή;</string>

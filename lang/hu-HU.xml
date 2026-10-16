@@ -146,7 +146,7 @@
   <string key="pwd_title">Kiszolgáló jelszava</string>
   <string key="pwd_explain">Adja meg a jelszót a kiszolgáló beállításainak módosításához.</string>
   <string key="logging_opt">Naplófájlok a kiszolgálón</string>
-  <string key="auto_update_opt">Automatikus frissítések</string>
+  <string key="auto_update_opt">Automatikus frissítések (vezérlőpult)</string>
   <string key="server_default">kiszolgáló alapértéke</string>
   <string key="no_data">Nincs elérhető adat</string>
   <string key="temp_help_open">Miért hiányzik a processzor hőmérséklete?</string>

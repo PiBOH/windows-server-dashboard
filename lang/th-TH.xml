@@ -146,7 +146,7 @@
   <string key="pwd_title">รหัสผ่านเซิร์ฟเวอร์</string>
   <string key="pwd_explain">ป้อนรหัสผ่านเพื่อเปลี่ยนตัวเลือกเซิร์ฟเวอร์</string>
   <string key="logging_opt">ไฟล์บันทึกบนเซิร์ฟเวอร์</string>
-  <string key="auto_update_opt">อัปเดตอัตโนมัติ</string>
+  <string key="auto_update_opt">การอัปเดตอัตโนมัติ (แดชบอร์ด)</string>
   <string key="server_default">ค่าเริ่มต้นของเซิร์ฟเวอร์</string>
   <string key="no_data">ไม่มีข้อมูล</string>
   <string key="temp_help_open">ทำไมไม่มีอุณหภูมิ CPU?</string>

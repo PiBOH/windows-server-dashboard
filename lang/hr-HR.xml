@@ -146,7 +146,7 @@
   <string key="pwd_title">Lozinka poslužitelja</string>
   <string key="pwd_explain">Unesite lozinku za promjenu opcija poslužitelja.</string>
   <string key="logging_opt">Datoteke zapisa na poslužitelju</string>
-  <string key="auto_update_opt">Automatsko ažuriranje</string>
+  <string key="auto_update_opt">Automatsko ažuriranje (upravljačka ploča)</string>
   <string key="server_default">zadano s poslužitelja</string>
   <string key="no_data">Nema dostupnih podataka</string>
   <string key="temp_help_open">Zašto nedostaje temperatura procesora?</string>
